@@ -95,7 +95,7 @@ function ApplicationForm() {
   return (
     <div className="application-container">
       <div className="application-header">
-        <img src="/images/LogoPaks.jpg" alt="Paks Logo" className="paks-logo" />
+        <img src="/LogoPaks.jpg" alt="Paks Logo" className="paks-logo" />
         <h1 className="paks-title">Paks Logistic LLC</h1>
       </div>
 
@@ -158,7 +158,7 @@ function InfoStep() {
           </ul>
         </div>
 
-        <img src="/images/Truck.jpg" alt="Truck" className="truck-image" />
+        <img src="/Truck.jpg" alt="Truck" className="truck-image" />
 
         <div className="job-section">
           <h2>We Offer:</h2>
