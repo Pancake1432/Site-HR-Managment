@@ -289,6 +289,7 @@
 
 /* ── DOCUMENTS GRID ──────────────────────────────────────────────────── */
 .documents-grid {
+  padding-top: 10px;
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 16px;
@@ -547,20 +548,10 @@
 
 /* Tablet: sidebar collapses to icons only */
 @media (max-width: 1024px) {
-  /* Sidebar: icon-only */
-  .sidebar { width: 64px; }
-  .logo span,
-  .nav-item span:not(.nav-icon),
-  .logout span:not(.nav-icon) { display: none; }
-  .logo { justify-content: center; padding: 0 10px; }
-  .nav-item { justify-content: center; padding: 14px 0; }
-  .logout { justify-content: center; padding: 14px 0; }
-
-  .main-content { margin-left: 64px; padding: 16px; }
   .content-grid { grid-template-columns: 1fr; }
   .documents-grid { grid-template-columns: repeat(3, 1fr); }
   .recruiting-cols,
-  .drivers-cols { grid-template-columns: 150px 140px 110px 120px 80px 80px }
+  .drivers-cols { grid-template-columns: 160px 1fr 90px 120px 80px 110px; }
   .employees-cols { grid-template-columns: 160px 1fr 120px 140px 140px; }
 }
 

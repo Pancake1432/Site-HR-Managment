@@ -1,0 +1,204 @@
+import { useState } from 'react';
+import { StatementData, PaymentType } from '../../types/dashboard';
+import { companyDriversData } from '../../data/driversData';
+
+const emptyForm: StatementData = {
+  driverId: null, driverName: '',
+  paymentType: 'miles',
+  miles: '', ratePerMile: '',
+  percent: '', grossAmount: '',
+  adjustmentType: 'bonus',
+  adjustmentAmount: '', adjustmentReason: '',
+};
+
+export default function StatementsPage() {
+  const [form, setForm]           = useState<StatementData>(emptyForm);
+  const [showPreview, setShowPreview] = useState(false);
+
+  const set = (partial: Partial<StatementData>) => setForm(f => ({ ...f, ...partial }));
+
+  const calc = () => {
+    const sub = form.paymentType === 'miles'
+      ? parseFloat(form.miles || '0') * parseFloat(form.ratePerMile || '0')
+      : parseFloat(form.grossAmount || '0') * (parseFloat(form.percent || '0') / 100);
+    const adj = parseFloat(form.adjustmentAmount || '0');
+    return {
+      sub:   sub.toFixed(2),
+      adj:   adj.toFixed(2),
+      total: (form.adjustmentType === 'bonus' ? sub + adj : sub - adj).toFixed(2),
+    };
+  };
+
+  const handleGenerate = () => {
+    if (!form.driverName) return alert('Please select a driver');
+    if (form.paymentType === 'miles' && (!form.miles || !form.ratePerMile))
+      return alert('Please enter miles and rate per mile');
+    if (form.paymentType === 'percent' && (!form.percent || !form.grossAmount))
+      return alert('Please enter percentage and gross amount');
+    setShowPreview(true);
+  };
+
+  const totals = calc();
+
+  return (
+    <div className="page">
+      <div className="page-header">
+        <h1 className="page-title">Statements</h1>
+        <p className="page-subtitle">Generate driver payment statements</p>
+      </div>
+      <center>
+        <div className="card statement-form-card">
+          <div className="card-header"><h2 className="card-title">Create Statement</h2></div>
+
+          <div className="form-grid">
+            {/* Driver select */}
+            <div className="form-group full-width">
+              <label>Select Driver</label>
+              <select
+                value={form.driverId ?? ''}
+                onChange={e => {
+                  const d = companyDriversData.find(d => d.id === parseInt(e.target.value));
+                  set({ driverId: d?.id ?? null, driverName: d?.name ?? '' });
+                }}
+              >
+                <option value="">Choose a driver...</option>
+                {companyDriversData.map(d => (
+                  <option key={d.id} value={d.id}>{d.name}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Payment type */}
+            <div className="form-group full-width">
+              <label>Payment Type</label>
+              <div className="custom-radio-group">
+                {(['miles', 'percent'] as PaymentType[]).map(v => (
+                  <label key={v} className={`custom-radio ${form.paymentType === v ? 'active' : ''}`}>
+                    <input type="radio" name="paymentType" value={v} checked={form.paymentType === v}
+                      onChange={() => set({ paymentType: v })} />
+                    <span className="radio-icon">{v === 'miles' ? '🛣️' : '📊'}</span>
+                    <span>{v === 'miles' ? 'Miles' : 'Percentage'}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Miles / Percentage inputs */}
+            {form.paymentType === 'miles' ? <>
+              <div className="form-group">
+                <label>Miles Driven</label>
+                <input type="number" placeholder="Enter miles" value={form.miles}
+                  onChange={e => set({ miles: e.target.value })} />
+              </div>
+              <div className="form-group">
+                <label>Rate per Mile ($)</label>
+                <input type="number" step="0.01" placeholder="Enter rate" value={form.ratePerMile}
+                  onChange={e => set({ ratePerMile: e.target.value })} />
+              </div>
+            </> : <>
+              <div className="form-group">
+                <label>Percentage (%)</label>
+                <input type="number" placeholder="Enter percentage" value={form.percent}
+                  onChange={e => set({ percent: e.target.value })} />
+              </div>
+              <div className="form-group">
+                <label>Gross Amount ($)</label>
+                <input type="number" step="0.01" placeholder="Enter gross" value={form.grossAmount}
+                  onChange={e => set({ grossAmount: e.target.value })} />
+              </div>
+            </>}
+
+            {/* Adjustment type */}
+            <div className="form-group full-width">
+              <label>Adjustment Type</label>
+              <div className="custom-radio-group">
+                {(['bonus', 'deduction'] as const).map(v => (
+                  <label key={v} className={`custom-radio ${form.adjustmentType === v ? 'active' : ''}`}>
+                    <input type="radio" name="adjType" value={v} checked={form.adjustmentType === v}
+                      onChange={() => set({ adjustmentType: v })} />
+                    <span className="radio-icon">{v === 'bonus' ? '➕' : '➖'}</span>
+                    <span>{v.charAt(0).toUpperCase() + v.slice(1)}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label>Adjustment Amount ($)</label>
+              <input type="number" step="0.01" placeholder="Enter amount" value={form.adjustmentAmount}
+                onChange={e => set({ adjustmentAmount: e.target.value })} />
+            </div>
+            <div className="form-group">
+              <label>Adjustment Reason</label>
+              <input type="text" placeholder="Enter reason" value={form.adjustmentReason}
+                onChange={e => set({ adjustmentReason: e.target.value })} />
+            </div>
+          </div>
+
+          <button className="generate-btn" onClick={handleGenerate}>Generate Statement</button>
+        </div>
+      </center>
+      {/* ── PREVIEW MODAL ── */}
+      {showPreview && (
+        <div className="modal-overlay" onClick={() => setShowPreview(false)}>
+          <div className="modal-content modal-xl" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Statement Preview</h2>
+              <button className="close-btn" onClick={() => setShowPreview(false)}>✕</button>
+            </div>
+            <div className="modal-body">
+              <div className="statement-document">
+                <div className="statement-header">
+                  <h1>Payment Statement</h1>
+                  <p>Date: {new Date().toLocaleDateString()}</p>
+                </div>
+
+                <div className="statement-section">
+                  <h3>Driver Information</h3>
+                  <p><strong>Name:</strong> {form.driverName}</p>
+                </div>
+
+                <div className="statement-section">
+                  <h3>Payment Details</h3>
+                  {form.paymentType === 'miles' ? <>
+                    <p><strong>Payment Type:</strong> Miles</p>
+                    <p><strong>Miles Driven:</strong> {form.miles}</p>
+                    <p><strong>Rate per Mile:</strong> ${form.ratePerMile}</p>
+                  </> : <>
+                    <p><strong>Payment Type:</strong> Percentage</p>
+                    <p><strong>Percentage:</strong> {form.percent}%</p>
+                    <p><strong>Gross Amount:</strong> ${form.grossAmount}</p>
+                  </>}
+                  <p><strong>Subtotal:</strong> ${totals.sub}</p>
+                </div>
+
+                {parseFloat(form.adjustmentAmount || '0') > 0 && (
+                  <div className="statement-section">
+                    <h3>Adjustments</h3>
+                    <p><strong>Type:</strong> {form.adjustmentType === 'bonus' ? 'Bonus' : 'Deduction'}</p>
+                    <p><strong>Amount:</strong> {form.adjustmentType === 'bonus' ? '+' : '-'}${totals.adj}</p>
+                    {form.adjustmentReason && <p><strong>Reason:</strong> {form.adjustmentReason}</p>}
+                  </div>
+                )}
+
+                <div className="statement-section statement-total">
+                  <h3>Total Payment</h3>
+                  <p className="total-amount">${totals.total}</p>
+                </div>
+              </div>
+
+              <div className="statement-actions">
+                <button className="download-btn" onClick={() => alert('PDF download would be implemented here')}>
+                  Download PDF
+                </button>
+                <button className="close-preview-btn" onClick={() => setShowPreview(false)}>
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
