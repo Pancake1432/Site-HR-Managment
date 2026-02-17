@@ -197,6 +197,8 @@
   width: 18px;
   height: 18px;
   cursor: pointer;
+  outline: none;
+  box-shadow: none;
 }
 
 /* Upload Section */
@@ -322,10 +324,16 @@
 
 .back-home {
   background: transparent;
-  color: white;
+  color: #667eea;
   box-shadow: none;
-  text-decoration: underline;
   margin-top: 20px;
+  padding: 15px;
+  font-size: 16px;
+  font-weight: 600;
+  margin-top: 20px;
+  transition: opacity 0.3s ease;
+  border: none;
+  cursor: pointer;
 }
 
 .back-home:hover {
