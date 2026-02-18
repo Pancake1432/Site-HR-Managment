@@ -49,7 +49,7 @@ function LoginPage() {
               id="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="admin@admin.com"
+              placeholder="Enter your email address"
               required
             />
           </div>
