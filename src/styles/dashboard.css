@@ -304,23 +304,61 @@
   background: var(--bg-card-secondary);
   border-radius: 12px;
   padding: 18px;
-  display: flex; flex-direction: column; gap: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
   border: 2px solid transparent;
   transition: all 0.25s;
+  min-height: 180px; /* Ensure consistent card height */
 }
-.document-card:hover { transform: translateY(-4px); border-color: var(--accent); box-shadow: 0 6px 18px rgba(102,126,234,0.18); }
-.document-card-header { display: flex; align-items: center; gap: 10px; }
-.document-card-info h3 { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
-.document-card-info p  { font-size: 12px; color: var(--text-secondary); }
-.document-card-stats   { font-size: 13px; color: var(--text-secondary); display: flex; gap: 10px; }
+.document-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--accent);
+  box-shadow: 0 6px 18px rgba(102,126,234,0.18);
+}
+.document-card-content {
+  flex: 1; /* Takes up available space, pushing button to bottom */
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  justify-content: space-between;
+}
+.document-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.document-card-info h3 {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+.document-card-info p {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.document-card-stats {
+  font-size: 13px;
+  color: var(--text-secondary);
+  display: flex;
+  gap: 10px;
+}
 .open-btn {
   padding: 9px;
   background: var(--gradient);
-  color: white; border: none; border-radius: 8px;
-  font-size: 14px; font-weight: 500; cursor: pointer;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
   transition: all 0.25s;
+  margin-top: auto; /* Push to bottom */
 }
-.open-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(102,126,234,0.3); }
+.open-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102,126,234,0.3);
+}
 
 /* ── MODALS ──────────────────────────────────────────────────────────── */
 .modal-overlay {
