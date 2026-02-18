@@ -6,7 +6,7 @@ export default function InfoStep() {
           <h2>Minimum Hiring Requirements:</h2>
           <ul>
             <li>Minimum 1 year of CDL experience.</li>
-            <li>Must have 1 moving violations or one accident and one violation in the last 3 years.</li>
+            <li>No more then one moving violations or one accident and one violation in the last 3 years.</li>
             <li>Able to pass Drug Test.</li>
             <li>Experience working with Refrigerated Freight.</li>
           </ul>
