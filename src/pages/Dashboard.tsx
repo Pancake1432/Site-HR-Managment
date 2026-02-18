@@ -13,8 +13,8 @@ import '../styles/dashboard.css';
 
 const NAV_ITEMS: { key: PageType; icon: string; label: string }[] = [
   { key: 'dashboard',  icon: '📊', label: 'Dashboard'  },
-  { key: 'drivers',    icon: '🚗', label: 'Drivers'    },
   { key: 'documents',  icon: '📄', label: 'Documents'  },
+  { key: 'drivers',    icon: '🚚', label: 'Drivers'    },
   { key: 'statements', icon: '📋', label: 'Statements' },
   { key: 'salary',     icon: '💰', label: 'Salary'     },
   { key: 'employees',  icon: '👥', label: 'Employees'  },
@@ -56,8 +56,8 @@ export default function Dashboard() {
       {/* ── MAIN CONTENT ── */}
       <main className="main-content">
         {activePage === 'dashboard'  && <DashboardHome  onNavigate={setActivePage} />}
-        {activePage === 'drivers'    && <DriversPage />}
         {activePage === 'documents'  && <DocumentsPage />}
+        {activePage === 'drivers'    && <DriversPage />}
         {activePage === 'statements' && <StatementsPage />}
         {activePage === 'salary'     && <SalaryPage />}
         {activePage === 'employees'  && <EmployeesPage />}
