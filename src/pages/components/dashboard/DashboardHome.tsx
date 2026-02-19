@@ -5,29 +5,48 @@ import { companyDriversData, allApplicantsData } from '../../data/driversData';
 
 interface Props {
   onNavigate: (page: PageType) => void;
+  onCheckApplicant: (driverId: number) => void;
 }
 
-export default function DashboardHome({ onNavigate }: Props) {
+export default function DashboardHome({ onNavigate, onCheckApplicant }: Props) {
   const navigate = useNavigate();
-  const [searchQuery, setSearchQuery]   = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusType | 'all'>('all');
+  
+  // Track applicants status (can be saved to backend later)
+  const [applicantStatuses, setApplicantStatuses] = useState<Record<number, StatusType>>({});
+
+  // Merge applicants with their current statuses
+  const applicantsWithStatus = useMemo(() => 
+    allApplicantsData.map(a => ({
+      ...a,
+      status: applicantStatuses[a.id] || a.status
+    }))
+  , [applicantStatuses]);
 
   const activeDriversCount = companyDriversData.filter(d => d.driverStatus === 'Ready').length;
-  const pendingCount       = allApplicantsData.length;
+  const pendingCount = applicantsWithStatus.length;
 
   const counts = useMemo(() => ({
-    applied:   allApplicantsData.filter(a => a.status === 'Applied').length,
-    contacted: allApplicantsData.filter(a => a.status === 'Contacted').length,
-    docs:      allApplicantsData.filter(a => a.status === 'Documents Sent').length,
-  }), []);
+    applied:   applicantsWithStatus.filter(a => a.status === 'Applied').length,
+    contacted: applicantsWithStatus.filter(a => a.status === 'Contacted').length,
+    docs:      applicantsWithStatus.filter(a => a.status === 'Documents Sent').length,
+  }), [applicantsWithStatus]);
 
-  const filtered = useMemo(() => allApplicantsData.filter(a => {
+  const filtered = useMemo(() => applicantsWithStatus.filter(a => {
     const q = searchQuery.toLowerCase();
     const matchSearch = a.firstName.toLowerCase().includes(q)
       || a.lastName.toLowerCase().includes(q)
       || a.name.toLowerCase().includes(q);
     return matchSearch && (statusFilter === 'all' || a.status === statusFilter);
-  }), [searchQuery, statusFilter]);
+  }), [searchQuery, statusFilter, applicantsWithStatus]);
+
+  const handleStatusChange = (applicantId: number, newStatus: StatusType) => {
+    setApplicantStatuses(prev => ({
+      ...prev,
+      [applicantId]: newStatus
+    }));
+  };
 
   return (
     <div className="page">
@@ -46,10 +65,10 @@ export default function DashboardHome({ onNavigate }: Props) {
         <div className="card">
           <div className="card-header"><h2 className="card-title">Recruiting</h2></div>
           <div className="recruiting-stats">
-            <span className="stat-badge">{allApplicantsData.length} Applications</span>
+            <span className="stat-badge">{applicantsWithStatus.length} Applications</span>
             <span className="stat-badge">{counts.applied} Applied</span>
             <span className="stat-badge">{counts.contacted} Contacted</span>
-            <span className="stat-badge">{counts.docs} Documents Sent</span>
+            <span className="stat-badge">{counts.docs} Docs Sent</span>
           </div>
 
           <div className="search-bar">
@@ -89,12 +108,26 @@ export default function DashboardHome({ onNavigate }: Props) {
                 <span className="cell">{a.position}</span>
                 <span className="cell"><span className="equip-badge">{a.equipment}</span></span>
                 <span className="cell">
-                  <span className={`status-badge status-recruiting-${a.status.toLowerCase().replace(/ /g, '-')}`}>
-                    {a.status}
-                  </span>
+                  <select 
+                    className={`status-dropdown status-recruiting-${a.status.toLowerCase().replace(/ /g, '-')}`}
+                    value={a.status}
+                    onChange={(e) => handleStatusChange(a.id, e.target.value as StatusType)}
+                  >
+                    <option value="Applied">Applied</option>
+                    <option value="Contacted">Contacted</option>
+                    <option value="Documents Sent">Docs Sent</option>
+                  </select>
                 </span>
                 <span className="cell">{a.date}</span>
-                <span className="cell"><button className="check-btn">Check</button></span>
+                <span className="cell">
+                  <button 
+                    className="check-btn" 
+                    onClick={() => onCheckApplicant(a.id)}
+                    title="View documents for this applicant"
+                  >
+                    Check
+                  </button>
+                </span>
               </div>
             )) : <div className="no-results">No candidates found</div>}
           </div>
@@ -105,12 +138,12 @@ export default function DashboardHome({ onNavigate }: Props) {
           <div className="card-header"><h2 className="card-title">Quick Actions</h2></div>
           <div className="quick-actions">
             {[
-              { icon: '➕', label: 'Add New Driver',     action: () => navigate('/apply')            },
-              { icon: '📄', label: 'Generate Statement', action: () => onNavigate('statements')      },
-              { icon: '📁', label: 'Manage Documents',   action: () => onNavigate('documents')       },
-              { icon: '👥', label: 'View All Drivers',   action: () => onNavigate('drivers')         },
-              { icon: '🏢', label: 'Employee Records',   action: () => onNavigate('employees')       },
-              { icon: '💰', label: 'Process Payroll',    action: () => onNavigate('salary')          },
+              { icon: '➕', label: 'Add New Driver',     action: () => navigate('/apply')        },
+              { icon: '📄', label: 'Generate Statement', action: () => onNavigate('statements')  },
+              { icon: '📁', label: 'Manage Documents',   action: () => onNavigate('documents')   },
+              { icon: '👥', label: 'View All Drivers',   action: () => onNavigate('drivers')     },
+              { icon: '🏢', label: 'Employee Records',   action: () => onNavigate('employees')   },
+              { icon: '💰', label: 'Process Payroll',    action: () => onNavigate('salary')      },
             ].map(btn => (
               <button key={btn.label} className="action-btn" onClick={btn.action}>
                 <span className="action-icon">{btn.icon}</span>

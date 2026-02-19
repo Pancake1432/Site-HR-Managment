@@ -17,7 +17,7 @@
 .container { display: flex; min-height: 100vh; }
 
 .sidebar {
-  width: 240px;
+  width: 160px;
   background: var(--gradient);
   padding: 20px 0;
   position: fixed;
@@ -72,7 +72,7 @@
 .logout:hover { background: rgba(255,255,255,0.1); color: white; }
 
 .main-content {
-  margin-left: 240px;
+  margin-left: 160px;
   flex: 1;
   padding: 30px;
   min-height: 100vh;
@@ -368,6 +368,7 @@
   z-index: 1000;
   padding: 16px;
   animation: fadeIn 0.25s ease;
+  margin: 0;
 }
 .modal-content {
   background: white;
@@ -646,4 +647,46 @@
   .filter-buttons { gap: 6px; }
   .filter-btn { padding: 6px 12px; font-size: 12px; }
   .main-content { padding: 12px; }
+}
+
+/* ── STATUS DROPDOWN ──────────────────────────────────────────────────── */
+.status-dropdown {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  outline: none;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M1 1L5 5L9 1' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  padding-right: 26px;
+}
+.status-dropdown:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+.status-dropdown:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+  
+}
+
+/* Status colors for dropdown */
+.status-dropdown option[value="Applied"] {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.status-dropdown option[value="Contacted"] {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.status-dropdown option[value="Documents Sent"] {
+  background-color: #d1fae5;
+  color: #065f46;
 }
