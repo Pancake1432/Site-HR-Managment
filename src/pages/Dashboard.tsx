@@ -21,9 +21,23 @@ const NAV_ITEMS: { key: PageType; icon: string; label: string }[] = [
 ];
 
 export default function Dashboard() {
-  const navigate                        = useNavigate();
-  const [activePage, setActivePage]     = useState<PageType>('dashboard');
+  const navigate = useNavigate();
+  const [activePage, setActivePage] = useState<PageType>('dashboard');
   const [showSettings, setShowSettings] = useState(false);
+  const [selectedDriverId, setSelectedDriverId] = useState<number | null>(null);
+
+  const handleNavigateToDocuments = (driverId: number) => {
+    setSelectedDriverId(driverId);
+    setActivePage('documents');
+  };
+
+  const handlePageChange = (page: PageType) => {
+    // Clear selected driver when changing pages manually
+    if (page !== 'documents') {
+      setSelectedDriverId(null);
+    }
+    setActivePage(page);
+  };
 
   return (
     <div className="container">
@@ -39,7 +53,7 @@ export default function Dashboard() {
             <div
               key={item.key}
               className={`nav-item ${activePage === item.key ? 'active' : ''}`}
-              onClick={() => setActivePage(item.key)}
+              onClick={() => handlePageChange(item.key)}
             >
               <span className="nav-icon">{item.icon}</span>
               <span>{item.label}</span>
@@ -55,8 +69,18 @@ export default function Dashboard() {
 
       {/* ── MAIN CONTENT ── */}
       <main className="main-content">
-        {activePage === 'dashboard'  && <DashboardHome  onNavigate={setActivePage} />}
-        {activePage === 'documents'  && <DocumentsPage />}
+        {activePage === 'dashboard' && (
+          <DashboardHome 
+            onNavigate={handlePageChange}
+            onCheckApplicant={handleNavigateToDocuments}
+          />
+        )}
+        {activePage === 'documents' && (
+          <DocumentsPage 
+            selectedDriverId={selectedDriverId}
+            onClose={() => setSelectedDriverId(null)}
+          />
+        )}
         {activePage === 'drivers'    && <DriversPage />}
         {activePage === 'statements' && <StatementsPage />}
         {activePage === 'salary'     && <SalaryPage />}

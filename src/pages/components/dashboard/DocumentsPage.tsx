@@ -1,8 +1,13 @@
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { Driver, DocFile } from '../../types/dashboard';
 import { allApplicantsData } from '../../data/driversData';
 
-export default function DocumentsPage() {
+interface Props {
+  selectedDriverId?: number | null;
+  onClose?: () => void;
+}
+
+export default function DocumentsPage({ selectedDriverId, onClose }: Props) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
   
@@ -17,6 +22,16 @@ export default function DocumentsPage() {
     documents: driverDocuments[d.id] || [], // Empty array if no documents uploaded
   })), [driverDocuments]);
 
+  // Auto-open modal when selectedDriverId is provided
+  useEffect(() => {
+    if (selectedDriverId) {
+      const driver = driversWithDocs.find(d => d.id === selectedDriverId);
+      if (driver) {
+        setSelectedDriver(driver);
+      }
+    }
+  }, [selectedDriverId, driversWithDocs]);
+
   const filtered = useMemo(() => driversWithDocs.filter(d => {
     const q = searchQuery.toLowerCase();
     return (
@@ -28,6 +43,11 @@ export default function DocumentsPage() {
 
   const handleOpen = (driver: typeof driversWithDocs[0]) => {
     setSelectedDriver(driver);
+  };
+
+  const handleClose = () => {
+    setSelectedDriver(null);
+    onClose?.(); // Notify parent component
   };
 
   const handleAddDocument = () => {
@@ -137,11 +157,11 @@ export default function DocumentsPage() {
 
       {/* ── DOCUMENT MODAL ── */}
       {selectedDriver && (
-        <div className="modal-overlay" onClick={() => setSelectedDriver(null)}>
+        <div className="modal-overlay" onClick={handleClose}>
           <div className="modal-content modal-xl" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <h2>{selectedDriver.name} — Documents</h2>
-              <button className="close-btn" onClick={() => setSelectedDriver(null)}>✕</button>
+              <button className="close-btn" onClick={handleClose}>✕</button>
             </div>
             <div className="modal-body">
 
