@@ -196,3 +196,36 @@
   }
 }
 
+
+/* ── ENHANCED MOBILE ─────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .auth-container {
+    padding: 16px;
+    align-items: flex-start;
+    padding-top: 40px;
+  }
+
+  .auth-box {
+    padding: 24px 20px;
+    border-radius: 16px;
+  }
+
+  .auth-header h1 {
+    font-size: 24px !important;
+  }
+
+  .auth-header p {
+    font-size: 14px;
+  }
+
+  .form-group input,
+  .form-group select {
+    font-size: 16px; /* Prevent iOS zoom on focus */
+    padding: 13px;
+  }
+
+  .auth-button {
+    padding: 14px;
+    font-size: 15px;
+  }
+}

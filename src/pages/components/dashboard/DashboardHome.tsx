@@ -105,9 +105,9 @@ export default function DashboardHome({ onNavigate, onCheckApplicant }: Props) {
             {filtered.length > 0 ? filtered.map(a => (
               <div key={a.id} className="table-row recruiting-cols">
                 <span className="cell-name"><span className="row-avatar">👤</span>{a.name}</span>
-                <span className="cell">{a.position}</span>
-                <span className="cell"><span className="equip-badge">{a.equipment}</span></span>
-                <span className="cell">
+                <span className="cell" data-label="Position">{a.position}</span>
+                <span className="cell" data-label="Equipment"><span className="equip-badge">{a.equipment}</span></span>
+                <span className="cell" data-label="Status">
                   <select 
                     className={`status-dropdown status-recruiting-${a.status.toLowerCase().replace(/ /g, '-')}`}
                     value={a.status}
@@ -118,8 +118,8 @@ export default function DashboardHome({ onNavigate, onCheckApplicant }: Props) {
                     <option value="Documents Sent">Docs Sent</option>
                   </select>
                 </span>
-                <span className="cell">{a.date}</span>
-                <span className="cell">
+                <span className="cell" data-label="Date">{a.date}</span>
+                <span className="cell" data-label="Action">
                   <button 
                     className="check-btn" 
                     onClick={() => onCheckApplicant(a.id)}

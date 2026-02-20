@@ -138,15 +138,15 @@ export default function DriversPage() {
           {filtered.length > 0 ? filtered.map(d => (
             <div key={d.id} className="table-row drivers-cols">
               <span className="cell-name"><span className="row-avatar">👤</span>{d.name}</span>
-              <span className="cell">{d.position}</span>
-              <span className="cell"><span className="equip-badge">{d.equipment}</span></span>
-              <span className="cell">
+              <span className="cell" data-label="Position">{d.position}</span>
+              <span className="cell" data-label="Equipment"><span className="equip-badge">{d.equipment}</span></span>
+              <span className="cell" data-label="Status">
                 <span className={`status-badge status-driver-${d.driverStatus?.toLowerCase().replace(' ', '-')}`}>
                   {d.driverStatus}
                 </span>
               </span>
-              <span className="cell">{d.date}</span>
-              <span className="cell">
+              <span className="cell" data-label="Date">{d.date}</span>
+              <span className="cell" data-label="Action">
                 <button className="view-btn" onClick={() => handleViewDetails(d)}>
                   View Details
                 </button>
