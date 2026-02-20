@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageType, StatusType } from '../../types/dashboard';
 import { companyDriversData, allApplicantsData } from '../../data/driversData';
+import StatusDropdown from './StatusDropdown';
 
 interface Props {
   onNavigate: (page: PageType) => void;
@@ -108,15 +109,10 @@ export default function DashboardHome({ onNavigate, onCheckApplicant }: Props) {
                 <span className="cell" data-label="Position">{a.position}</span>
                 <span className="cell" data-label="Equipment"><span className="equip-badge">{a.equipment}</span></span>
                 <span className="cell" data-label="Status">
-                  <select 
-                    className={`status-dropdown status-recruiting-${a.status.toLowerCase().replace(/ /g, '-')}`}
+                  <StatusDropdown
                     value={a.status}
-                    onChange={(e) => handleStatusChange(a.id, e.target.value as StatusType)}
-                  >
-                    <option value="Applied">Applied</option>
-                    <option value="Contacted">Contacted</option>
-                    <option value="Documents Sent">Docs Sent</option>
-                  </select>
+                    onChange={(newStatus) => handleStatusChange(a.id, newStatus)}
+                  />
                 </span>
                 <span className="cell" data-label="Date">{a.date}</span>
                 <span className="cell" data-label="Action">
