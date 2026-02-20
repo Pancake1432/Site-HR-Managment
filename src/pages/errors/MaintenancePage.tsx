@@ -2,7 +2,6 @@ import { useNavigate } from 'react-router-dom';
 import '../../styles/errors.css';
 
 
-
 export default function MaintenancePage() {
   const navigate = useNavigate();
 
