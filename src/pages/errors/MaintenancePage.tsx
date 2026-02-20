@@ -1,12 +1,8 @@
 import { useNavigate } from 'react-router-dom';
 import '../../styles/errors.css';
 
-interface MaintenancePageProps {
-  /** Optional estimated time back online, e.g. "5 minutes" */
-  eta?: string;
-}
 
-export default function MaintenancePage({ eta }: MaintenancePageProps) {
+export default function MaintenancePage() {
   const navigate = useNavigate();
 
   return (

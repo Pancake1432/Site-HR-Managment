@@ -657,47 +657,9 @@
   .main-content { padding: 12px; }
 }
 
-/* ── STATUS DROPDOWN ──────────────────────────────────────────────────── */
-.status-dropdown {
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 500;
-  outline: none;
-  border: none;
-  cursor: pointer;
-  transition: all 0.2s;
-  appearance: none;
-  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M1 1L5 5L9 1' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3e%3c/svg%3e");
-  background-repeat: no-repeat;
-  background-position: right 8px center;
-  padding-right: 26px;
-}
-.status-dropdown:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-.status-dropdown:focus {
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
-  
-}
 
-/* Status colors for dropdown */
-.status-dropdown option[value="Applied"] {
-  background-color: #dbeafe;
-  color: #1e40af;
-}
+/* (status-dropdown replaced by custom StatusDropdown component) */
 
-.status-dropdown option[value="Contacted"] {
-  background-color: #fef3c7;
-  color: #92400e;
-}
-
-.status-dropdown option[value="Documents Sent"] {
-  background-color: #d1fae5;
-  color: #065f46;
-}
 
 /* ── DRIVER DOCUMENTS GRID ───────────────────────────────────────────── */
 .driver-documents-grid {
@@ -845,6 +807,7 @@
     background: var(--bg-card);
     z-index: 10;
     border-bottom: 2px solid var(--border);
+    padding-top: 60px;
   }
 
   .modal-header h2 {
@@ -1229,6 +1192,7 @@
   /* Modal specific for Documents page */
   .modal-content.modal-xl .modal-header {
     padding: 14px 16px;
+    padding-top: 60px;
   }
 
   .modal-content.modal-xl .modal-header h2 {
@@ -1529,4 +1493,171 @@
 
   /* Tighten cards */
   .card { padding: 14px !important; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   CUSTOM STATUS DROPDOWN (StatusDropdown.tsx)
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.sdd-root {
+  position: relative;
+  display: inline-block;
+}
+
+/* ── TRIGGER PILL ──────────────────────────────────────────────────── */
+.sdd-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 10px 6px 8px;
+  border: none;
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: filter 0.15s, transform 0.15s, box-shadow 0.15s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+.sdd-trigger:hover {
+  filter: brightness(0.96);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+}
+.sdd-trigger--open {
+  filter: brightness(0.94);
+  transform: translateY(0);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+.sdd-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.sdd-label {
+  line-height: 1;
+}
+
+.sdd-chevron {
+  display: flex;
+  align-items: center;
+  opacity: 0.6;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  margin-left: 1px;
+}
+.sdd-chevron--up {
+  transform: rotate(180deg);
+}
+
+/* ── POPOVER ───────────────────────────────────────────────────────── */
+/* Portal-rendered: position is set via inline style from JS */
+.sdd-popover {
+  position: absolute; /* overridden to fixed via inline top/left from JS */
+  z-index: 9999;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 8px;
+  min-width: 190px;
+  box-shadow:
+    0 4px 6px -1px rgba(0,0,0,0.08),
+    0 12px 28px -5px rgba(0,0,0,0.14),
+    0 0 0 1px rgba(0,0,0,0.04);
+  animation: sdd-popover-in 0.18s cubic-bezier(0.16, 1, 0.3, 1) both;
+  /* Use page-scroll coordinates, set by JS */
+  position: absolute;
+}
+
+@keyframes sdd-popover-in {
+  from { opacity: 0; transform: translateY(-6px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);    }
+}
+
+/* Arrow tip */
+.sdd-popover::before {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: 50%;
+  transform: translateX(-50%) rotate(45deg);
+  width: 9px;
+  height: 9px;
+  background: white;
+  border-left: 1px solid var(--border);
+  border-top: 1px solid var(--border);
+  border-radius: 2px 0 0 0;
+}
+
+.sdd-popover-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  padding: 4px 8px 8px;
+  opacity: 0.7;
+}
+
+/* ── OPTION ROWS ───────────────────────────────────────────────────── */
+.sdd-option {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s, color 0.12s;
+  position: relative;
+}
+.sdd-option:hover {
+  background: var(--bg-card-secondary);
+}
+.sdd-option--active {
+  background: var(--bg-card-secondary);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.sdd-option-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.sdd-option-emoji {
+  font-size: 15px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.sdd-option-text {
+  flex: 1;
+}
+.sdd-option-check {
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* ── MOBILE: portal popover positioned by JS, just constrain width ── */
+@media (max-width: 768px) {
+  .sdd-popover {
+    min-width: 220px;
+    max-width: calc(100vw - 32px);
+  }
+  .sdd-popover::before {
+    display: none;
+  }
 }
