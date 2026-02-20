@@ -1,16 +1,36 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { Driver, DocFile } from '../../types/dashboard';
-import { allApplicantsData, defaultDocuments } from '../../data/driversData';
+import { allApplicantsData } from '../../data/driversData';
 
-export default function DocumentsPage() {
-  const [searchQuery, setSearchQuery]     = useState('');
+interface Props {
+  selectedDriverId?: number | null;
+  onClose?: () => void;
+}
+
+export default function DocumentsPage({ selectedDriverId, onClose }: Props) {
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
-  const [driverDocs, setDriverDocs]       = useState<DocFile[]>([]);
+  
+  // Store documents per driver in state (each driver starts with NO documents)
+  const [driverDocuments, setDriverDocuments] = useState<Record<number, DocFile[]>>({});
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Map drivers with their documents (empty by default)
   const driversWithDocs = useMemo(() => allApplicantsData.map(d => ({
     ...d,
-    documents: defaultDocuments.map(doc => ({ ...doc })) as DocFile[],
-  })), []);
+    documents: driverDocuments[d.id] || [], // Empty array if no documents uploaded
+  })), [driverDocuments]);
+
+  // Auto-open modal when selectedDriverId is provided
+  useEffect(() => {
+    if (selectedDriverId) {
+      const driver = driversWithDocs.find(d => d.id === selectedDriverId);
+      if (driver) {
+        setSelectedDriver(driver);
+      }
+    }
+  }, [selectedDriverId, driversWithDocs]);
 
   const filtered = useMemo(() => driversWithDocs.filter(d => {
     const q = searchQuery.toLowerCase();
@@ -23,14 +43,69 @@ export default function DocumentsPage() {
 
   const handleOpen = (driver: typeof driversWithDocs[0]) => {
     setSelectedDriver(driver);
-    setDriverDocs([...driver.documents]);
+  };
+
+  const handleClose = () => {
+    setSelectedDriver(null);
+    onClose?.(); // Notify parent component
+  };
+
+  const handleAddDocument = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !selectedDriver) return;
+
+    // Only allow PDFs
+    if (!file.type.includes('pdf')) {
+      alert('Please upload PDF files only');
+      return;
+    }
+
+    // Create a new document entry
+    const newDoc: DocFile = {
+      id: Date.now(), // Unique ID
+      name: file.name,
+      type: 'PDF',
+      uploadDate: new Date().toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }),
+      size: formatFileSize(file.size),
+    };
+
+    // Add document to this driver's collection
+    setDriverDocuments(prev => ({
+      ...prev,
+      [selectedDriver.id]: [...(prev[selectedDriver.id] || []), newDoc]
+    }));
+
+    // Clear the input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+
+    console.log('✅ Document uploaded:', newDoc);
+    alert(`✅ Document "${file.name}" uploaded successfully!`);
   };
 
   const handleDelete = (docId: number) => {
-    if (window.confirm('Delete this document?')) {
-      setDriverDocs(prev => prev.filter(d => d.id !== docId));
+    if (!selectedDriver) return;
+    
+    if (window.confirm('Delete this document? This action cannot be undone.')) {
+      setDriverDocuments(prev => ({
+        ...prev,
+        [selectedDriver.id]: (prev[selectedDriver.id] || []).filter(d => d.id !== docId)
+      }));
     }
   };
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  };
+
+  const currentDriverDocs = selectedDriver ? (driverDocuments[selectedDriver.id] || []) : [];
 
   return (
     <div className="page">
@@ -53,15 +128,17 @@ export default function DocumentsPage() {
         <div className="documents-grid">
           {filtered.length > 0 ? filtered.map(d => (
             <div key={d.id} className="document-card">
-              <div className="document-card-header">
-                <div className="candidate-avatar">👤</div>
-                <div className="document-card-info">
-                  <h3>{d.name}</h3>
-                  <p>{d.position} · {d.equipment}</p>
+              <div className="document-card-content">
+                <div className="document-card-header">
+                  <div className="candidate-avatar">👤</div>
+                  <div className="document-card-info">
+                    <h3>{d.name}</h3>
+                    <p>{d.position} · {d.equipment}</p>
+                  </div>
                 </div>
-              </div>
-              <div className="document-card-stats">
-                <span>{d.documents.length} Documents</span>
+                <div className="document-card-stats">
+                  <span>{d.documents.length} Documents</span>
+                </div>
               </div>
               <button className="open-btn" onClick={() => handleOpen(d)}>Open</button>
             </div>
@@ -69,24 +146,35 @@ export default function DocumentsPage() {
         </div>
       </div>
 
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".pdf,application/pdf"
+        onChange={handleFileUpload}
+        style={{ display: 'none' }}
+      />
+
       {/* ── DOCUMENT MODAL ── */}
       {selectedDriver && (
-        <div className="modal-overlay" onClick={() => setSelectedDriver(null)}>
+        <div className="modal-overlay" onClick={handleClose}>
           <div className="modal-content modal-xl" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <h2>{selectedDriver.name} — Documents</h2>
-              <button className="close-btn" onClick={() => setSelectedDriver(null)}>✕</button>
+              <button className="close-btn" onClick={handleClose}>✕</button>
             </div>
             <div className="modal-body">
 
               {/* Documents list */}
               <div className="modal-section">
                 <div className="modal-section-header">
-                  <h3>Documents</h3>
-                  <button className="add-document-btn">➕ Add Document</button>
+                  <h3>Documents ({currentDriverDocs.length})</h3>
+                  <button className="add-document-btn" onClick={handleAddDocument}>
+                    ➕ Add Document
+                  </button>
                 </div>
                 <div className="documents-list">
-                  {driverDocs.length > 0 ? driverDocs.map(doc => (
+                  {currentDriverDocs.length > 0 ? currentDriverDocs.map(doc => (
                     <div key={doc.id} className="document-item">
                       <div className="document-icon">📄</div>
                       <div className="document-info">
@@ -95,14 +183,22 @@ export default function DocumentsPage() {
                       </div>
                       <div className="document-actions">
                         <button className="doc-action-btn open">Open</button>
-                        <button className="doc-action-btn delete" onClick={() => handleDelete(doc.id)}>Delete</button>
+                        <button className="doc-action-btn delete" onClick={() => handleDelete(doc.id)}>
+                          Delete
+                        </button>
                       </div>
                     </div>
-                  )) : <p className="no-documents">No documents uploaded yet</p>}
+                  )) : (
+                    <div className="no-documents">
+                      <div style={{ fontSize: '48px', marginBottom: '12px' }}>📂</div>
+                      <p style={{ fontSize: '16px', fontWeight: 600, marginBottom: '8px' }}>No documents uploaded yet</p>
+                      <p style={{ fontSize: '14px', color: '#718096' }}>
+                        Click "Add Document" above to upload PDFs for {selectedDriver.name}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
-
-              
 
             </div>
           </div>
