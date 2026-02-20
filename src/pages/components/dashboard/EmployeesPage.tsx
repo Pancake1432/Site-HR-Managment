@@ -62,18 +62,18 @@ export default function EmployeesPage() {
           {filtered.length > 0 ? filtered.map(e => (
             <div key={e.id} className="table-row employees-cols">
               <span className="cell-name"><span className="row-avatar">👤</span>{e.name}</span>
-              <span className="cell">{e.position}</span>
-              <span className="cell">
+              <span className="cell" data-label="Position">{e.position}</span>
+              <span className="cell" data-label="Payment Type">
                 <span className={`payment-badge ${e.paymentType === 'miles' ? 'miles' : 'percent'}`}>
                   {e.paymentType === 'miles' ? '📏 Per Mile' : '📊 Percentage'}
                 </span>
               </span>
-              <span className="cell">
+              <span className="cell" data-label="Employment Status">
                 <span className={`employment-badge ${e.employmentStatus?.toLowerCase()}`}>
                   {e.employmentStatus}
                 </span>
               </span>
-              <span className="cell">
+              <span className="cell" data-label="Action">
                 <button className="details-btn" onClick={() => setSelected(e)}>
                   View Full Details
                 </button>
