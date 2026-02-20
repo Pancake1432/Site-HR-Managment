@@ -623,7 +623,6 @@
     text-transform: uppercase;
     display: block;
     margin-bottom: 2px;
-    padding-right: 8px;
   }
 
   .documents-grid { grid-template-columns: repeat(2, 1fr); }
