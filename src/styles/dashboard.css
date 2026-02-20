@@ -1661,3 +1661,290 @@
     display: none;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   DASHBOARD CHARTS (DashboardCharts.tsx)
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.dc-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+/* ── CARD ───────────────────────────────────────────────────────────── */
+.dc-card {
+  background: white;
+  border-radius: 14px;
+  padding: 22px 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.dc-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dc-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.dc-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: var(--bg-card-secondary);
+  color: var(--text-secondary);
+}
+
+/* ── DONUT ──────────────────────────────────────────────────────────── */
+.dc-donut-layout {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.dc-donut-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.dc-donut-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.dc-donut-value {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.dc-donut-sub {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 3px;
+}
+
+/* ── LEGEND ─────────────────────────────────────────────────────────── */
+.dc-legend {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.dc-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.dc-legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dc-legend-label {
+  flex: 1;
+  color: var(--text-secondary);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dc-legend-value {
+  font-weight: 700;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  margin-left: auto;
+}
+
+.dc-legend-pct {
+  font-size: 11px;
+  color: var(--text-secondary);
+  width: 32px;
+  text-align: right;
+}
+
+/* ── BAR CHART ──────────────────────────────────────────────────────── */
+.dc-bar-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  justify-content: center;
+  flex: 1;
+}
+
+.dc-bar-row {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.dc-bar-meta {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+}
+
+.dc-bar-emoji {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.dc-bar-label {
+  flex: 1;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.dc-bar-count {
+  font-weight: 700;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.dc-bar-track {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--bg-card-secondary);
+  overflow: hidden;
+}
+
+.dc-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  min-width: 4px;
+}
+
+/* ── RESPONSIVE ─────────────────────────────────────────────────────── */
+
+/* Tablet: 2 columns, equipment bar spans full width */
+@media (max-width: 1100px) {
+  .dc-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .dc-card:last-child {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Large phone / small tablet: single column, tighter layout */
+@media (max-width: 768px) {
+  .dc-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .dc-card:last-child {
+    grid-column: auto;
+  }
+  .dc-card {
+    padding: 16px 14px;
+    gap: 14px;
+  }
+  /* Donut: shrink SVG a bit, keep side-by-side */
+  .dc-donut-layout {
+    gap: 14px;
+    align-items: center;
+  }
+  .dc-donut-wrap svg {
+    width: 110px;
+    height: 110px;
+  }
+  .dc-donut-value {
+    font-size: 20px;
+  }
+  .dc-donut-sub {
+    font-size: 9px;
+  }
+  /* Legend: slightly tighter */
+  .dc-legend {
+    gap: 7px;
+  }
+  .dc-legend-item {
+    font-size: 12px;
+    gap: 6px;
+  }
+  /* Bar chart: slightly taller bars for touch */
+  .dc-bar-track {
+    height: 10px;
+  }
+}
+
+/* Small phone: stack donut vertically, legend in 2-col grid */
+@media (max-width: 480px) {
+  .dc-card {
+    padding: 14px 12px;
+    gap: 12px;
+  }
+  .dc-title {
+    font-size: 14px;
+  }
+
+  /* Stack donut + legend vertically */
+  .dc-donut-layout {
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+  }
+  .dc-donut-wrap svg {
+    width: 120px;
+    height: 120px;
+  }
+  .dc-donut-value {
+    font-size: 22px;
+  }
+
+  /* Legend: 2-column grid when stacked below donut */
+  .dc-legend {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 16px;
+    width: 100%;
+  }
+  .dc-legend-item {
+    font-size: 12px;
+  }
+  .dc-legend-pct {
+    width: auto;
+    text-align: left;
+  }
+
+  /* Bar chart: bigger text & bars for touch */
+  .dc-bar-meta {
+    font-size: 13px;
+  }
+  .dc-bar-track {
+    height: 12px;
+  }
+  .dc-bar-emoji {
+    font-size: 16px;
+  }
+}

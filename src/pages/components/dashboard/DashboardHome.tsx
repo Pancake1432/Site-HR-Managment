@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { PageType, StatusType } from '../../types/dashboard';
 import { companyDriversData, allApplicantsData } from '../../data/driversData';
 import StatusDropdown from './StatusDropdown';
+import DashboardCharts from './DashboardCharts';
 
 interface Props {
   onNavigate: (page: PageType) => void;
@@ -14,25 +15,33 @@ export default function DashboardHome({ onNavigate, onCheckApplicant }: Props) {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusType | 'all'>('all');
   
-  // Track applicants status (can be saved to backend later)
   const [applicantStatuses, setApplicantStatuses] = useState<Record<number, StatusType>>({});
 
-  // Merge applicants with their current statuses
-  const applicantsWithStatus = useMemo(() => 
+  const applicantsWithStatus = useMemo(() =>
     allApplicantsData.map(a => ({
       ...a,
       status: applicantStatuses[a.id] || a.status
     }))
   , [applicantStatuses]);
 
-  const activeDriversCount = companyDriversData.filter(d => d.driverStatus === 'Ready').length;
-  const pendingCount = applicantsWithStatus.length;
 
   const counts = useMemo(() => ({
     applied:   applicantsWithStatus.filter(a => a.status === 'Applied').length,
     contacted: applicantsWithStatus.filter(a => a.status === 'Contacted').length,
     docs:      applicantsWithStatus.filter(a => a.status === 'Documents Sent').length,
   }), [applicantsWithStatus]);
+
+  // Driver readiness counts
+  const driversReady    = companyDriversData.filter(d => d.driverStatus === 'Ready').length;
+  const driversNotReady = companyDriversData.filter(d => d.driverStatus === 'Not Ready').length;
+
+  // Equipment distribution — company drivers only (not applicants)
+  const equipmentCounts = useMemo(() => {
+    return companyDriversData.reduce<Record<string, number>>((acc, d) => {
+      acc[d.equipment] = (acc[d.equipment] || 0) + 1;
+      return acc;
+    }, {});
+  }, []);
 
   const filtered = useMemo(() => applicantsWithStatus.filter(a => {
     const q = searchQuery.toLowerCase();
@@ -54,12 +63,17 @@ export default function DashboardHome({ onNavigate, onCheckApplicant }: Props) {
       <div className="page-header">
         <h1 className="page-title">Dashboard</h1>
         <p className="page-subtitle">Track, manage and control all HR activities</p>
-        <div className="stats-row">
-          <div className="stat-item"><div className="stat-value">{activeDriversCount}</div><div className="stat-label">Active drivers</div></div>
-          <div className="stat-item"><div className="stat-value">{pendingCount}</div><div className="stat-label">Pending approvals</div></div>
-          <div className="stat-item"><div className="stat-value">$847k</div><div className="stat-label">Total payroll</div></div>
-        </div>
       </div>
+
+      {/* ── LIVE CHARTS ── */}
+      <DashboardCharts
+        applied={counts.applied}
+        contacted={counts.contacted}
+        docsSent={counts.docs}
+        driversReady={driversReady}
+        driversNotReady={driversNotReady}
+        equipmentCounts={equipmentCounts}
+      />
 
       <div className="content-grid">
         {/* ── RECRUITING ── */}
