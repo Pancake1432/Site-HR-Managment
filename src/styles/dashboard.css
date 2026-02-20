@@ -612,17 +612,24 @@
   .drivers-cols,
   .employees-cols {
     grid-template-columns: 1fr;
-    gap: 6px;
+    gap: 14px;
   }
-  .table-row { padding: 14px; }
-  .cell-name { margin-bottom: 4px; }
+  .table-row { padding: 18px 16px; }
+  .cell-name { margin-bottom: 6px; font-size: 15px; }
+  .cell {
+    padding: 10px 12px;
+    background: white;
+    border-radius: 8px;
+    font-size: 14px;
+  }
   .cell::before {
     content: attr(data-label);
-    font-size: 11px; font-weight: 600;
+    font-size: 11px; font-weight: 700;
     color: var(--text-secondary);
     text-transform: uppercase;
+    letter-spacing: 0.6px;
     display: block;
-    margin-bottom: 2px;
+    margin-bottom: 5px;
     padding-right: 8px;
   }
 
