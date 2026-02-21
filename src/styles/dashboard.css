@@ -1554,9 +1554,9 @@
 }
 
 /* ── POPOVER ───────────────────────────────────────────────────────── */
-/* Portal-rendered: position is set via inline style from JS */
+/* Portal-rendered: position:fixed so it stays anchored to viewport on scroll */
 .sdd-popover {
-  position: absolute; /* overridden to fixed via inline top/left from JS */
+  position: fixed;
   z-index: 9999;
   background: white;
   border: 1px solid var(--border);
@@ -1568,8 +1568,6 @@
     0 12px 28px -5px rgba(0,0,0,0.14),
     0 0 0 1px rgba(0,0,0,0.04);
   animation: sdd-popover-in 0.18s cubic-bezier(0.16, 1, 0.3, 1) both;
-  /* Use page-scroll coordinates, set by JS */
-  position: absolute;
 }
 
 @keyframes sdd-popover-in {
