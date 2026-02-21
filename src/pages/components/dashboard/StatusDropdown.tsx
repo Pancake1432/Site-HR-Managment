@@ -30,25 +30,20 @@ export default function StatusDropdown({ value, onChange }: Props) {
 
   const current = STATUS_OPTIONS.find(o => o.value === value)!;
 
-  // Calculate position from the trigger button's bounding rect
   const calcPosition = useCallback(() => {
     if (!triggerRef.current) return;
     const rect = triggerRef.current.getBoundingClientRect();
-    const scrollY = window.scrollY;
-    const scrollX = window.scrollX;
 
-    // Try to place below; if not enough room place above
     const spaceBelow = window.innerHeight - rect.bottom;
-    const popoverH = 160; // approximate height
+    const popoverH = 160;
 
     const top = spaceBelow >= popoverH
-      ? rect.bottom + scrollY + 8
-      : rect.top  + scrollY - popoverH - 8;
+      ? rect.bottom + 8
+      : rect.top - popoverH - 8;
 
-    // Center under trigger, clamped to viewport
     const popoverW = 190;
-    let left = rect.left + scrollX + rect.width / 2 - popoverW / 2;
-    left = Math.max(8, Math.min(left, window.innerWidth + scrollX - popoverW - 8));
+    let left = rect.left + rect.width / 2 - popoverW / 2;
+    left = Math.max(8, Math.min(left, window.innerWidth - popoverW - 8));
 
     setPopoverPos({ top, left });
   }, []);
@@ -58,17 +53,18 @@ export default function StatusDropdown({ value, onChange }: Props) {
     setOpen(prev => !prev);
   };
 
-  // Recalc on scroll / resize
+  // Close on ANY scroll anywhere (captures inner scroll containers too)
+  // and close on resize — this is the standard approach used by Radix, Headless UI, etc.
   useEffect(() => {
     if (!open) return;
-    const update = () => calcPosition();
-    window.addEventListener('scroll', update, true);
-    window.addEventListener('resize', update);
+    const close = () => setOpen(false);
+    window.addEventListener('scroll', close, true);   // true = capture, catches inner divs
+    window.addEventListener('resize', close);
     return () => {
-      window.removeEventListener('scroll', update, true);
-      window.removeEventListener('resize', update);
+      window.removeEventListener('scroll', close, true);
+      window.removeEventListener('resize', close);
     };
-  }, [open, calcPosition]);
+  }, [open]);
 
   // Close on outside click
   useEffect(() => {
@@ -99,7 +95,6 @@ export default function StatusDropdown({ value, onChange }: Props) {
 
   return (
     <div className="sdd-root">
-      {/* ── TRIGGER PILL ── */}
       <button
         ref={triggerRef}
         className={`sdd-trigger ${open ? 'sdd-trigger--open' : ''}`}
@@ -118,7 +113,6 @@ export default function StatusDropdown({ value, onChange }: Props) {
         </span>
       </button>
 
-      {/* ── POPOVER — rendered via portal so it escapes overflow:hidden/auto ── */}
       {open && createPortal(
         <div
           ref={popoverRef}
