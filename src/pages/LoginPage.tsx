@@ -2,6 +2,10 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/auth.css';
 
+// Hardcoded admin credentials
+const ADMIN_EMAIL = 'admin@admin.com';
+const ADMIN_PASSWORD = 'admin123';
+
 function LoginPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
@@ -12,18 +16,17 @@ function LoginPage() {
     e.preventDefault();
     setError('');
     
-    // Simple authentication - in production, you'd validate against a backend
-    if (email && password) {
-      // Check if user exists in localStorage (simulated database)
-      const users = JSON.parse(localStorage.getItem('users') || '[]');
-      const user = users.find((u: any) => u.email === email && u.password === password);
-      
-      if (user) {
-        localStorage.setItem('currentUser', JSON.stringify(user));
-        navigate('/dashboard');
-      } else {
-        setError('Invalid email or password');
-      }
+    // Check against hardcoded credentials
+    if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+      // Store user session
+      localStorage.setItem('currentUser', JSON.stringify({ 
+        email: ADMIN_EMAIL,
+        name: 'Administrator',
+        role: 'admin' 
+      }));
+      navigate('/dashboard');
+    } else {
+      setError('Invalid email or password. Please check your credentials.');
     }
   };
 
@@ -46,7 +49,7 @@ function LoginPage() {
               id="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="manager@example.com"
+              placeholder="Enter your email address"
               required
             />
           </div>
@@ -67,17 +70,6 @@ function LoginPage() {
             Sign In
           </button>
         </form>
-
-        <div className="auth-divider">
-          <span>or</span>
-        </div>
-
-        <div className="auth-links">
-          <p>Don't have an account?</p>
-          <button onClick={() => navigate('/register')} className="link-button">
-            Create Account
-          </button>
-        </div>
 
         <button onClick={() => navigate('/')} className="back-button">
           ← Back to Home

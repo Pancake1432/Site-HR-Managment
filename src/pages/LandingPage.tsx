@@ -8,7 +8,7 @@ function LandingPage() {
     <div className="landing-container">
       <div className="landing-content">
         <div className="logo-section">
-          <h1 className="main-title">🏢HR Management System</h1>
+          <h1 className="main-title">🏢 HR Management System</h1>
           <p className="subtitle">Streamline your hiring and management process</p>
         </div>
 
@@ -17,14 +17,9 @@ function LandingPage() {
             <div className="card-icon">🔐</div>
             <h2>HR Manager Portal</h2>
             <p>Access your dashboard to manage drivers, documents, and payroll</p>
-            <div className="card-buttons">
-              <button className="card-button primary" onClick={() => navigate('/login')}>
-                Sign In
-              </button>
-              <button className="card-button secondary" onClick={() => navigate('/register')}>
-                Create Account
-              </button>
-            </div>
+            <button className="card-button primary full-width" onClick={() => navigate('/login')}>
+              Sign In
+            </button>
           </div>
 
           <div className="action-card">
