@@ -622,6 +622,7 @@
     border-radius: 8px;
     font-size: 14px;
   }
+  html.dark .cell{background: rgba(129,140,248,0.12);}
   .cell::before {
     content: attr(data-label);
     font-size: 11px; font-weight: 700;
@@ -2001,7 +2002,7 @@ html.dark .stat-badge           { background: rgba(129,140,248,0.12); color: var
 html.dark .table-header         { color: var(--text-secondary); border-bottom: 1px solid var(--border); }
 html.dark .table-row            { background: var(--bg-card-secondary); border: 1px solid var(--border); }
 html.dark .table-row:hover      { background: var(--hover); border-color: var(--accent); }
-html.dark .cell                 { color: var(--text-primary); }
+html.dark .cell                 { color: var(--text-primary);}
 html.dark .cell-name            { color: var(--text-primary); font-weight: 600; }
 html.dark .row-avatar           { background: var(--hover); }
 html.dark .no-results           { color: var(--text-secondary); }
@@ -2072,6 +2073,8 @@ html.dark .document-info-small strong,
 html.dark .statement-info-small strong { color: var(--text-primary); }
 html.dark .document-info-small span,
 html.dark .statement-info-small span   { color: var(--text-secondary); }
+html.dark .document-card-info h3 { color: var(--text-primary); }
+html.dark .in-progress h3 { color: var(--text-primary); }
 
 /* ── DRIVER DOCS CARDS ── */
 html.dark .driver-doc-card      { background: var(--bg-card-secondary); border: 1px solid var(--border); }
