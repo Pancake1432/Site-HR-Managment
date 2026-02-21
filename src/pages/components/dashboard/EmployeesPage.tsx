@@ -12,9 +12,9 @@ export default function EmployeesPage() {
     ...d,
     documents: defaultDocuments.map(doc => ({ ...doc })),
     statements: [
-      { id: 1, date: '01/01/2024', amount: 4250, type: d.paymentType === 'miles' ? 'miles' : 'percent' },
-      { id: 2, date: '01/15/2024', amount: 4100, type: d.paymentType === 'miles' ? 'miles' : 'percent' },
-      { id: 3, date: '02/01/2024', amount: 4500, type: d.paymentType === 'miles' ? 'miles' : 'percent' },
+      { id: 1, date: '01/01/2024', amount: '4250', type: d.paymentType === 'miles' ? 'miles' : 'percent' },
+      { id: 2, date: '01/15/2024', amount: '4100', type: d.paymentType === 'miles' ? 'miles' : 'percent' },
+      { id: 3, date: '02/01/2024', amount: '4500', type: d.paymentType === 'miles' ? 'miles' : 'percent' },
     ],
   })), []);
 
@@ -115,7 +115,7 @@ export default function EmployeesPage() {
                       <div className="statement-info-small">
                         <strong>{fmtDate(s.date, settings.dateFormat)}</strong>
                         <span>
-                          {s.type === 'miles' ? fmtPerDist(settings.distanceUnit) : 'Percentage'} — {fmtCurrency(s.amount, settings.currency)}
+                          {s.type === 'miles' ? fmtPerDist(settings.distanceUnit) : 'Percentage'} — {fmtCurrency(Number(s.amount), settings.currency)}
                         </span>
                       </div>
                       <button className="doc-action-btn open">View</button>

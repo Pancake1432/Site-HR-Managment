@@ -1971,7 +1971,7 @@ html.dark .container            { background: var(--bg-main); }
 
 /* ── SIDEBAR ── */
 html.dark .sidebar              { background: var(--bg-card); border-right: 1px solid var(--border); }
-html.dark .logo                 { color: var(--text-primary); border-bottom: 1px solid var(--border); }
+html.dark .logo                 { color: var(--text-primary); }
 html.dark .nav-item             { color: var(--text-secondary); }
 html.dark .nav-item:hover       { background: var(--hover); color: var(--text-primary); }
 html.dark .nav-item.active      { background: rgba(129,140,248,0.15); color: var(--accent); }

@@ -11,6 +11,7 @@ export interface AppSettings {
   dateFormat:         DateFmt;
   compactView:        boolean;
   emailNotifications: boolean;
+  autoSave:           boolean;
 }
 
 const DEFAULTS: AppSettings = {
@@ -20,6 +21,7 @@ const DEFAULTS: AppSettings = {
   dateFormat:         'MM/DD/YY',
   compactView:        false,
   emailNotifications: true,
+  autoSave:           true,
 };
 
 interface SettingsCtx {

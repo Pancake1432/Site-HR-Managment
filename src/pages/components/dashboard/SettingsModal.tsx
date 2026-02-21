@@ -131,6 +131,7 @@ export default function SettingsModal({ onClose }: Props) {
               options={DATE_LABELS as Record<DateFmt, string>}
               onChange={v => update('dateFormat', v)}
             />
+          </div>
 
           {/* ── NOTIFICATIONS ── */}
           <SectionHeader icon="🔔" title="Notifications" />
@@ -143,13 +144,23 @@ export default function SettingsModal({ onClose }: Props) {
             />
           </div>
 
+          {/* ── DATA ── */}
+          <SectionHeader icon="💾" title="Data" />
+          <div className="stg-card">
+            <ToggleRow
+              label="Auto-Save"
+              sub="Automatically save changes as you make them"
+              checked={settings.autoSave}
+              onChange={v => update('autoSave', v)}
+            />
+          </div>
+
           {/* ── FOOTER ── */}
           <p className="stg-footer">
             Settings are saved automatically in your browser.
           </p>
         </div>
       </div>
-    </div>
     </div>
   );
 }

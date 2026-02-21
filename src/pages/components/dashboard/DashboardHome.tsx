@@ -4,7 +4,7 @@ import { PageType, StatusType } from '../../types/dashboard';
 import { companyDriversData, allApplicantsData } from '../../data/driversData';
 import StatusDropdown from './StatusDropdown';
 import DashboardCharts from './DashboardCharts';
-import { useSettings, fmtDate, fmtCurrency, CURRENCY_SYMBOLS } from '../../contexts/SettingsContext';
+import { useSettings, fmtDate, CURRENCY_SYMBOLS } from '../../contexts/SettingsContext';
 
 interface Props {
   onNavigate: (page: PageType) => void;
