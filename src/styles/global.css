@@ -32,3 +32,35 @@ a {
   text-decoration: none;
   color: inherit;
 }
+
+/* ── MOBILE / TOUCH IMPROVEMENTS ─────────────────────────────────── */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  -webkit-overflow-scrolling: touch;
+  overflow-x: hidden;
+}
+
+/* Prevent double-tap zoom on buttons */
+button, a, [role="button"] {
+  touch-action: manipulation;
+}
+
+/* Better tap highlight */
+* {
+  -webkit-tap-highlight-color: rgba(102, 126, 234, 0.15);
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Prevent text selection on interactive elements */
+button, .nav-item, .filter-btn {
+  user-select: none;
+  -webkit-user-select: none;
+}

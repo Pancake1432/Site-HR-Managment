@@ -13,22 +13,42 @@ import '../styles/dashboard.css';
 
 const NAV_ITEMS: { key: PageType; icon: string; label: string }[] = [
   { key: 'dashboard',  icon: '📊', label: 'Dashboard'  },
-  { key: 'drivers',    icon: '🚗', label: 'Drivers'    },
   { key: 'documents',  icon: '📄', label: 'Documents'  },
+  { key: 'drivers',    icon: '🚚', label: 'Drivers'    },
   { key: 'statements', icon: '📋', label: 'Statements' },
   { key: 'salary',     icon: '💰', label: 'Salary'     },
   { key: 'employees',  icon: '👥', label: 'Employees'  },
 ];
 
 export default function Dashboard() {
-  const navigate                        = useNavigate();
-  const [activePage, setActivePage]     = useState<PageType>('dashboard');
+  const navigate = useNavigate();
+  const [activePage, setActivePage] = useState<PageType>('dashboard');
   const [showSettings, setShowSettings] = useState(false);
+  const [selectedDriverId, setSelectedDriverId] = useState<number | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const handleNavigateToDocuments = (driverId: number) => {
+    setSelectedDriverId(driverId);
+    setActivePage('documents');
+  };
+
+  const handlePageChange = (page: PageType) => {
+    if (page !== 'documents') {
+      setSelectedDriverId(null);
+    }
+    setActivePage(page);
+    setSidebarOpen(false);
+  };
 
   return (
     <div className="container">
+      {/* ── MOBILE SIDEBAR OVERLAY ── */}
+      {sidebarOpen && (
+        <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />
+      )}
+
       {/* ── SIDEBAR ── */}
-      <aside className="sidebar">
+      <aside className={`sidebar ${sidebarOpen ? 'sidebar-mobile-open' : ''}`}>
         <div className="logo">
           <div className="logo-icon">🏢</div>
           <span>HR Manager</span>
@@ -39,7 +59,7 @@ export default function Dashboard() {
             <div
               key={item.key}
               className={`nav-item ${activePage === item.key ? 'active' : ''}`}
-              onClick={() => setActivePage(item.key)}
+              onClick={() => handlePageChange(item.key)}
             >
               <span className="nav-icon">{item.icon}</span>
               <span>{item.label}</span>
@@ -53,18 +73,56 @@ export default function Dashboard() {
         </div>
       </aside>
 
+      {/* ── MOBILE TOP BAR ── */}
+      <header className="mobile-topbar">
+        <button className="hamburger-btn" onClick={() => setSidebarOpen(!sidebarOpen)} aria-label="Open menu">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+        <div className="mobile-topbar-title">
+          <span>{NAV_ITEMS.find(i => i.key === activePage)?.icon}</span>
+          {' '}{NAV_ITEMS.find(i => i.key === activePage)?.label}
+        </div>
+        <button className="mobile-settings-btn" onClick={() => setShowSettings(true)} aria-label="Settings">⚙️</button>
+      </header>
+
       {/* ── MAIN CONTENT ── */}
       <main className="main-content">
-        {activePage === 'dashboard'  && <DashboardHome  onNavigate={setActivePage} />}
+        {activePage === 'dashboard' && (
+          <DashboardHome 
+            onNavigate={handlePageChange}
+            onCheckApplicant={handleNavigateToDocuments}
+          />
+        )}
+        {activePage === 'documents' && (
+          <DocumentsPage 
+            selectedDriverId={selectedDriverId}
+            onClose={() => setSelectedDriverId(null)}
+          />
+        )}
         {activePage === 'drivers'    && <DriversPage />}
-        {activePage === 'documents'  && <DocumentsPage />}
         {activePage === 'statements' && <StatementsPage />}
         {activePage === 'salary'     && <SalaryPage />}
         {activePage === 'employees'  && <EmployeesPage />}
       </main>
 
-      {/* ── SETTINGS FAB ── */}
-      <div className="settings-icon" onClick={() => setShowSettings(true)}>⚙️</div>
+      {/* ── MOBILE BOTTOM NAV ── */}
+      <nav className="mobile-bottom-nav">
+        {NAV_ITEMS.map(item => (
+          <button
+            key={item.key}
+            className={`mobile-bottom-nav-item ${activePage === item.key ? 'active' : ''}`}
+            onClick={() => handlePageChange(item.key)}
+          >
+            <span className="mobile-bottom-nav-icon">{item.icon}</span>
+            <span className="mobile-bottom-nav-label">{item.label}</span>
+          </button>
+        ))}
+      </nav>
+
+      {/* ── SETTINGS FAB (desktop only) ── */}
+      <div className="settings-icon desktop-only" onClick={() => setShowSettings(true)}>⚙️</div>
 
       {/* ── SETTINGS MODAL ── */}
       {showSettings && (
