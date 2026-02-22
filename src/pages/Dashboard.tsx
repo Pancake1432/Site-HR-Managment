@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageType } from './types/dashboard';
+import { useSettings } from './contexts/SettingsContext';
 
 import DashboardHome  from './components/dashboard/DashboardHome';
 import DriversPage    from './components/dashboard/DriversPage';
@@ -23,10 +24,32 @@ const NAV_ITEMS: { key: PageType; icon: string; label: string }[] = [
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { settings } = useSettings();
   const [activePage, setActivePage] = useState<PageType>('dashboard');
   const [showSettings, setShowSettings] = useState(false);
   const [selectedDriverId, setSelectedDriverId] = useState<number | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Apply dark / compact classes ONLY while the Dashboard is mounted
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', settings.darkMode);
+  }, [settings.darkMode]);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('compact', settings.compactView);
+  }, [settings.compactView]);
+
+  // Clean up both classes when leaving the dashboard
+  useEffect(() => {
+    return () => {
+      document.documentElement.classList.remove('dark', 'compact');
+    };
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('currentUser');
+    navigate('/login', { replace: true });
+  };
 
   const handleNavigateToDocuments = (driverId: number) => {
     setSelectedDriverId(driverId);
@@ -68,7 +91,7 @@ export default function Dashboard() {
           ))}
         </nav>
 
-        <div className="logout" onClick={() => navigate('/')}>
+        <div className="logout" onClick={handleLogout}>
           <span className="nav-icon">🚪</span>
           <span>Logout</span>
         </div>

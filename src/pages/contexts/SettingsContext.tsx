@@ -40,8 +40,6 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   });
 
   useEffect(() => { localStorage.setItem('hr_settings', JSON.stringify(settings)); }, [settings]);
-  useEffect(() => { document.documentElement.classList.toggle('dark', settings.darkMode); }, [settings.darkMode]);
-  useEffect(() => { document.documentElement.classList.toggle('compact', settings.compactView); }, [settings.compactView]);
 
   const update = <K extends keyof AppSettings>(key: K, val: AppSettings[K]) =>
     setSettings(prev => ({ ...prev, [key]: val }));
