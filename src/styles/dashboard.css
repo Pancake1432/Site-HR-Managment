@@ -460,7 +460,7 @@
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 24px; }
 .container .form-group { display: flex; flex-direction: column; gap: 7px; }
 .container .form-group.full-width { grid-column: 1 / -1; }
-.container .form-group label { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.container .form-group label { font-size: 13px; font-weight: 600;}
 .container .form-group input, .container .form-group select {
   padding: 11px 14px;
   border: 2px solid var(--border);
@@ -1973,7 +1973,7 @@ html.dark .container            { background: var(--bg-main); }
 /* ── SIDEBAR ── */
 html.dark .sidebar              { background: var(--bg-card); border-right: 1px solid var(--border); }
 html.dark .logo                 { color: var(--text-primary); }
-html.dark .nav-item             { color: var(--text-secondary); }
+html.dark .nav-item             { color: var(--text-primary); }
 html.dark .nav-item:hover       { background: var(--hover); color: var(--text-primary); }
 html.dark .nav-item.active      { background: rgba(129,140,248,0.15); color: var(--accent); }
 html.dark .logout               { color: var(--text-secondary); border-top: 1px solid var(--border); }
@@ -1996,7 +1996,7 @@ html.dark .page-subtitle        { color: var(--text-third); }
 /* ── STATS ROW (in page header) ── */
 html.dark .stat-value           { color: white; }
 html.dark .stat-label           { color: var(--text-third); }
-html.dark .stat-badge           { background: rgba(129,140,248,0.12); color: var(--text-secondary); border: 1px solid var(--border); }
+html.dark .stat-badge           { background: rgba(129,140,248,0.12); color: var(--text-primary); border: 1px solid var(--border); }
 
 /* ── TABLE ── */
 html.dark .table-header         { color: var(--text-secondary); border-bottom: 1px solid var(--border); }
@@ -2012,7 +2012,7 @@ html.dark .search-bar           { background: var(--bg-card-secondary); border-c
 html.dark .search-bar input     { color: var(--text-primary); background: transparent; }
 html.dark .search-bar input::placeholder { color: var(--text-secondary); }
 html.dark .search-bar:focus-within { border-color: var(--accent); }
-html.dark .filter-btn           { background: var(--bg-card-secondary); color: var(--text-secondary); border-color: var(--border); }
+html.dark .filter-btn           { background: var(--bg-card-secondary); color: var(--text-primary); border-color: var(--border); }
 html.dark .filter-btn:hover     { border-color: var(--accent); color: var(--accent); }
 html.dark .filter-btn.active    { background: var(--accent); color: white; border-color: var(--accent); }
 
@@ -2027,10 +2027,10 @@ html.dark .employment-badge.fired   { background: rgba(239,68,68,0.12); color: #
 html.dark .dc-card              { background: var(--bg-card); }
 html.dark .dc-title             { color: var(--text-primary); }
 html.dark .dc-badge             { background: var(--bg-card-secondary); color: var(--text-secondary); }
-html.dark .dc-legend-label      { color: var(--text-secondary); }
+html.dark .dc-legend-label      { color: var(--text-primary); }
 html.dark .dc-legend-value      { color: var(--text-primary); }
-html.dark .dc-legend-pct        { color: var(--text-secondary); }
-html.dark .dc-bar-label         { color: var(--text-secondary); }
+html.dark .dc-legend-pct        { color: var(--text-primary); }
+html.dark .dc-bar-label         { color: var(--text-primary); }
 html.dark .dc-bar-count         { color: var(--text-primary); }
 html.dark .dc-bar-track         { background: var(--bg-card-secondary); }
 html.dark .dc-donut-value       { color: var(--text-primary); }
@@ -2075,6 +2075,9 @@ html.dark .document-info-small span,
 html.dark .statement-info-small span   { color: var(--text-secondary); }
 html.dark .document-card-info h3 { color: var(--text-primary); }
 html.dark .in-progress h3 { color: var(--text-primary); }
+html.dark .document-info h4 { color: var(--text-primary); }
+html.dark .status-driver-ready { color: #065f46;; }
+
 
 /* ── DRIVER DOCS CARDS ── */
 html.dark .driver-doc-card      { background: var(--bg-card-secondary); border: 1px solid var(--border); }
@@ -2088,13 +2091,13 @@ html.dark .doc-action-btn.open  { background: rgba(129,140,248,0.15); color: #a5
 html.dark .doc-action-btn.delete { background: rgba(239,68,68,0.12); color: #fca5a5; }
 
 /* ── FORMS (statement, etc.) ── */
-html.dark .container .form-group label     { color: var(--text-secondary); }
+html.dark .container .form-group label     { color: var(--text-primary); }
 html.dark .container .form-group input,
 html.dark .container .form-group select    { background: var(--bg-card-secondary); border-color: var(--border); color: var(--text-primary); }
 html.dark .container .form-group input:focus,
 html.dark .container .form-group select:focus { border-color: var(--accent); }
 html.dark .custom-radio         { background: var(--bg-card-secondary); border-color: var(--border); color: var(--text-secondary); }
-html.dark .custom-radio.active  { background: rgba(129,140,248,0.15); border-color: var(--accent); color: var(--accent); }
+html.dark .custom-radio.active  { background: rgba(129,140,248,0.15); border-color: var(--accent); color: var(--white); }
 html.dark .generate-btn         { background: var(--gradient); }
 html.dark .statement-document   { background: var(--bg-card-secondary); border: 1px solid var(--border); }
 html.dark .statement-header     { border-bottom: 1px solid var(--border); }
