@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageType } from './types/dashboard';
+import { useSettings } from './contexts/SettingsContext';
 
 import DashboardHome  from './components/dashboard/DashboardHome';
 import DriversPage    from './components/dashboard/DriversPage';
@@ -8,6 +9,7 @@ import DocumentsPage  from './components/dashboard/DocumentsPage';
 import StatementsPage from './components/dashboard/StatementsPage';
 import SalaryPage     from './components/dashboard/SalaryPage';
 import EmployeesPage  from './components/dashboard/EmployeesPage';
+import SettingsModal  from './components/dashboard/SettingsModal';
 
 import '../styles/dashboard.css';
 
@@ -22,10 +24,32 @@ const NAV_ITEMS: { key: PageType; icon: string; label: string }[] = [
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { settings } = useSettings();
   const [activePage, setActivePage] = useState<PageType>('dashboard');
   const [showSettings, setShowSettings] = useState(false);
   const [selectedDriverId, setSelectedDriverId] = useState<number | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Apply dark / compact classes ONLY while the Dashboard is mounted
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', settings.darkMode);
+  }, [settings.darkMode]);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('compact', settings.compactView);
+  }, [settings.compactView]);
+
+  // Clean up both classes when leaving the dashboard
+  useEffect(() => {
+    return () => {
+      document.documentElement.classList.remove('dark', 'compact');
+    };
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('currentUser');
+    navigate('/login', { replace: true });
+  };
 
   const handleNavigateToDocuments = (driverId: number) => {
     setSelectedDriverId(driverId);
@@ -67,7 +91,7 @@ export default function Dashboard() {
           ))}
         </nav>
 
-        <div className="logout" onClick={() => navigate('/')}>
+        <div className="logout" onClick={handleLogout}>
           <span className="nav-icon">🚪</span>
           <span>Logout</span>
         </div>
@@ -124,23 +148,8 @@ export default function Dashboard() {
       {/* ── SETTINGS FAB (desktop only) ── */}
       <div className="settings-icon desktop-only" onClick={() => setShowSettings(true)}>⚙️</div>
 
-      {/* ── SETTINGS MODAL ── */}
       {showSettings && (
-        <div className="modal-overlay" onClick={() => setShowSettings(false)}>
-          <div className="modal-content settings-modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>Settings</h2>
-              <button className="close-btn" onClick={() => setShowSettings(false)}>✕</button>
-            </div>
-            <div className="modal-body">
-              <div className="in-progress">
-                <div className="progress-icon">🚧</div>
-                <h3>In Progress</h3>
-                <p>Settings functionality is currently under development.</p>
-              </div>
-            </div>
-          </div>
-        </div>
+        <SettingsModal onClose={() => setShowSettings(false)} />
       )}
     </div>
   );

@@ -1,32 +1,73 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { z } from 'zod';
 import '../styles/auth.css';
 
-// Hardcoded admin credentials
+// ── Zod schema ──────────────────────────────────────────────────────────────
+const loginSchema = z.object({
+  email: z
+    .string()
+    .min(1, 'Email is required')
+    .email('Please enter a valid email address'),
+  password: z
+    .string()
+    .min(1, 'Password is required')
+    .min(6, 'Password must be at least 6 characters'),
+});
+
+type LoginFields = z.infer<typeof loginSchema>;
+
+// Hardcoded admin credentials (swap for a real auth call when ready)
 const ADMIN_EMAIL = 'admin@admin.com';
 const ADMIN_PASSWORD = 'admin123';
 
+// ── Component ────────────────────────────────────────────────────────────────
 function LoginPage() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const location = useLocation();
+  // After login, redirect back to wherever the user tried to go
+  const from = (location.state as { from?: Location })?.from?.pathname ?? '/dashboard';
+
+  const [fields, setFields] = useState<LoginFields>({ email: '', password: '' });
+  const [fieldErrors, setFieldErrors] = useState<Partial<LoginFields>>({});
+  const [serverError, setServerError] = useState('');
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFields((prev) => ({ ...prev, [name]: value }));
+    // Clear field-level error as the user types
+    setFieldErrors((prev) => ({ ...prev, [name]: undefined }));
+    setServerError('');
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    
-    // Check against hardcoded credentials
+    setServerError('');
+
+    // ── Zod parse ──────────────────────────────────────────────────────────
+    const result = loginSchema.safeParse(fields);
+
+    if (!result.success) {
+      const errors: Partial<LoginFields> = {};
+      for (const issue of result.error.issues) {
+        const field = issue.path[0] as keyof LoginFields;
+        if (!errors[field]) errors[field] = issue.message;
+      }
+      setFieldErrors(errors);
+      return;
+    }
+
+    // ── Credential check ───────────────────────────────────────────────────
+    const { email, password } = result.data;
+
     if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
-      // Store user session
-      localStorage.setItem('currentUser', JSON.stringify({ 
-        email: ADMIN_EMAIL,
-        name: 'Administrator',
-        role: 'admin' 
-      }));
-      navigate('/dashboard');
+      localStorage.setItem(
+        'currentUser',
+        JSON.stringify({ email: ADMIN_EMAIL, name: 'Administrator', role: 'admin' })
+      );
+      navigate(from, { replace: true });
     } else {
-      setError('Invalid email or password. Please check your credentials.');
+      setServerError('Invalid email or password. Please check your credentials.');
     }
   };
 
@@ -39,31 +80,39 @@ function LoginPage() {
           <p>Sign in to your HR Manager account</p>
         </div>
 
-        {error && <div className="error-message">{error}</div>}
+        {serverError && <div className="error-message">{serverError}</div>}
 
-        <form onSubmit={handleSubmit} className="auth-form">
+        <form onSubmit={handleSubmit} className="auth-form" noValidate>
+          {/* Email */}
           <div className="form-group">
             <label htmlFor="email">Email Address</label>
             <input
               type="email"
               id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              name="email"
+              value={fields.email}
+              onChange={handleChange}
               placeholder="Enter your email address"
-              required
             />
+            {fieldErrors.email && (
+              <span className="field-error">{fieldErrors.email}</span>
+            )}
           </div>
 
+          {/* Password */}
           <div className="form-group">
             <label htmlFor="password">Password</label>
             <input
               type="password"
               id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              name="password"
+              value={fields.password}
+              onChange={handleChange}
               placeholder="Enter your password"
-              required
             />
+            {fieldErrors.password && (
+              <span className="field-error">{fieldErrors.password}</span>
+            )}
           </div>
 
           <button type="submit" className="auth-button">
