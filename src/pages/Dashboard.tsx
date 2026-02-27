@@ -1,44 +1,56 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { PageType } from './types/dashboard';
-
-import DashboardHome  from './components/dashboard/DashboardHome';
-import DriversPage    from './components/dashboard/DriversPage';
-import DocumentsPage  from './components/dashboard/DocumentsPage';
-import StatementsPage from './components/dashboard/StatementsPage';
-import SalaryPage     from './components/dashboard/SalaryPage';
-import EmployeesPage  from './components/dashboard/EmployeesPage';
-
+import { useNavigate, useLocation, Outlet } from 'react-router-dom';
+import { useSettings } from './contexts/SettingsContext';
+import SettingsModal from './components/dashboard/SettingsModal';
 import '../styles/dashboard.css';
 
-const NAV_ITEMS: { key: PageType; icon: string; label: string }[] = [
-  { key: 'dashboard',  icon: '📊', label: 'Dashboard'  },
-  { key: 'documents',  icon: '📄', label: 'Documents'  },
-  { key: 'drivers',    icon: '🚚', label: 'Drivers'    },
-  { key: 'statements', icon: '📋', label: 'Statements' },
-  { key: 'salary',     icon: '💰', label: 'Salary'     },
-  { key: 'employees',  icon: '👥', label: 'Employees'  },
+const NAV_ITEMS = [
+  { path: '/dashboard',            icon: '📊', label: 'Dashboard'  },
+  { path: '/dashboard/documents',  icon: '📄', label: 'Documents'  },
+  { path: '/dashboard/drivers',    icon: '🚚', label: 'Drivers'    },
+  { path: '/dashboard/statements', icon: '📋', label: 'Statements' },
+  { path: '/dashboard/salary',     icon: '💰', label: 'Salary'     },
+  { path: '/dashboard/employees',  icon: '👥', label: 'Employees'  },
 ];
 
 export default function Dashboard() {
-  const navigate = useNavigate();
-  const [activePage, setActivePage] = useState<PageType>('dashboard');
+  const navigate   = useNavigate();
+  const location   = useLocation();
+  const { settings } = useSettings();
   const [showSettings, setShowSettings] = useState(false);
-  const [selectedDriverId, setSelectedDriverId] = useState<number | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen]   = useState(false);
 
-  const handleNavigateToDocuments = (driverId: number) => {
-    setSelectedDriverId(driverId);
-    setActivePage('documents');
+  // Determine active nav item from current URL
+  const activePath = NAV_ITEMS
+    .slice()
+    .reverse() // check more-specific paths first
+    .find(item => location.pathname.startsWith(item.path))?.path ?? '/dashboard';
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', settings.darkMode);
+  }, [settings.darkMode]);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('compact', settings.compactView);
+  }, [settings.compactView]);
+
+  useEffect(() => {
+    return () => {
+      document.documentElement.classList.remove('dark', 'compact');
+    };
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('currentUser');
+    navigate('/login', { replace: true });
   };
 
-  const handlePageChange = (page: PageType) => {
-    if (page !== 'documents') {
-      setSelectedDriverId(null);
-    }
-    setActivePage(page);
+  const handleNavClick = (path: string) => {
+    navigate(path);
     setSidebarOpen(false);
   };
+
+  const activeItem = NAV_ITEMS.find(i => i.path === activePath);
 
   return (
     <div className="container">
@@ -57,9 +69,9 @@ export default function Dashboard() {
         <nav className="nav-items">
           {NAV_ITEMS.map(item => (
             <div
-              key={item.key}
-              className={`nav-item ${activePage === item.key ? 'active' : ''}`}
-              onClick={() => handlePageChange(item.key)}
+              key={item.path}
+              className={`nav-item ${activePath === item.path ? 'active' : ''}`}
+              onClick={() => handleNavClick(item.path)}
             >
               <span className="nav-icon">{item.icon}</span>
               <span>{item.label}</span>
@@ -67,7 +79,7 @@ export default function Dashboard() {
           ))}
         </nav>
 
-        <div className="logout" onClick={() => navigate('/')}>
+        <div className="logout" onClick={handleLogout}>
           <span className="nav-icon">🚪</span>
           <span>Logout</span>
         </div>
@@ -81,39 +93,24 @@ export default function Dashboard() {
           <span></span>
         </button>
         <div className="mobile-topbar-title">
-          <span>{NAV_ITEMS.find(i => i.key === activePage)?.icon}</span>
-          {' '}{NAV_ITEMS.find(i => i.key === activePage)?.label}
+          <span>{activeItem?.icon}</span>
+          {' '}{activeItem?.label}
         </div>
         <button className="mobile-settings-btn" onClick={() => setShowSettings(true)} aria-label="Settings">⚙️</button>
       </header>
 
-      {/* ── MAIN CONTENT ── */}
+      {/* ── MAIN CONTENT (nested routes render here) ── */}
       <main className="main-content">
-        {activePage === 'dashboard' && (
-          <DashboardHome 
-            onNavigate={handlePageChange}
-            onCheckApplicant={handleNavigateToDocuments}
-          />
-        )}
-        {activePage === 'documents' && (
-          <DocumentsPage 
-            selectedDriverId={selectedDriverId}
-            onClose={() => setSelectedDriverId(null)}
-          />
-        )}
-        {activePage === 'drivers'    && <DriversPage />}
-        {activePage === 'statements' && <StatementsPage />}
-        {activePage === 'salary'     && <SalaryPage />}
-        {activePage === 'employees'  && <EmployeesPage />}
+        <Outlet />
       </main>
 
       {/* ── MOBILE BOTTOM NAV ── */}
       <nav className="mobile-bottom-nav">
         {NAV_ITEMS.map(item => (
           <button
-            key={item.key}
-            className={`mobile-bottom-nav-item ${activePage === item.key ? 'active' : ''}`}
-            onClick={() => handlePageChange(item.key)}
+            key={item.path}
+            className={`mobile-bottom-nav-item ${activePath === item.path ? 'active' : ''}`}
+            onClick={() => handleNavClick(item.path)}
           >
             <span className="mobile-bottom-nav-icon">{item.icon}</span>
             <span className="mobile-bottom-nav-label">{item.label}</span>
@@ -124,23 +121,8 @@ export default function Dashboard() {
       {/* ── SETTINGS FAB (desktop only) ── */}
       <div className="settings-icon desktop-only" onClick={() => setShowSettings(true)}>⚙️</div>
 
-      {/* ── SETTINGS MODAL ── */}
       {showSettings && (
-        <div className="modal-overlay" onClick={() => setShowSettings(false)}>
-          <div className="modal-content settings-modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>Settings</h2>
-              <button className="close-btn" onClick={() => setShowSettings(false)}>✕</button>
-            </div>
-            <div className="modal-body">
-              <div className="in-progress">
-                <div className="progress-icon">🚧</div>
-                <h3>In Progress</h3>
-                <p>Settings functionality is currently under development.</p>
-              </div>
-            </div>
-          </div>
-        </div>
+        <SettingsModal onClose={() => setShowSettings(false)} />
       )}
     </div>
   );

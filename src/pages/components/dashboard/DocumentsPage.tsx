@@ -1,13 +1,11 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Driver, DocFile } from '../../types/dashboard';
 import { allApplicantsData } from '../../data/driversData';
 
-interface Props {
-  selectedDriverId?: number | null;
-  onClose?: () => void;
-}
-
-export default function DocumentsPage({ selectedDriverId, onClose }: Props) {
+export default function DocumentsPage() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
   
@@ -19,18 +17,21 @@ export default function DocumentsPage({ selectedDriverId, onClose }: Props) {
   // Map drivers with their documents (empty by default)
   const driversWithDocs = useMemo(() => allApplicantsData.map(d => ({
     ...d,
-    documents: driverDocuments[d.id] || [], // Empty array if no documents uploaded
+    documents: driverDocuments[d.id] || [],
   })), [driverDocuments]);
 
-  // Auto-open modal when selectedDriverId is provided
+  // Auto-open modal when :id is present in URL
   useEffect(() => {
-    if (selectedDriverId) {
-      const driver = driversWithDocs.find(d => d.id === selectedDriverId);
+    if (id) {
+      const numId = Number(id);
+      const driver = driversWithDocs.find(d => d.id === numId);
       if (driver) {
         setSelectedDriver(driver);
       }
+    } else {
+      setSelectedDriver(null);
     }
-  }, [selectedDriverId, driversWithDocs]);
+  }, [id, driversWithDocs]);
 
   const filtered = useMemo(() => driversWithDocs.filter(d => {
     const q = searchQuery.toLowerCase();
@@ -42,12 +43,11 @@ export default function DocumentsPage({ selectedDriverId, onClose }: Props) {
   }), [searchQuery, driversWithDocs]);
 
   const handleOpen = (driver: typeof driversWithDocs[0]) => {
-    setSelectedDriver(driver);
+    navigate(`/dashboard/documents/${driver.id}`);
   };
 
   const handleClose = () => {
-    setSelectedDriver(null);
-    onClose?.(); // Notify parent component
+    navigate('/dashboard/documents');
   };
 
   const handleAddDocument = () => {
