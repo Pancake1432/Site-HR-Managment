@@ -229,3 +229,11 @@
     font-size: 15px;
   }
 }
+
+/* ── Zod field-level errors ─────────────────────────────────────── */
+.field-error {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.78rem;
+  color: #e53e3e;
+}
