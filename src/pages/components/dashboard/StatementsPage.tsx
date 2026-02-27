@@ -1,7 +1,10 @@
 import { useState } from 'react';
-import { StatementData, PaymentType } from '../../types/dashboard';
+import { useNavigate } from 'react-router-dom';
+import { StatementData, SavedStatement, PaymentType } from '../../types/dashboard';
 import { companyDriversData } from '../../data/driversData';
 import { useSettings, fmtDate, fmtCurrency, fmtDistUnit, CURRENCY_SYMBOLS } from '../../contexts/SettingsContext';
+import { useSavedStatements } from '../../contexts/SavedStatementsContext';
+import { downloadStatementPDF } from '../../utils/pdfUtils';
 
 const emptyForm: StatementData = {
   driverId: null, driverName: '',
@@ -14,6 +17,8 @@ const emptyForm: StatementData = {
 
 export default function StatementsPage() {
   const { settings } = useSettings();
+  const { addStatement } = useSavedStatements();
+  const navigate = useNavigate();
   const [form, setForm] = useState<StatementData>(emptyForm);
   const [showPreview, setShowPreview] = useState(false);
 
@@ -42,6 +47,42 @@ export default function StatementsPage() {
       return alert('Please enter percentage and gross amount');
     setShowPreview(true);
   };
+
+  const buildSavedStatement = (): SavedStatement => {
+    const totals = calc();
+    return {
+      id: `stmt-${Date.now()}`,
+      savedAt: new Date().toISOString(),
+      driverId: form.driverId,
+      driverName: form.driverName,
+      paymentType: form.paymentType as PaymentType,
+      miles: form.miles,
+      ratePerMile: form.ratePerMile,
+      percent: form.percent,
+      grossAmount: form.grossAmount,
+      adjustmentType: form.adjustmentType,
+      adjustmentAmount: form.adjustmentAmount,
+      adjustmentReason: form.adjustmentReason,
+      subtotal: totals.sub,
+      adjustment: totals.adj,
+      total: totals.total,
+    };
+  };
+
+  // ── Action handlers ───────────────────────────────────────────────────────
+
+  const handleSaveToSalary = () => {
+    addStatement(buildSavedStatement());
+    setShowPreview(false);
+    navigate('/dashboard/salary');
+  };
+
+  const handleDownloadPDF = () => {
+    downloadStatementPDF(buildSavedStatement(), settings.currency, settings.distanceUnit, settings.dateFormat);
+    setShowPreview(false);
+  };
+
+  const handleClose = () => setShowPreview(false);
 
   const totals = calc();
 
@@ -139,11 +180,11 @@ export default function StatementsPage() {
       </center>
 
       {showPreview && (
-        <div className="modal-overlay" onClick={() => setShowPreview(false)}>
+        <div className="modal-overlay" onClick={handleClose}>
           <div className="modal-content modal-xl" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <h2>Statement Preview</h2>
-              <button className="close-btn" onClick={() => setShowPreview(false)}>✕</button>
+              <button className="close-btn" onClick={handleClose}>✕</button>
             </div>
             <div className="modal-body">
               <div className="statement-document">
@@ -181,9 +222,18 @@ export default function StatementsPage() {
                   <p className="total-amount">{fmtCurrency(totals.total, settings.currency)}</p>
                 </div>
               </div>
+
+              {/* ── 3-button action bar ── */}
               <div className="statement-actions">
-                <button className="download-btn" onClick={() => alert('PDF download would be implemented here')}>Download PDF</button>
-                <button className="close-preview-btn" onClick={() => setShowPreview(false)}>Close</button>
+                <button className="save-salary-btn" onClick={handleSaveToSalary}>
+                  💾 Save to Salary
+                </button>
+                <button className="download-btn" onClick={handleDownloadPDF}>
+                  📄 Download PDF
+                </button>
+                <button className="close-preview-btn" onClick={handleClose}>
+                  Close
+                </button>
               </div>
             </div>
           </div>
