@@ -128,24 +128,46 @@ export default function StatementsPage() {
             {form.paymentType === 'miles' ? <>
               <div className="form-group">
                 <label>{distUnit.charAt(0).toUpperCase() + distUnit.slice(1)} Driven</label>
-                <input type="number" placeholder={`Enter ${distUnit}`} value={form.miles}
-                  onChange={e => set({ miles: e.target.value })} />
+                <input
+                  type="number"
+                  placeholder={`Enter ${distUnit}`}
+                  value={form.miles}
+                  onChange={e => set({ miles: e.target.value })}
+                  onWheel={e => e.currentTarget.blur()}
+                />
               </div>
+
               <div className="form-group">
                 <label>Rate per {distUnit} ({sym})</label>
-                <input type="number" step="0.01" placeholder="Enter rate" value={form.ratePerMile}
-                  onChange={e => set({ ratePerMile: e.target.value })} />
+                <input
+                  type="number"
+                  placeholder="Enter rate"
+                  value={form.ratePerMile}
+                  onChange={e => set({ ratePerMile: e.target.value })}
+                  onWheel={e => e.currentTarget.blur()}
+                />
               </div>
             </> : <>
               <div className="form-group">
                 <label>Percentage (%)</label>
-                <input type="number" placeholder="Enter percentage" value={form.percent}
-                  onChange={e => set({ percent: e.target.value })} />
+                <input
+                  type="number"
+                  placeholder="Enter percentage"
+                  value={form.percent}
+                  onChange={e => set({ percent: e.target.value })}
+                  onWheel={e => e.currentTarget.blur()}
+                />
               </div>
+
               <div className="form-group">
                 <label>Gross Amount ({sym})</label>
-                <input type="number" step="0.01" placeholder="Enter gross" value={form.grossAmount}
-                  onChange={e => set({ grossAmount: e.target.value })} />
+                <input
+                  type="number"
+                  placeholder="Enter gross"
+                  value={form.grossAmount}
+                  onChange={(e) => set({ grossAmount: e.target.value })}
+                  onWheel={(e) => e.currentTarget.blur()}
+                />
               </div>
             </>}
 
@@ -154,9 +176,17 @@ export default function StatementsPage() {
               <label>Adjustment Type</label>
               <div className="custom-radio-group">
                 {(['bonus', 'deduction'] as const).map(v => (
-                  <label key={v} className={`custom-radio ${form.adjustmentType === v ? 'active' : ''}`}>
-                    <input type="radio" name="adjType" value={v} checked={form.adjustmentType === v}
-                      onChange={() => set({ adjustmentType: v })} />
+                  <label
+                    key={v}
+                    className={`custom-radio ${form.adjustmentType === v ? 'active' : ''}`}
+                  >
+                    <input
+                      type="radio"
+                      name="adjType"
+                      value={v}
+                      checked={form.adjustmentType === v}
+                      onChange={() => set({ adjustmentType: v })}
+                    />
                     <span className="radio-icon">{v === 'bonus' ? '➕' : '➖'}</span>
                     <span>{v.charAt(0).toUpperCase() + v.slice(1)}</span>
                   </label>
@@ -166,13 +196,23 @@ export default function StatementsPage() {
 
             <div className="form-group">
               <label>Adjustment Amount ({sym})</label>
-              <input type="number" step="0.01" placeholder="Enter amount" value={form.adjustmentAmount}
-                onChange={e => set({ adjustmentAmount: e.target.value })} />
+              <input
+                type="number"
+                placeholder="Enter amount"
+                value={form.adjustmentAmount}
+                onChange={e => set({ adjustmentAmount: e.target.value })}
+                onWheel={e => e.currentTarget.blur()}
+              />
             </div>
+
             <div className="form-group">
               <label>Adjustment Reason</label>
-              <input type="text" placeholder="Enter reason" value={form.adjustmentReason}
-                onChange={e => set({ adjustmentReason: e.target.value })} />
+              <input
+                type="text"
+                placeholder="Enter reason"
+                value={form.adjustmentReason}
+                onChange={e => set({ adjustmentReason: e.target.value })}
+              />
             </div>
           </div>
           <button className="generate-btn" onClick={handleGenerate}>Generate Statement</button>
