@@ -9,6 +9,7 @@ import ServerErrorPage from './pages/errors/ServerErrorPage';
 import MaintenancePage from './pages/errors/MaintenancePage';
 import ErrorBoundary from './pages/errors/ErrorBoundary';
 import ProtectedRoute, { PublicOnlyRoute } from './pages/components/ProtectedRoute';
+import { SavedStatementsProvider } from './pages/contexts/SavedStatementsContext';
 
 import DashboardHome  from './pages/components/dashboard/DashboardHome';
 import DriversPage    from './pages/components/dashboard/DriversPage';
@@ -17,17 +18,18 @@ import StatementsPage from './pages/components/dashboard/StatementsPage';
 import SalaryPage     from './pages/components/dashboard/SalaryPage';
 import EmployeesPage  from './pages/components/dashboard/EmployeesPage';
 
-import InfoStep             from './pages/components/application/InfoStep';
-import PersonalInfoStep     from './pages/components/application/PersonalInfoStep';
+import InfoStep              from './pages/components/application/InfoStep';
+import PersonalInfoStep      from './pages/components/application/PersonalInfoStep';
 import DrivingExperienceStep from './pages/components/application/DrivingExperienceStep';
-import WorkPreferencesStep  from './pages/components/application/WorkPreferencesStep';
-import AvailabilityStep     from './pages/components/application/AvailabilityStep';
-import DocumentsStep        from './pages/components/application/DocumentsStep';
+import WorkPreferencesStep   from './pages/components/application/WorkPreferencesStep';
+import AvailabilityStep      from './pages/components/application/AvailabilityStep';
+import DocumentsStep         from './pages/components/application/DocumentsStep';
 
 function App() {
   return (
     <ErrorBoundary>
-      <Router>
+      <SavedStatementsProvider>
+        <Router>
         <Routes>
           {/* ── Public routes ── */}
           <Route path="/" element={<LandingPage />} />
@@ -94,6 +96,7 @@ function App() {
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Router>
+      </SavedStatementsProvider>
     </ErrorBoundary>
   );
 }
