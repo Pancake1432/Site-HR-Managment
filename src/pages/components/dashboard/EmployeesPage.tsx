@@ -1,9 +1,12 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Driver } from '../../types/dashboard';
 import { companyDriversData, defaultDocuments } from '../../data/driversData';
 import { useSettings, fmtDate, fmtCurrency, fmtPerDist } from '../../contexts/SettingsContext';
 
 export default function EmployeesPage() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { settings } = useSettings();
   const [searchQuery, setSearchQuery] = useState('');
   const [selected, setSelected] = useState<Driver | null>(null);
@@ -17,6 +20,17 @@ export default function EmployeesPage() {
       { id: 3, date: '02/01/2024', amount: '4500', type: d.paymentType === 'miles' ? 'miles' : 'percent' },
     ],
   })), []);
+
+  // Sync modal with URL param :id
+  useEffect(() => {
+    if (id) {
+      const numId = Number(id);
+      const emp = employees.find(e => e.id === numId);
+      setSelected(emp ?? null);
+    } else {
+      setSelected(null);
+    }
+  }, [id, employees]);
 
   const filtered = useMemo(() => employees.filter(e => {
     const q = searchQuery.toLowerCase();
@@ -60,7 +74,7 @@ export default function EmployeesPage() {
                 <span className={`employment-badge ${e.employmentStatus?.toLowerCase()}`}>{e.employmentStatus}</span>
               </span>
               <span className="cell" data-label="Action">
-                <button className="details-btn" onClick={() => setSelected(e)}>View Full Details</button>
+                <button className="details-btn" onClick={() => navigate(`/dashboard/employees/${e.id}`)}>View Full Details</button>
               </span>
             </div>
           )) : <div className="no-results">No employees found</div>}
@@ -68,11 +82,11 @@ export default function EmployeesPage() {
       </div>
 
       {selected && (
-        <div className="modal-overlay" onClick={() => setSelected(null)}>
+        <div className="modal-overlay" onClick={() => navigate('/dashboard/employees')}>
           <div className="modal-content modal-xl" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <h2>{selected.name} — Full Details</h2>
-              <button className="close-btn" onClick={() => setSelected(null)}>✕</button>
+              <button className="close-btn" onClick={() => navigate('/dashboard/employees')}>✕</button>
             </div>
             <div className="modal-body">
               <div className="employee-info-section">

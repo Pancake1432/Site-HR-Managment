@@ -1,17 +1,12 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PageType, StatusType } from '../../types/dashboard';
+import { StatusType } from '../../types/dashboard';
 import { companyDriversData, allApplicantsData } from '../../data/driversData';
 import StatusDropdown from './StatusDropdown';
 import DashboardCharts from './DashboardCharts';
 import { useSettings, fmtDate, CURRENCY_SYMBOLS } from '../../contexts/SettingsContext';
 
-interface Props {
-  onNavigate: (page: PageType) => void;
-  onCheckApplicant: (driverId: number) => void;
-}
-
-export default function DashboardHome({ onNavigate, onCheckApplicant }: Props) {
+export default function DashboardHome() {
   const navigate = useNavigate();
   const { settings } = useSettings();
   const [searchQuery, setSearchQuery] = useState('');
@@ -98,7 +93,7 @@ export default function DashboardHome({ onNavigate, onCheckApplicant }: Props) {
                 </span>
                 <span className="cell" data-label="Date">{fmtDate(a.date, settings.dateFormat)}</span>
                 <span className="cell" data-label="Action">
-                  <button className="check-btn" onClick={() => onCheckApplicant(a.id)}>Check</button>
+                  <button className="check-btn" onClick={() => navigate(`/dashboard/documents/${a.id}`)}>Check</button>
                 </span>
               </div>
             )) : <div className="no-results">No candidates found</div>}
@@ -110,12 +105,12 @@ export default function DashboardHome({ onNavigate, onCheckApplicant }: Props) {
           <div className="card-header"><h2 className="card-title">Quick Actions</h2></div>
           <div className="quick-actions">
             {[
-              { icon: '➕', label: 'Add New Driver',     action: () => navigate('/apply')       },
-              { icon: '📄', label: 'Generate Statement', action: () => onNavigate('statements') },
-              { icon: '📁', label: 'Manage Documents',   action: () => onNavigate('documents')  },
-              { icon: '👥', label: 'View All Drivers',   action: () => onNavigate('drivers')    },
-              { icon: '🏢', label: 'Employee Records',   action: () => onNavigate('employees')  },
-              { icon: '💰', label: 'Process Payroll',    action: () => onNavigate('salary')     },
+              { icon: '➕', label: 'Add New Driver',     action: () => navigate('/apply')                  },
+              { icon: '📄', label: 'Generate Statement', action: () => navigate('/dashboard/statements')   },
+              { icon: '📁', label: 'Manage Documents',   action: () => navigate('/dashboard/documents')    },
+              { icon: '👥', label: 'View All Drivers',   action: () => navigate('/dashboard/drivers')      },
+              { icon: '🏢', label: 'Employee Records',   action: () => navigate('/dashboard/employees')    },
+              { icon: '💰', label: 'Process Payroll',    action: () => navigate('/dashboard/salary')       },
             ].map(btn => (
               <button key={btn.label} className="action-btn" onClick={btn.action}>
                 <span className="action-icon">{btn.icon}</span><span>{btn.label}</span>
