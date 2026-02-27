@@ -49,3 +49,22 @@ export interface StatementData {
   adjustmentAmount: string;
   adjustmentReason: string;
 }
+
+/** A fully-calculated statement saved to the Salary page */
+export interface SavedStatement {
+  id: string;
+  savedAt: string;        // ISO date string
+  driverId: number | null;
+  driverName: string;
+  paymentType: PaymentType;
+  miles: string;
+  ratePerMile: string;
+  percent: string;
+  grossAmount: string;
+  adjustmentType: 'bonus' | 'deduction';
+  adjustmentAmount: string;
+  adjustmentReason: string;
+  subtotal: string;
+  adjustment: string;
+  total: string;
+}
