@@ -1,9 +1,10 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Driver, DocFile } from '../../types/dashboard';
-import { allApplicantsData } from '../../data/driversData';
+import { useCompanyData } from '../../hooks/useCompanyData';
 
 export default function DocumentsPage() {
+  const { applicants: allApplicantsData } = useCompanyData();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
