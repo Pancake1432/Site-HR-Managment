@@ -2324,7 +2324,7 @@ html.compact .activity-item     { padding: 10px; }
   font-size: 13px; font-weight: 500; cursor: pointer;
   transition: all 0.2s;
 }
-.salary-clear-btn:hover { background: #fff5f5; }
+.salary-clear-btn:hover { background: rgba(229,62,62,0.08); }
 
 .salary-table-wrapper { overflow-x: auto; }
 .salary-table {
@@ -2338,7 +2338,7 @@ html.compact .activity-item     { padding: 10px; }
   letter-spacing: 0.04em; color: var(--text-secondary);
   border-bottom: 2px solid var(--border);
 }
-.salary-table td { padding: 13px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.salary-table td { padding: 13px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; color: var(--text-primary); }
 .salary-table tbody tr:hover td { background: var(--hover); }
 .salary-table tbody tr:last-child td { border-bottom: none; }
 
@@ -2346,8 +2346,8 @@ html.compact .activity-item     { padding: 10px; }
   display: inline-flex; align-items: center; gap: 4px;
   padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 500;
 }
-.salary-badge-miles     { background: #ebf4ff; color: #3182ce; }
-.salary-badge-percent   { background: #faf5ff; color: #805ad5; }
+.salary-badge-miles     { background: rgba(49,130,206,0.12);  color: #3182ce; }
+.salary-badge-percent   { background: rgba(128,90,213,0.12);  color: #805ad5; }
 .salary-adj-bonus       { color: #38a169; font-weight: 600; }
 .salary-adj-deduction   { color: #e53e3e; font-weight: 600; }
 
@@ -2358,10 +2358,10 @@ html.compact .activity-item     { padding: 10px; }
   font-size: 15px; display: flex; align-items: center; justify-content: center;
   transition: all 0.2s;
 }
-.salary-action-pdf    { background: #ebf8ff; }
-.salary-action-pdf:hover    { background: #bee3f8; }
-.salary-action-delete { background: #fff5f5; }
-.salary-action-delete:hover { background: #fed7d7; }
+.salary-action-pdf    { background: rgba(49,130,206,0.12); }
+.salary-action-pdf:hover    { background: rgba(49,130,206,0.25); }
+.salary-action-delete { background: rgba(229,62,62,0.1); }
+.salary-action-delete:hover { background: rgba(229,62,62,0.22); }
 
 @media (max-width: 768px) {
   .salary-summary-row { grid-template-columns: 1fr; }
@@ -2369,11 +2369,26 @@ html.compact .activity-item     { padding: 10px; }
 }
 
 /* ── Dark mode: Salary ──────────────────────────────────────────────── */
-html.dark .salary-badge-miles     { background: rgba(49,130,206,0.2); color: #63b3ed; }
-html.dark .salary-badge-percent   { background: rgba(128,90,213,0.2); color: #b794f4; }
-html.dark .salary-clear-btn       { border-color: #fc8181; color: #fc8181; }
-html.dark .salary-clear-btn:hover { background: rgba(252,129,129,0.1); }
-html.dark .salary-action-pdf      { background: rgba(49,130,206,0.15); }
-html.dark .salary-action-pdf:hover      { background: rgba(49,130,206,0.3); }
-html.dark .salary-action-delete   { background: rgba(229,62,62,0.15); }
-html.dark .salary-action-delete:hover   { background: rgba(229,62,62,0.3); }
+html.dark .salary-summary-card         { background: var(--bg-card); }
+html.dark .salary-summary-label        { color: var(--text-secondary); }
+html.dark .salary-summary-value        { color: var(--text-primary); }
+html.dark .salary-summary-total .salary-summary-label { color: rgba(255,255,255,0.8); }
+html.dark .salary-summary-total .salary-summary-value { color: #fff; }
+
+html.dark .salary-table th             { color: var(--text-secondary); border-bottom-color: var(--border); }
+html.dark .salary-table td             { color: var(--text-primary);   border-bottom-color: var(--border); }
+html.dark .salary-table td strong      { color: var(--text-primary); }
+html.dark .salary-table tbody tr:hover td { background: var(--hover); }
+
+html.dark .salary-badge-miles          { background: rgba(99,179,237,0.15);  color: #63b3ed; }
+html.dark .salary-badge-percent        { background: rgba(183,148,244,0.15); color: #b794f4; }
+html.dark .salary-adj-bonus            { color: #68d391; }
+html.dark .salary-adj-deduction        { color: #fc8181; }
+
+html.dark .salary-clear-btn            { border-color: #fc8181; color: #fc8181; background: transparent; }
+html.dark .salary-clear-btn:hover      { background: rgba(252,129,129,0.12); }
+
+html.dark .salary-action-pdf           { background: rgba(99,179,237,0.15); }
+html.dark .salary-action-pdf:hover     { background: rgba(99,179,237,0.28); }
+html.dark .salary-action-delete        { background: rgba(252,129,129,0.15); }
+html.dark .salary-action-delete:hover  { background: rgba(252,129,129,0.28); }

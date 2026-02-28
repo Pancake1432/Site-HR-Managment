@@ -37,7 +37,7 @@ export default function SalaryPage() {
           <div className="in-progress" style={{ padding: '56px 20px', textAlign: 'center' }}>
             <div style={{ fontSize: 56, marginBottom: 16 }}>💰</div>
             <h3 style={{ fontSize: 22, fontWeight: 600, marginBottom: 8 }}>No Statements Saved</h3>
-            <p style={{ color: '#718096', marginBottom: 24 }}>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: 24 }}>
               Generate a statement and press <strong>Save to Salary</strong> to see it here.
             </p>
             <button
@@ -117,7 +117,7 @@ export default function SalaryPage() {
                         {s.adjustmentType === 'bonus' ? '+' : '-'}{fmtCurrency(s.adjustment, settings.currency)}
                       </span>
                     ) : (
-                      <span style={{ color: '#a0aec0' }}>—</span>
+                      <span style={{ color: 'var(--text-secondary)' }}>—</span>
                     )}
                   </td>
                   <td><strong style={{ color: 'var(--accent)' }}>{fmtCurrency(s.total, settings.currency)}</strong></td>
