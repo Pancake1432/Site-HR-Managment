@@ -1,4 +1,5 @@
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Driver, DocFile } from '../../types/dashboard';
 import { companyDriversData } from '../../data/driversData';
 import { useSettings, fmtDate } from '../../contexts/SettingsContext';
@@ -10,6 +11,8 @@ interface DriverDocuments {
 }
 
 export default function DriversPage() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { settings } = useSettings();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
@@ -17,6 +20,17 @@ export default function DriversPage() {
   const cdlInputRef      = useRef<HTMLInputElement>(null);
   const medicalInputRef  = useRef<HTMLInputElement>(null);
   const contractInputRef = useRef<HTMLInputElement>(null);
+
+  // Sync modal with URL param :id
+  useEffect(() => {
+    if (id) {
+      const numId = Number(id);
+      const driver = companyDriversData.find(d => d.id === numId);
+      setSelectedDriver(driver ?? null);
+    } else {
+      setSelectedDriver(null);
+    }
+  }, [id]);
 
   const filtered = useMemo(() => companyDriversData.filter(d => {
     const q = searchQuery.toLowerCase();
@@ -98,7 +112,7 @@ export default function DriversPage() {
               </span>
               <span className="cell" data-label="Date">{fmtDate(d.date, settings.dateFormat)}</span>
               <span className="cell" data-label="Action">
-                <button className="view-btn" onClick={() => setSelectedDriver(d)}>View Details</button>
+                <button className="view-btn" onClick={() => navigate(`/dashboard/drivers/${d.id}`)}>View Details</button>
               </span>
             </div>
           )) : <div className="no-results">No drivers found</div>}
@@ -111,11 +125,11 @@ export default function DriversPage() {
       <input ref={contractInputRef} type="file" accept=".pdf,application/pdf" onChange={e => e.target.files?.[0] && handleFileUpload('workingContract', e.target.files[0])} style={{ display: 'none' }} />
 
       {selectedDriver && (
-        <div className="modal-overlay" onClick={() => setSelectedDriver(null)}>
+        <div className="modal-overlay" onClick={() => navigate('/dashboard/drivers')}>
           <div className="modal-content modal-xl" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <h2>{selectedDriver.name} — Documents</h2>
-              <button className="close-btn" onClick={() => setSelectedDriver(null)}>✕</button>
+              <button className="close-btn" onClick={() => navigate('/dashboard/drivers')}>✕</button>
             </div>
             <div className="modal-body">
               <div className="modal-section">

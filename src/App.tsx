@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';
@@ -9,15 +9,42 @@ import ServerErrorPage from './pages/errors/ServerErrorPage';
 import MaintenancePage from './pages/errors/MaintenancePage';
 import ErrorBoundary from './pages/errors/ErrorBoundary';
 import ProtectedRoute, { PublicOnlyRoute } from './pages/components/ProtectedRoute';
+import { SavedStatementsProvider } from './pages/contexts/SavedStatementsContext';
+
+import DashboardHome  from './pages/components/dashboard/DashboardHome';
+import DriversPage    from './pages/components/dashboard/DriversPage';
+import DocumentsPage  from './pages/components/dashboard/DocumentsPage';
+import StatementsPage from './pages/components/dashboard/StatementsPage';
+import SalaryPage     from './pages/components/dashboard/SalaryPage';
+import EmployeesPage  from './pages/components/dashboard/EmployeesPage';
+
+import InfoStep              from './pages/components/application/InfoStep';
+import PersonalInfoStep      from './pages/components/application/PersonalInfoStep';
+import DrivingExperienceStep from './pages/components/application/DrivingExperienceStep';
+import WorkPreferencesStep   from './pages/components/application/WorkPreferencesStep';
+import AvailabilityStep      from './pages/components/application/AvailabilityStep';
+import DocumentsStep         from './pages/components/application/DocumentsStep';
 
 function App() {
   return (
     <ErrorBoundary>
-      <Router>
+      <SavedStatementsProvider>
+        <Router>
         <Routes>
           {/* ── Public routes ── */}
           <Route path="/" element={<LandingPage />} />
-          <Route path="/apply" element={<ApplicationForm />} />
+
+          {/* ── Application form with nested step routes ── */}
+          <Route path="/apply" element={<ApplicationForm />}>
+            {/* /apply  → redirect to /apply/info */}
+            <Route index element={<Navigate to="info" replace />} />
+            <Route path="info"               element={<InfoStep />} />
+            <Route path="personal-info"      element={<PersonalInfoStep />} />
+            <Route path="driving-experience" element={<DrivingExperienceStep />} />
+            <Route path="work-preferences"   element={<WorkPreferencesStep />} />
+            <Route path="availability"       element={<AvailabilityStep />} />
+            <Route path="documents"          element={<DocumentsStep />} />
+          </Route>
 
           {/* ── Auth routes (redirect to dashboard if already logged in) ── */}
           <Route
@@ -29,7 +56,7 @@ function App() {
             }
           />
 
-          {/* ── Protected routes (redirect to /login if not authenticated) ── */}
+          {/* ── Protected dashboard with nested sub-routes ── */}
           <Route
             path="/dashboard"
             element={
@@ -37,7 +64,28 @@ function App() {
                 <Dashboard />
               </ProtectedRoute>
             }
-          />
+          >
+            {/* /dashboard  → home */}
+            <Route index element={<DashboardHome />} />
+
+            {/* /dashboard/documents  &  /dashboard/documents/:id */}
+            <Route path="documents" element={<DocumentsPage />} />
+            <Route path="documents/:id" element={<DocumentsPage />} />
+
+            {/* /dashboard/drivers  &  /dashboard/drivers/:id */}
+            <Route path="drivers" element={<DriversPage />} />
+            <Route path="drivers/:id" element={<DriversPage />} />
+
+            {/* /dashboard/statements */}
+            <Route path="statements" element={<StatementsPage />} />
+
+            {/* /dashboard/salary */}
+            <Route path="salary" element={<SalaryPage />} />
+
+            {/* /dashboard/employees  &  /dashboard/employees/:id */}
+            <Route path="employees" element={<EmployeesPage />} />
+            <Route path="employees/:id" element={<EmployeesPage />} />
+          </Route>
 
           {/* ── Error routes ── */}
           <Route path="/403" element={<ForbiddenPage />} />
@@ -48,6 +96,7 @@ function App() {
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Router>
+      </SavedStatementsProvider>
     </ErrorBoundary>
   );
 }
