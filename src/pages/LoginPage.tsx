@@ -17,9 +17,13 @@ const loginSchema = z.object({
 
 type LoginFields = z.infer<typeof loginSchema>;
 
-// Hardcoded admin credentials (swap for a real auth call when ready)
-const ADMIN_EMAIL = 'admin@admin.com';
-const ADMIN_PASSWORD = 'admin123';
+// ── Company accounts (swap for a real DB auth call when ready) ──────────────
+// To add a new company: add an entry here and a matching key in driversData.ts
+const ACCOUNTS: Record<string, { password: string; name: string; companyId: string; companyName: string }> = {
+  'dispatch@pakslogistic.com':  { password: 'paks123',  name: 'Paks Admin',  companyId: 'company-paks',  companyName: 'Paks Logistic LLC'       },
+  'dispatch@swifttransport.com': { password: 'swift123', name: 'Swift Admin', companyId: 'company-swift', companyName: 'Swift Transport Inc'     },
+  'dispatch@eaglefreight.com': { password: 'eagle123', name: 'Eagle Admin', companyId: 'company-eagle', companyName: 'Eagle Freight Solutions' },
+};
 
 // ── Component ────────────────────────────────────────────────────────────────
 function LoginPage() {
@@ -59,11 +63,18 @@ function LoginPage() {
 
     // ── Credential check ───────────────────────────────────────────────────
     const { email, password } = result.data;
+    const account = ACCOUNTS[email.toLowerCase()];
 
-    if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+    if (account && account.password === password) {
       localStorage.setItem(
         'currentUser',
-        JSON.stringify({ email: ADMIN_EMAIL, name: 'Administrator', role: 'admin' })
+        JSON.stringify({
+          email,
+          name:        account.name,
+          role:        'admin',
+          companyId:   account.companyId,
+          companyName: account.companyName,
+        })
       );
       navigate(from, { replace: true });
     } else {
