@@ -2364,8 +2364,62 @@ html.compact .activity-item     { padding: 10px; }
 .salary-action-delete:hover { background: rgba(229,62,62,0.22); }
 
 @media (max-width: 768px) {
+  .salary-summary-row { grid-template-columns: 1fr 1fr; gap: 12px; }
+  .salary-summary-card { padding: 18px 12px; }
+  .salary-summary-value { font-size: 22px; }
+
+  /* ── Card-flip table: each row becomes a self-contained card ── */
+  .salary-table thead { display: none; }
+
+  .salary-table,
+  .salary-table tbody,
+  .salary-table tr,
+  .salary-table td { display: block; width: 100%; }
+
+  .salary-table tbody tr {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 12px;
+    padding: 4px 0;
+    background: var(--bg-card-secondary);
+    overflow: hidden;
+  }
+  .salary-table tbody tr:last-child { margin-bottom: 0; }
+
+  /* Remove per-cell borders; the card border handles separation */
+  .salary-table td {
+    border-bottom: 1px solid var(--border);
+    padding: 10px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    font-size: 14px;
+  }
+  .salary-table td:last-child { border-bottom: none; }
+
+  /* Label injected from data-label attribute */
+  .salary-table td::before {
+    content: attr(data-label);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* Actions row: centre the buttons */
+  .salary-table td[data-label="Actions"] { justify-content: space-between; }
+  .salary-row-actions { margin-left: auto; }
+}
+
+@media (max-width: 480px) {
   .salary-summary-row { grid-template-columns: 1fr; }
-  .salary-table th, .salary-table td { padding: 10px 10px; font-size: 13px; }
+  .salary-summary-card { padding: 14px 12px; }
+  .salary-summary-value { font-size: 20px; }
+  .salary-table td { font-size: 13px; padding: 9px 14px; }
 }
 
 /* ── Dark mode: Salary ──────────────────────────────────────────────── */

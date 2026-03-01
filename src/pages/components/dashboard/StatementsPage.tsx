@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { StatementData, SavedStatement, PaymentType } from '../../types/dashboard';
-import { companyDriversData } from '../../data/driversData';
+import { useCompanyData } from '../../hooks/useCompanyData';
 import { useSettings, fmtDate, fmtCurrency, fmtDistUnit, CURRENCY_SYMBOLS } from '../../contexts/SettingsContext';
 import { useSavedStatements } from '../../contexts/SavedStatementsContext';
 import { downloadStatementPDF } from '../../utils/pdfUtils';
@@ -18,6 +18,7 @@ const emptyForm: StatementData = {
 export default function StatementsPage() {
   const { settings } = useSettings();
   const { addStatement } = useSavedStatements();
+  const { companyDrivers: companyDriversData } = useCompanyData();
   const navigate = useNavigate();
   const [form, setForm] = useState<StatementData>(emptyForm);
   const [showPreview, setShowPreview] = useState(false);

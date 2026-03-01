@@ -1,10 +1,12 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Driver } from '../../types/dashboard';
-import { companyDriversData, defaultDocuments } from '../../data/driversData';
+import { defaultDocuments } from '../../data/driversData';
+import { useCompanyData } from '../../hooks/useCompanyData';
 import { useSettings, fmtDate, fmtCurrency, fmtPerDist } from '../../contexts/SettingsContext';
 
 export default function EmployeesPage() {
+  const { companyDrivers: companyDriversData } = useCompanyData();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { settings } = useSettings();

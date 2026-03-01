@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Driver, DocFile } from '../../types/dashboard';
-import { companyDriversData } from '../../data/driversData';
+import { useCompanyData } from '../../hooks/useCompanyData';
 import { useSettings, fmtDate } from '../../contexts/SettingsContext';
 
 interface DriverDocuments {
@@ -14,6 +14,7 @@ export default function DriversPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { settings } = useSettings();
+  const { companyDrivers: companyDriversData } = useCompanyData();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
   const [driverDocuments, setDriverDocuments] = useState<Record<number, DriverDocuments>>({});

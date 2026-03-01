@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useSettings } from './contexts/SettingsContext';
+import { SavedStatementsProvider } from './contexts/SavedStatementsContext';
 import SettingsModal from './components/dashboard/SettingsModal';
 import '../styles/dashboard.css';
 
@@ -13,7 +14,7 @@ const NAV_ITEMS = [
   { path: '/dashboard/employees',  icon: '👥', label: 'Employees'  },
 ];
 
-export default function Dashboard() {
+function DashboardLayout() {
   const navigate   = useNavigate();
   const location   = useLocation();
   const { settings } = useSettings();
@@ -125,5 +126,13 @@ export default function Dashboard() {
         <SettingsModal onClose={() => setShowSettings(false)} />
       )}
     </div>
+  );
+}
+
+export default function Dashboard() {
+  return (
+    <SavedStatementsProvider>
+      <DashboardLayout />
+    </SavedStatementsProvider>
   );
 }
