@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { StatusType } from '../../types/dashboard';
 import { useCompanyData } from '../../hooks/useCompanyData';
+import { useLocalOverrides } from '../../hooks/useLocalOverrides';
 import StatusDropdown from './StatusDropdown';
 import DashboardCharts from './DashboardCharts';
 import { useSettings, fmtDate, CURRENCY_SYMBOLS } from '../../contexts/SettingsContext';
@@ -10,9 +11,13 @@ export default function DashboardHome() {
   const navigate = useNavigate();
   const { settings } = useSettings();
   const { companyDrivers, applicants } = useCompanyData();
+  const { applyOverrides } = useLocalOverrides();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusType | 'all'>('all');
   const [applicantStatuses, setApplicantStatuses] = useState<Record<number, StatusType>>({});
+
+  // Apply locally-saved status overrides so charts stay in sync with DriversPage
+  const drivers = useMemo(() => applyOverrides(companyDrivers), [companyDrivers, applyOverrides]);
 
   const applicantsWithStatus = useMemo(() =>
     applicants.map(a => ({ ...a, status: applicantStatuses[a.id] || a.status }))
@@ -24,13 +29,13 @@ export default function DashboardHome() {
     docs:      applicantsWithStatus.filter(a => a.status === 'Documents Sent').length,
   }), [applicantsWithStatus]);
 
-  const driversReady    = companyDrivers.filter(d => d.driverStatus === 'Ready').length;
-  const driversNotReady = companyDrivers.filter(d => d.driverStatus === 'Not Ready').length;
+  const driversReady    = drivers.filter(d => d.driverStatus === 'Ready').length;
+  const driversNotReady = drivers.filter(d => d.driverStatus === 'Not Ready').length;
 
   const equipmentCounts = useMemo(() =>
-    companyDrivers.reduce<Record<string, number>>((acc, d) => {
+    drivers.reduce<Record<string, number>>((acc, d) => {
       acc[d.equipment] = (acc[d.equipment] || 0) + 1; return acc;
-    }, {}), [companyDrivers]);
+    }, {}), [drivers]);
 
   const filtered = useMemo(() => applicantsWithStatus.filter(a => {
     const q = searchQuery.toLowerCase();
