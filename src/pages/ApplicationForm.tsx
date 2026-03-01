@@ -1,29 +1,38 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { ApplicationProvider, useApplicationForm } from './contexts/ApplicationContext';
 import { submitApplication, saveDraft, clearDraft } from './services/applicationService';
-
-import InfoStep from './components/application/InfoStep';
-import PersonalInfoStep from './components/application/PersonalInfoStep';
-import DrivingExperienceStep from './components/application/DrivingExperienceStep';
-import WorkPreferencesStep from './components/application/WorkPreferencesStep';
-import AvailabilityStep from './components/application/AvailabilityStep';
-import DocumentsStep from './components/application/DocumentsStep';
-
+import { useState } from 'react';
 import '../styles/application.css';
 
+// ── Step definitions (order matters) ────────────────────────────────────────
+const STEPS = [
+  { path: 'info',               label: 'Info'               },
+  { path: 'personal-info',      label: 'Personal Info'      },
+  { path: 'driving-experience', label: 'Driving Experience' },
+  { path: 'work-preferences',   label: 'Work Preferences'   },
+  { path: 'availability',       label: 'Availability'       },
+  { path: 'documents',          label: 'Documents'          },
+] as const;
+
+// Derive current step index from URL
+function useCurrentStep() {
+  const { pathname } = useLocation();
+  const slug = pathname.split('/').pop() ?? '';
+  const idx = STEPS.findIndex(s => s.path === slug);
+  return idx === -1 ? 0 : idx;
+}
+
 function ApplicationFormContent() {
-  const navigate = useNavigate();
+  const navigate    = useNavigate();
   const { formData, resetForm } = useApplicationForm();
-  const [currentStep, setCurrentStep] = useState(0);
+  const currentStep = useCurrentStep();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Validation for each step
+  // ── Validation per step ───────────────────────────────────────────────────
   const isStepValid = (step: number): boolean => {
     switch (step) {
-      case 0:
-        return true; // Info step has no inputs
-      
+      case 0: return true; // Info step has no inputs
+
       case 1: // Personal Information
         return !!(
           formData.name.trim() &&
@@ -34,7 +43,7 @@ function ApplicationFormContent() {
           formData.zip.trim() &&
           formData.familyStatus
         );
-      
+
       case 2: // Driving Experience
         return !!(
           formData.drivingExperience &&
@@ -42,7 +51,7 @@ function ApplicationFormContent() {
           formData.drivingRecord.trim() &&
           formData.workedReefer
         );
-      
+
       case 3: // Work Preferences
         return !!(
           formData.dislike.trim() &&
@@ -51,20 +60,23 @@ function ApplicationFormContent() {
           formData.specialConsideration.trim() &&
           formData.onRoad.trim()
         );
-      
+
       case 4: // Availability
         return !!(
           formData.drugTest &&
           formData.securingUnloading &&
           formData.salaryExpectation.trim()
         );
-      
-      case 5: // Documents - NOW OPTIONAL
-        return true; // Always valid, documents are optional
-      
-      default:
-        return false;
+
+      case 5: return true; // Documents are optional
+
+      default: return false;
     }
+  };
+
+  // ── Navigation helpers ────────────────────────────────────────────────────
+  const goToStep = (index: number) => {
+    navigate(`/apply/${STEPS[index].path}`);
   };
 
   const nextStep = () => {
@@ -72,22 +84,17 @@ function ApplicationFormContent() {
       alert('Please fill in all required fields before proceeding.');
       return;
     }
-
-    if (currentStep < 5) {
-      setCurrentStep(currentStep + 1);
-      // Auto-save draft when moving forward
-      if (currentStep > 0) {
-        saveDraft(formData);
-      }
+    if (currentStep < STEPS.length - 1) {
+      if (currentStep > 0) saveDraft(formData);
+      goToStep(currentStep + 1);
     }
   };
 
   const prevStep = () => {
-    if (currentStep > 0) {
-      setCurrentStep(currentStep - 1);
-    }
+    if (currentStep > 0) goToStep(currentStep - 1);
   };
 
+  // ── Submit ────────────────────────────────────────────────────────────────
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -96,21 +103,26 @@ function ApplicationFormContent() {
       const result = await submitApplication(formData);
 
       if (result.success) {
-        alert(`✅ Application submitted successfully!\n\nYour application ID is: ${result.applicationId}\n\nWe will review your application and contact you soon.`);
+        alert(
+          `Application submitted successfully!\n\nYour application ID is: ${result.applicationId}\n\nWe will review your application and contact you soon.`
+        );
         clearDraft();
         resetForm();
-        setCurrentStep(0); // Reset to info step
-        navigate('/'); // Navigate to home
+        navigate('/');
       } else {
-        alert(`❌ Failed to submit application:\n\n${result.error}\n\nPlease try again or contact dispatch@pakslogistic.com for assistance.`);
+        alert(
+          `Failed to submit application:\n\n${result.error}\n\nPlease try again or contact dispatch@pakslogistic.com for assistance.`
+        );
       }
     } catch (error) {
-      alert('❌ An error occurred while submitting your application.\n\nPlease try again or contact dispatch@pakslogistic.com');
+      alert('An error occurred while submitting your application.\n\nPlease try again or contact dispatch@pakslogistic.com');
       console.error('Submission error:', error);
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  const isLastStep = currentStep === STEPS.length - 1;
 
   return (
     <div className="application-container">
@@ -120,13 +132,8 @@ function ApplicationFormContent() {
       </div>
 
       <form onSubmit={handleSubmit} className="multi-step-form">
-        {/* Step rendering */}
-        {currentStep === 0 && <InfoStep />}
-        {currentStep === 1 && <PersonalInfoStep />}
-        {currentStep === 2 && <DrivingExperienceStep />}
-        {currentStep === 3 && <WorkPreferencesStep />}
-        {currentStep === 4 && <AvailabilityStep />}
-        {currentStep === 5 && <DocumentsStep />}
+        {/* Step content rendered by nested route */}
+        <Outlet />
 
         {/* Navigation buttons */}
         <div className="navigation">
@@ -136,7 +143,7 @@ function ApplicationFormContent() {
             </button>
           )}
 
-          {currentStep > 0 && currentStep < 5 && (
+          {currentStep > 0 && !isLastStep && (
             <>
               <button type="button" onClick={prevStep} className="btn-secondary">
                 Back
@@ -147,9 +154,14 @@ function ApplicationFormContent() {
             </>
           )}
 
-          {currentStep === 5 && (
+          {isLastStep && (
             <>
-              <button type="button" onClick={prevStep} className="btn-secondary" disabled={isSubmitting}>
+              <button
+                type="button"
+                onClick={prevStep}
+                className="btn-secondary"
+                disabled={isSubmitting}
+              >
                 Back
               </button>
               <button type="submit" className="btn-primary" disabled={isSubmitting}>

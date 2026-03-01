@@ -1,36 +1,35 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { Driver, DocFile } from '../../types/dashboard';
-import { allApplicantsData } from '../../data/driversData';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Driver } from '../../types/dashboard';
+import { useCompanyData } from '../../hooks/useCompanyData';
+import { useDocumentStorage } from '../../hooks/useDocumentStorage';
 
-interface Props {
-  selectedDriverId?: number | null;
-  onClose?: () => void;
-}
+export default function DocumentsPage() {
+  const { applicants: allApplicantsData } = useCompanyData();
+  const { driverDocuments, addDocument, removeDocument, openDocument } = useDocumentStorage();
 
-export default function DocumentsPage({ selectedDriverId, onClose }: Props) {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
-  
-  // Store documents per driver in state (each driver starts with NO documents)
-  const [driverDocuments, setDriverDocuments] = useState<Record<number, DocFile[]>>({});
-  
+  const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Map drivers with their documents (empty by default)
+  // Merge persisted documents into each driver
   const driversWithDocs = useMemo(() => allApplicantsData.map(d => ({
     ...d,
-    documents: driverDocuments[d.id] || [], // Empty array if no documents uploaded
-  })), [driverDocuments]);
+    documents: driverDocuments[d.id] || [],
+  })), [allApplicantsData, driverDocuments]);
 
-  // Auto-open modal when selectedDriverId is provided
+  // Auto-open modal when :id is in the URL
   useEffect(() => {
-    if (selectedDriverId) {
-      const driver = driversWithDocs.find(d => d.id === selectedDriverId);
-      if (driver) {
-        setSelectedDriver(driver);
-      }
+    if (id) {
+      const driver = driversWithDocs.find(d => d.id === Number(id));
+      if (driver) setSelectedDriver(driver);
+    } else {
+      setSelectedDriver(null);
     }
-  }, [selectedDriverId, driversWithDocs]);
+  }, [id, driversWithDocs]);
 
   const filtered = useMemo(() => driversWithDocs.filter(d => {
     const q = searchQuery.toLowerCase();
@@ -42,67 +41,39 @@ export default function DocumentsPage({ selectedDriverId, onClose }: Props) {
   }), [searchQuery, driversWithDocs]);
 
   const handleOpen = (driver: typeof driversWithDocs[0]) => {
-    setSelectedDriver(driver);
+    navigate(`/dashboard/documents/${driver.id}`);
   };
 
-  const handleClose = () => {
-    setSelectedDriver(null);
-    onClose?.(); // Notify parent component
-  };
+  const handleClose = () => navigate('/dashboard/documents');
 
-  const handleAddDocument = () => {
-    fileInputRef.current?.click();
-  };
+  const handleAddDocument = () => fileInputRef.current?.click();
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !selectedDriver) return;
 
-    // Only allow PDFs
     if (!file.type.includes('pdf')) {
       alert('Please upload PDF files only');
       return;
     }
 
-    // Create a new document entry
-    const newDoc: DocFile = {
-      id: Date.now(), // Unique ID
-      name: file.name,
-      type: 'PDF',
-      uploadDate: new Date().toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }),
-      size: formatFileSize(file.size),
-    };
-
-    // Add document to this driver's collection
-    setDriverDocuments(prev => ({
-      ...prev,
-      [selectedDriver.id]: [...(prev[selectedDriver.id] || []), newDoc]
-    }));
-
-    // Clear the input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+    setIsUploading(true);
+    try {
+      await addDocument(selectedDriver.id, file);
+      alert(`✅ "${file.name}" uploaded and saved successfully!`);
+    } catch {
+      alert('❌ Failed to upload document. Please try again.');
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
-
-    console.log('✅ Document uploaded:', newDoc);
-    alert(`✅ Document "${file.name}" uploaded successfully!`);
   };
 
   const handleDelete = (docId: number) => {
     if (!selectedDriver) return;
-    
-    if (window.confirm('Delete this document? This action cannot be undone.')) {
-      setDriverDocuments(prev => ({
-        ...prev,
-        [selectedDriver.id]: (prev[selectedDriver.id] || []).filter(d => d.id !== docId)
-      }));
+    if (window.confirm('Delete this document? This cannot be undone.')) {
+      removeDocument(selectedDriver.id, docId);
     }
-  };
-
-  const formatFileSize = (bytes: number): string => {
-    if (bytes < 1024) return bytes + ' B';
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   };
 
   const currentDriverDocs = selectedDriver ? (driverDocuments[selectedDriver.id] || []) : [];
@@ -164,15 +135,18 @@ export default function DocumentsPage({ selectedDriverId, onClose }: Props) {
               <button className="close-btn" onClick={handleClose}>✕</button>
             </div>
             <div className="modal-body">
-
-              {/* Documents list */}
               <div className="modal-section">
                 <div className="modal-section-header">
                   <h3>Documents ({currentDriverDocs.length})</h3>
-                  <button className="add-document-btn" onClick={handleAddDocument}>
-                    ➕ Add Document
+                  <button
+                    className="add-document-btn"
+                    onClick={handleAddDocument}
+                    disabled={isUploading}
+                  >
+                    {isUploading ? '⏳ Uploading...' : '➕ Add Document'}
                   </button>
                 </div>
+
                 <div className="documents-list">
                   {currentDriverDocs.length > 0 ? currentDriverDocs.map(doc => (
                     <div key={doc.id} className="document-item">
@@ -182,8 +156,16 @@ export default function DocumentsPage({ selectedDriverId, onClose }: Props) {
                         <p>{doc.type} · {doc.size} · {doc.uploadDate}</p>
                       </div>
                       <div className="document-actions">
-                        <button className="doc-action-btn open">Open</button>
-                        <button className="doc-action-btn delete" onClick={() => handleDelete(doc.id)}>
+                        <button
+                          className="doc-action-btn open"
+                          onClick={() => openDocument(doc)}
+                        >
+                          Open
+                        </button>
+                        <button
+                          className="doc-action-btn delete"
+                          onClick={() => handleDelete(doc.id)}
+                        >
                           Delete
                         </button>
                       </div>
@@ -191,15 +173,16 @@ export default function DocumentsPage({ selectedDriverId, onClose }: Props) {
                   )) : (
                     <div className="no-documents">
                       <div style={{ fontSize: '48px', marginBottom: '12px' }}>📂</div>
-                      <p style={{ fontSize: '16px', fontWeight: 600, marginBottom: '8px' }}>No documents uploaded yet</p>
-                      <p style={{ fontSize: '14px', color: '#718096' }}>
+                      <p style={{ fontSize: '16px', fontWeight: 600, marginBottom: '8px' }}>
+                        No documents uploaded yet
+                      </p>
+                      <p style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
                         Click "Add Document" above to upload PDFs for {selectedDriver.name}
                       </p>
                     </div>
                   )}
                 </div>
               </div>
-
             </div>
           </div>
         </div>
