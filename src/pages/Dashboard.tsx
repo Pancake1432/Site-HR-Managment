@@ -15,16 +15,14 @@ const NAV_ITEMS = [
 ];
 
 function DashboardLayout() {
-  const navigate   = useNavigate();
-  const location   = useLocation();
+  const navigate     = useNavigate();
+  const location     = useLocation();
   const { settings } = useSettings();
   const [showSettings, setShowSettings] = useState(false);
-  const [sidebarOpen, setSidebarOpen]   = useState(false);
 
-  // Determine active nav item from current URL
   const activePath = NAV_ITEMS
     .slice()
-    .reverse() // check more-specific paths first
+    .reverse()
     .find(item => location.pathname.startsWith(item.path))?.path ?? '/dashboard';
 
   useEffect(() => {
@@ -36,9 +34,7 @@ function DashboardLayout() {
   }, [settings.compactView]);
 
   useEffect(() => {
-    return () => {
-      document.documentElement.classList.remove('dark', 'compact');
-    };
+    return () => { document.documentElement.classList.remove('dark', 'compact'); };
   }, []);
 
   const handleLogout = () => {
@@ -46,22 +42,13 @@ function DashboardLayout() {
     navigate('/login', { replace: true });
   };
 
-  const handleNavClick = (path: string) => {
-    navigate(path);
-    setSidebarOpen(false);
-  };
-
   const activeItem = NAV_ITEMS.find(i => i.path === activePath);
 
   return (
     <div className="container">
-      {/* ── MOBILE SIDEBAR OVERLAY ── */}
-      {sidebarOpen && (
-        <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />
-      )}
 
-      {/* ── SIDEBAR ── */}
-      <aside className={`sidebar ${sidebarOpen ? 'sidebar-mobile-open' : ''}`}>
+      {/* ── SIDEBAR (desktop only) ── */}
+      <aside className="sidebar">
         <div className="logo">
           <div className="logo-icon">🏢</div>
           <span>HR Manager</span>
@@ -72,7 +59,7 @@ function DashboardLayout() {
             <div
               key={item.path}
               className={`nav-item ${activePath === item.path ? 'active' : ''}`}
-              onClick={() => handleNavClick(item.path)}
+              onClick={() => navigate(item.path)}
             >
               <span className="nav-icon">{item.icon}</span>
               <span>{item.label}</span>
@@ -88,19 +75,20 @@ function DashboardLayout() {
 
       {/* ── MOBILE TOP BAR ── */}
       <header className="mobile-topbar">
-        <button className="hamburger-btn" onClick={() => setSidebarOpen(!sidebarOpen)} aria-label="Open menu">
-          <span></span>
-          <span></span>
-          <span></span>
-        </button>
-        <div className="mobile-topbar-title">
-          <span>{activeItem?.icon}</span>
-          {' '}{activeItem?.label}
+        <div className="mobile-topbar-brand">
+          <div className="mobile-topbar-logo">🏢</div>
         </div>
-        <button className="mobile-settings-btn" onClick={() => setShowSettings(true)} aria-label="Settings">⚙️</button>
+        <div className="mobile-topbar-center">
+          <span className="mobile-topbar-app">HR Manager</span>
+          <span className="mobile-topbar-page">{activeItem?.icon} {activeItem?.label}</span>
+        </div>
+        <div className="mobile-topbar-actions">
+          <button className="mobile-topbar-btn" onClick={() => setShowSettings(true)} aria-label="Settings">⚙️</button>
+          <button className="mobile-topbar-btn mobile-topbar-logout" onClick={handleLogout} aria-label="Logout">🚪</button>
+        </div>
       </header>
 
-      {/* ── MAIN CONTENT (nested routes render here) ── */}
+      {/* ── MAIN CONTENT ── */}
       <main className="main-content">
         <Outlet />
       </main>
@@ -111,7 +99,7 @@ function DashboardLayout() {
           <button
             key={item.path}
             className={`mobile-bottom-nav-item ${activePath === item.path ? 'active' : ''}`}
-            onClick={() => handleNavClick(item.path)}
+            onClick={() => navigate(item.path)}
           >
             <span className="mobile-bottom-nav-icon">{item.icon}</span>
             <span className="mobile-bottom-nav-label">{item.label}</span>

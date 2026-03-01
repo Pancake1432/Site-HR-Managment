@@ -25,7 +25,7 @@
   display: flex;
   flex-direction: column;
   box-shadow: 2px 0 10px rgba(0,0,0,0.1);
-  overflow-y: auto;
+  overflow: hidden;
   z-index: 100;
 }
 
@@ -47,7 +47,7 @@
   font-size: 18px;
 }
 
-.nav-items { flex: 1; }
+.nav-items { flex: 1; overflow-y: auto; }
 .nav-item {
   padding: 14px 20px;
   display: flex; align-items: center; gap: 10px;
@@ -1331,104 +1331,105 @@
 /* ── TABLET / MOBILE (≤768px) ─────────────────────────────────────── */
 @media (max-width: 768px) {
 
-  /* Hide desktop sidebar, show mobile top bar */
-  .sidebar {
-    position: fixed;
-    top: 0;
-    left: -240px;
-    width: 240px !important;
-    height: 100vh;
-    z-index: 200;
-    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    /* Reset icon-only styles */
-  }
-  .sidebar.sidebar-mobile-open {
-    left: 0;
-    box-shadow: 4px 0 20px rgba(0,0,0,0.3);
-  }
+  /* Hide desktop sidebar on mobile */
+  .sidebar { display: none; }
 
-  /* Restore full sidebar labels when slide-in is open */
-  .sidebar.sidebar-mobile-open .logo span,
-  .sidebar.sidebar-mobile-open .nav-item span:not(.nav-icon),
-  .sidebar.sidebar-mobile-open .logout span:not(.nav-icon) {
-    display: inline !important;
-  }
-  .sidebar.sidebar-mobile-open .logo { justify-content: flex-start; padding: 0 20px; }
-  .sidebar.sidebar-mobile-open .nav-item { justify-content: flex-start; padding: 14px 20px; }
-  .sidebar.sidebar-mobile-open .logout { justify-content: flex-start; padding: 14px 20px; }
-
-  /* Dark overlay behind open sidebar */
-  .sidebar-overlay {
-    display: block;
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.4);
-    z-index: 199;
-    backdrop-filter: blur(2px);
-  }
-
-  /* Mobile top bar */
+  /* ── Mobile top bar ── */
+  /* ── Mobile top bar ── */
   .mobile-topbar {
-    display: flex;
+    display: grid;
+    grid-template-columns: 44px 1fr 44px;
     align-items: center;
-    justify-content: space-between;
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 56px;
-    background: var(--gradient);
-    padding: 0 16px;
+    top: 0; left: 0; right: 0;
+    height: 60px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 0 12px;
     z-index: 150;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+    box-shadow: 0 1px 0 rgba(255,255,255,0.1), 0 4px 24px rgba(102,126,234,0.4);
   }
 
-  .mobile-topbar-title {
-    font-size: 16px;
-    font-weight: 600;
-    color: white;
+  /* Left slot — logo icon */
+  .mobile-topbar-brand {
     display: flex;
     align-items: center;
+    justify-content: flex-start;
+  }
+
+  .mobile-topbar-logo {
+    width: 36px; height: 36px;
+    background: rgba(255,255,255,0.18);
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 19px;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+
+  /* Hide the text part — we'll show page name centered instead */
+  .mobile-topbar-text { display: none; }
+
+  /* Center slot — current page title */
+  .mobile-topbar-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+  }
+
+  .mobile-topbar-app {
+    font-size: 9px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.5);
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    line-height: 1;
+  }
+
+  .mobile-topbar-page {
+    font-size: 15px;
+    font-weight: 700;
+    color: white;
+    letter-spacing: 0.2px;
+    line-height: 1.2;
+  }
+
+  /* Right slot — actions */
+  .mobile-topbar-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
     gap: 6px;
   }
 
-  .hamburger-btn {
-    background: transparent;
-    border: none;
+  .mobile-topbar-btn {
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.2);
     cursor: pointer;
-    padding: 8px;
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-    border-radius: 8px;
-    transition: background 0.2s;
+    font-size: 16px;
+    width: 34px; height: 34px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 9px;
+    transition: all 0.15s;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
   }
-  .hamburger-btn:hover { background: rgba(255,255,255,0.15); }
-  .hamburger-btn span {
-    display: block;
-    width: 22px;
-    height: 2px;
-    background: white;
-    border-radius: 2px;
-    transition: all 0.2s;
-  }
+  .mobile-topbar-btn:active { transform: scale(0.92); }
+  .mobile-topbar-btn:hover  { background: rgba(255,255,255,0.25); }
 
-  .mobile-settings-btn {
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    font-size: 22px;
-    padding: 6px;
-    border-radius: 8px;
-    transition: background 0.2s;
+  .mobile-topbar-logout {
+    background: rgba(239,68,68,0.2);
+    border-color: rgba(239,68,68,0.35);
   }
-  .mobile-settings-btn:hover { background: rgba(255,255,255,0.15); }
+  .mobile-topbar-logout:hover  { background: rgba(239,68,68,0.35); }
+  .mobile-topbar-logout:active { background: rgba(239,68,68,0.5); }
 
   /* Main content: no sidebar offset, add top bar padding and bottom nav padding */
   .main-content {
     margin-left: 0 !important;
     padding: 16px 12px 80px !important;
-    padding-top: 72px !important;
+    padding-top: 80px !important;
   }
 
   /* Hide desktop-only elements */
@@ -1486,7 +1487,7 @@
 @media (max-width: 480px) {
   .mobile-bottom-nav-label { font-size: 9px; }
   .mobile-bottom-nav-icon  { font-size: 18px; }
-  .main-content { padding: 12px 10px 76px !important; padding-top: 68px !important; }
+  .main-content { padding: 12px 10px 76px !important; padding-top: 76px !important; }
 
   /* Tighten page headers */
   .page-header { padding: 16px !important; }
@@ -1980,11 +1981,11 @@ html.dark .logout               { color: var(--text-secondary); border-top: 1px 
 html.dark .logout:hover         { background: rgba(239,68,68,0.1); color: #f87171; }
 
 /* ── MOBILE NAV ── */
+
 html.dark .mobile-topbar        { background: linear-gradient(135deg, #2a3275 0%, #3d2060 100%); }
 html.dark .mobile-bottom-nav    { background: var(--bg-card); border-top: 1px solid var(--border); }
 html.dark .mobile-bottom-nav-item { color: var(--text-secondary); }
 html.dark .mobile-bottom-nav-item.active { color: var(--accent); }
-html.dark .hamburger-btn span   { background: white; }
 
 /* ── CARDS ── */
 html.dark .card,
