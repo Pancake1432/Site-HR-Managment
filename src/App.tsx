@@ -9,7 +9,6 @@ import ServerErrorPage from './pages/errors/ServerErrorPage';
 import MaintenancePage from './pages/errors/MaintenancePage';
 import ErrorBoundary from './pages/errors/ErrorBoundary';
 import ProtectedRoute, { PublicOnlyRoute } from './pages/components/ProtectedRoute';
-import { SavedStatementsProvider } from './pages/contexts/SavedStatementsContext';
 
 import DashboardHome  from './pages/components/dashboard/DashboardHome';
 import DriversPage    from './pages/components/dashboard/DriversPage';
@@ -28,7 +27,6 @@ import DocumentsStep         from './pages/components/application/DocumentsStep'
 function App() {
   return (
     <ErrorBoundary>
-      <SavedStatementsProvider>
         <Router>
         <Routes>
           {/* ── Public routes ── */}
@@ -95,8 +93,7 @@ function App() {
           {/* ── Catch-all 404 ── */}
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
-      </Router>
-      </SavedStatementsProvider>
+        </Router>
     </ErrorBoundary>
   );
 }

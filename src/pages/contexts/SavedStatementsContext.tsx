@@ -8,11 +8,32 @@ interface SavedStatementsCtx {
   clearStatements: () => void;
 }
 
-const STORAGE_KEY = 'hr_saved_statements';
+// ── Old shared key (pre multi-company) — remove on first mount ───────────────
+const LEGACY_KEY = 'hr_saved_statements';
+
+/** Each company gets its own isolated key */
+function getStorageKey(): string {
+  try {
+    const raw = localStorage.getItem('currentUser');
+    const user = raw ? JSON.parse(raw) : null;
+    const companyId: string = user?.companyId ?? 'unknown';
+    return `hr_saved_statements_${companyId}`;
+  } catch {
+    return 'hr_saved_statements_unknown';
+  }
+}
+
+/** Wipe the old shared key so stale cross-company data cannot leak */
+function migrateLegacyKey() {
+  if (localStorage.getItem(LEGACY_KEY) !== null) {
+    localStorage.removeItem(LEGACY_KEY);
+  }
+}
 
 function load(): SavedStatement[] {
+  migrateLegacyKey();
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(getStorageKey());
     return raw ? JSON.parse(raw) : [];
   } catch {
     return [];
@@ -20,7 +41,7 @@ function load(): SavedStatement[] {
 }
 
 function persist(list: SavedStatement[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+  localStorage.setItem(getStorageKey(), JSON.stringify(list));
 }
 
 const Ctx = createContext<SavedStatementsCtx>({
@@ -51,7 +72,7 @@ export function SavedStatementsProvider({ children }: { children: ReactNode }) {
 
   const clearStatements = () => {
     setStatements([]);
-    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(getStorageKey());
   };
 
   return (
