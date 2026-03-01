@@ -96,11 +96,11 @@ export function useDocumentStorage() {
 
   const openDocument = (doc: StoredDoc) => {
     if (doc.base64) {
-      // Open stored base64 content directly in a new tab
       const win = window.open();
       if (win) {
         win.document.write(
-          `<iframe src="${doc.base64}" style="width:100%;height:100vh;border:none;"></iframe>`
+          `<style>*{margin:0;padding:0}body,html{height:100%;overflow:hidden}</style>` +
+          `<iframe src="${doc.base64}" style="width:100%;height:100%;border:none;display:block;"></iframe>`
         );
         win.document.title = doc.name;
       }
