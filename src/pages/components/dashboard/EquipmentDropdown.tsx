@@ -16,7 +16,6 @@ const EQUIPMENT_OPTIONS: EquipmentOption[] = [
   { value: 'Van',      label: 'Van',      emoji: '🚐', bg: '#eff6ff', color: '#1d4ed8', dot: '#3b82f6' },
   { value: 'Reefer',   label: 'Reefer',   emoji: '❄️', bg: '#f0fdf4', color: '#065f46', dot: '#10b981' },
   { value: 'Flat Bed', label: 'Flat Bed', emoji: '🛻', bg: '#fff7ed', color: '#9a3412', dot: '#f97316' },
-  { value: 'Any',      label: 'Any',      emoji: '🔄', bg: '#faf5ff', color: '#6b21a8', dot: '#a855f7' },
 ];
 
 interface Props {
@@ -37,7 +36,7 @@ export default function EquipmentDropdown({ value, onChange }: Props) {
     const rect = triggerRef.current.getBoundingClientRect();
 
     const spaceBelow = window.innerHeight - rect.bottom;
-    const popoverH = 220;
+    const popoverH = 200;
 
     const top = spaceBelow >= popoverH
       ? rect.bottom + 8
@@ -55,7 +54,6 @@ export default function EquipmentDropdown({ value, onChange }: Props) {
     setOpen(prev => !prev);
   };
 
-  // Close on ANY scroll anywhere
   useEffect(() => {
     if (!open) return;
     const close = () => setOpen(false);
@@ -67,7 +65,6 @@ export default function EquipmentDropdown({ value, onChange }: Props) {
     };
   }, [open]);
 
-  // Close on outside click
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
@@ -81,7 +78,6 @@ export default function EquipmentDropdown({ value, onChange }: Props) {
     return () => document.removeEventListener('mousedown', handler);
   }, [open]);
 
-  // Close on Escape
   useEffect(() => {
     if (!open) return;
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
