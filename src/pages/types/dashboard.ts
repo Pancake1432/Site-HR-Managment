@@ -3,7 +3,7 @@ export type StatusType = 'Applied' | 'Contacted' | 'Documents Sent';
 export type DriverStatusType = 'Ready' | 'Not Ready';
 export type PaymentType = 'miles' | 'percent';
 export type EmploymentStatus = 'Working' | 'Fired';
-export type EquipmentType = 'Van' | 'Reefer' | 'Flat Bed' | 'Any';
+export type EquipmentType = 'Unsigned' | 'Van' | 'Reefer' | 'Flat Bed' | 'Any';
 
 export interface Driver {
   id: number;

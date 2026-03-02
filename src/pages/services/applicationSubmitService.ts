@@ -1,5 +1,5 @@
 import { ApplicationFormData } from '../types/application';
-import { Driver } from '../types/dashboard';
+import { Driver, EquipmentType } from '../types/dashboard';
 import { StoredDoc } from '../hooks/useDocumentStorage';
 import {
   generateApplicationPDFName,
@@ -21,6 +21,11 @@ function getApplicantsKey(companyId: string): string {
 /** Key for tracking deleted applicant IDs (covers hardcoded + dynamic) */
 function getDeletedApplicantsKey(companyId: string): string {
   return `hr_deleted_applicants_${companyId}`;
+}
+
+/** Key for applicant field overrides (equipment, status, etc.) */
+function getApplicantOverridesKey(companyId: string): string {
+  return `hr_applicant_overrides_${companyId}`;
 }
 
 function getCurrentCompanyId(): string {
@@ -112,6 +117,30 @@ export function deleteApplicant(applicantId: number): void {
   } catch { /* ignore */ }
 }
 
+// ── Applicant overrides (equipment, etc.) ──────────────────────────────────
+
+export interface ApplicantOverride {
+  equipment?: EquipmentType;
+}
+
+/** Get all applicant overrides for the current company */
+export function getApplicantOverrides(companyId: string): Record<number, ApplicantOverride> {
+  try {
+    const raw = localStorage.getItem(getApplicantOverridesKey(companyId));
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+/** Update equipment (or other fields) for an applicant */
+export function saveApplicantOverride(applicantId: number, fields: ApplicantOverride): void {
+  const companyId = getCurrentCompanyId();
+  const overrides = getApplicantOverrides(companyId);
+  overrides[applicantId] = { ...(overrides[applicantId] ?? {}), ...fields };
+  localStorage.setItem(getApplicantOverridesKey(companyId), JSON.stringify(overrides));
+}
+
 // ── Read a File as base64 data URL ─────────────────────────────────────────
 
 function readFileAsBase64(file: File): Promise<string> {
@@ -155,9 +184,8 @@ function storeDocuments(
  * 1. Generates a unique application ID
  * 2. Creates the application PDF (From-{Name}-{ID}.pdf)
  * 3. Reads CDL and Medical Card files as base64
- * 4. Adds new applicant to localStorage → picked up by getCompanyData()
+ * 4. Adds new applicant with equipment "Unsigned" to localStorage
  * 5. Stores ALL documents (PDF + CDL + Medical Card) in hr_documents_${companyId}
- *    → picked up by useDocumentStorage() on the Documents page
  *
  * No downloads — everything lives in the dashboard Documents page.
  */
@@ -188,14 +216,14 @@ export async function submitApplicationToDashboard(
     : 100;
   const driverId = maxId + 1;
 
-  // Create the new applicant — tagged "Applied"
+  // Create the new applicant — tagged "Applied", equipment "Unsigned"
   const driver: Driver = {
     id: driverId,
     name: formData.name,
     firstName,
     lastName,
     position: 'Company Driver',
-    equipment: 'Van',
+    equipment: 'Unsigned',
     status: 'Applied',
     date: dateStr,
   };
