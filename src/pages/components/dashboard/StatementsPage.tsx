@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { StatementData, SavedStatement, PaymentType } from '../../types/dashboard';
-import { companyDriversData } from '../../data/driversData';
+import { useCompanyData } from '../../hooks/useCompanyData';
 import { useSettings, fmtDate, fmtCurrency, fmtDistUnit, CURRENCY_SYMBOLS } from '../../contexts/SettingsContext';
 import { useSavedStatements } from '../../contexts/SavedStatementsContext';
 import { downloadStatementPDF } from '../../utils/pdfUtils';
@@ -18,6 +18,7 @@ const emptyForm: StatementData = {
 export default function StatementsPage() {
   const { settings } = useSettings();
   const { addStatement } = useSavedStatements();
+  const { companyDrivers: companyDriversData, companyName } = useCompanyData();
   const navigate = useNavigate();
   const [form, setForm] = useState<StatementData>(emptyForm);
   const [showPreview, setShowPreview] = useState(false);
@@ -78,7 +79,7 @@ export default function StatementsPage() {
   };
 
   const handleDownloadPDF = () => {
-    downloadStatementPDF(buildSavedStatement(), settings.currency, settings.distanceUnit, settings.dateFormat);
+    downloadStatementPDF(buildSavedStatement(), settings.currency, settings.distanceUnit, settings.dateFormat, companyName);
     setShowPreview(false);
   };
 
@@ -260,6 +261,9 @@ export default function StatementsPage() {
                 <div className="statement-section statement-total">
                   <h3>Total Payment</h3>
                   <p className="total-amount">{fmtCurrency(totals.total, settings.currency)}</p>
+                </div>
+                <div style={{ textAlign: 'center', marginTop: '16px', fontSize: '12px', color: '#a0aec0' }}>
+                  {companyName}
                 </div>
               </div>
 

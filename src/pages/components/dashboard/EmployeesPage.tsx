@@ -1,31 +1,31 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Driver } from '../../types/dashboard';
-import { companyDriversData, defaultDocuments } from '../../data/driversData';
+import { Driver, EmploymentStatus } from '../../types/dashboard';
+import { useCompanyData } from '../../hooks/useCompanyData';
+import { useLocalOverrides } from '../../hooks/useLocalOverrides';
+import { useDriverDocStorage } from '../../hooks/useDriverDocStorage';
+import { useSavedStatements } from '../../contexts/SavedStatementsContext';
 import { useSettings, fmtDate, fmtCurrency, fmtPerDist } from '../../contexts/SettingsContext';
 
 export default function EmployeesPage() {
+  const { companyDrivers } = useCompanyData();
+  const { applyOverrides, saveOverride } = useLocalOverrides();
+  const { getDriverDocs, openDoc }       = useDriverDocStorage();
+  const { statements }                   = useSavedStatements();
+
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { settings } = useSettings();
+
   const [searchQuery, setSearchQuery] = useState('');
-  const [selected, setSelected] = useState<Driver | null>(null);
+  const [selected, setSelected]       = useState<Driver | null>(null);
 
-  const employees = useMemo(() => companyDriversData.map(d => ({
-    ...d,
-    documents: defaultDocuments.map(doc => ({ ...doc })),
-    statements: [
-      { id: 1, date: '01/01/2024', amount: '4250', type: d.paymentType === 'miles' ? 'miles' : 'percent' },
-      { id: 2, date: '01/15/2024', amount: '4100', type: d.paymentType === 'miles' ? 'miles' : 'percent' },
-      { id: 3, date: '02/01/2024', amount: '4500', type: d.paymentType === 'miles' ? 'miles' : 'percent' },
-    ],
-  })), []);
+  // Apply locally-saved overrides (status, employment status, etc.)
+  const employees = useMemo(() => applyOverrides(companyDrivers), [companyDrivers, applyOverrides]);
 
-  // Sync modal with URL param :id
   useEffect(() => {
     if (id) {
-      const numId = Number(id);
-      const emp = employees.find(e => e.id === numId);
+      const emp = employees.find(e => e.id === Number(id));
       setSelected(emp ?? null);
     } else {
       setSelected(null);
@@ -34,11 +34,21 @@ export default function EmployeesPage() {
 
   const filtered = useMemo(() => employees.filter(e => {
     const q = searchQuery.toLowerCase();
-    return e.firstName.toLowerCase().includes(q) || e.lastName.toLowerCase().includes(q) || e.name.toLowerCase().includes(q);
+    return e.firstName.toLowerCase().includes(q)
+      || e.lastName.toLowerCase().includes(q)
+      || e.name.toLowerCase().includes(q);
   }), [searchQuery, employees]);
 
   const workingCount = employees.filter(e => e.employmentStatus === 'Working').length;
   const firedCount   = employees.filter(e => e.employmentStatus === 'Fired').length;
+
+  const toggleEmploymentStatus = (emp: Driver) => {
+    const next: EmploymentStatus = emp.employmentStatus === 'Working' ? 'Fired' : 'Working';
+    saveOverride(emp.id, { employmentStatus: next });
+    if (selected?.id === emp.id) {
+      setSelected(prev => prev ? { ...prev, employmentStatus: next } : prev);
+    }
+  };
 
   return (
     <div className="page">
@@ -71,7 +81,14 @@ export default function EmployeesPage() {
                 </span>
               </span>
               <span className="cell" data-label="Employment Status">
-                <span className={`employment-badge ${e.employmentStatus?.toLowerCase()}`}>{e.employmentStatus}</span>
+                <button
+                  className={`employment-badge ${e.employmentStatus?.toLowerCase()}`}
+                  style={{ cursor: 'pointer', border: 'none', background: 'none' }}
+                  title="Click to toggle status"
+                  onClick={() => toggleEmploymentStatus(e)}
+                >
+                  {e.employmentStatus}
+                </button>
               </span>
               <span className="cell" data-label="Action">
                 <button className="details-btn" onClick={() => navigate(`/dashboard/employees/${e.id}`)}>View Full Details</button>
@@ -81,66 +98,103 @@ export default function EmployeesPage() {
         </div>
       </div>
 
-      {selected && (
-        <div className="modal-overlay" onClick={() => navigate('/dashboard/employees')}>
-          <div className="modal-content modal-xl" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>{selected.name} — Full Details</h2>
-              <button className="close-btn" onClick={() => navigate('/dashboard/employees')}>✕</button>
-            </div>
-            <div className="modal-body">
-              <div className="employee-info-section">
-                <h3>Employee Information</h3>
-                <div className="info-grid">
-                  <div className="info-item"><strong>Name</strong><span>{selected.name}</span></div>
-                  <div className="info-item"><strong>Position</strong><span>{selected.position}</span></div>
-                  <div className="info-item"><strong>Equipment</strong><span>{selected.equipment}</span></div>
-                  <div className="info-item"><strong>Payment Type</strong><span>{selected.paymentType === 'miles' ? fmtPerDist(settings.distanceUnit) : 'Percentage'}</span></div>
-                  <div className="info-item">
-                    <strong>Employment Status</strong>
-                    <span className={`employment-badge ${selected.employmentStatus?.toLowerCase()}`}>{selected.employmentStatus}</span>
+      {/* ── Employee detail modal ── */}
+      {selected && (() => {
+        const docs = getDriverDocs(selected.id);
+        const docList = [
+          docs.cdl             && { ...docs.cdl,             label: 'CDL Certificate'  },
+          docs.medicalCard     && { ...docs.medicalCard,     label: 'Medical Card'     },
+          docs.workingContract && { ...docs.workingContract, label: 'Working Contract' },
+        ].filter(Boolean) as (typeof docs.cdl & { label: string })[];
+
+        // Statements saved from the Statements page for this driver
+        const employeeStatements = statements.filter(s => s.driverId === selected.id);
+
+        return (
+          <div className="modal-overlay" onClick={() => navigate('/dashboard/employees')}>
+            <div className="modal-content modal-xl" onClick={e => e.stopPropagation()}>
+              <div className="modal-header">
+                <h2>{selected.name} — Full Details</h2>
+                <button className="close-btn" onClick={() => navigate('/dashboard/employees')}>✕</button>
+              </div>
+              <div className="modal-body">
+
+                {/* Info */}
+                <div className="employee-info-section">
+                  <h3>Employee Information</h3>
+                  <div className="info-grid">
+                    <div className="info-item"><strong>Name</strong><span>{selected.name}</span></div>
+                    <div className="info-item"><strong>Position</strong><span>{selected.position}</span></div>
+                    <div className="info-item"><strong>Equipment</strong><span>{selected.equipment}</span></div>
+                    <div className="info-item"><strong>Payment Type</strong><span>{selected.paymentType === 'miles' ? fmtPerDist(settings.distanceUnit) : 'Percentage'}</span></div>
+                    <div className="info-item">
+                      <strong>Employment Status</strong>
+                      <button
+                        className={`employment-badge ${selected.employmentStatus?.toLowerCase()}`}
+                        style={{ cursor: 'pointer', border: 'none', background: 'none' }}
+                        title="Click to toggle"
+                        onClick={() => toggleEmploymentStatus(selected)}
+                      >
+                        {selected.employmentStatus}
+                      </button>
+                    </div>
+                    <div className="info-item"><strong>Join Date</strong><span>{fmtDate(selected.date, settings.dateFormat)}</span></div>
                   </div>
-                  <div className="info-item"><strong>Join Date</strong><span>{fmtDate(selected.date, settings.dateFormat)}</span></div>
                 </div>
-              </div>
 
-              <div className="employee-info-section">
-                <h3>Documents ({selected.documents?.length ?? 0})</h3>
-                <div className="modal-documents-list">
-                  {(selected.documents ?? []).map(doc => (
-                    <div key={doc.id} className="modal-document-item">
-                      <div className="document-icon-small">📄</div>
-                      <div className="document-info-small">
-                        <strong>{doc.name}</strong>
-                        <span>{doc.type} · {doc.size} · {fmtDate(doc.uploadDate, settings.dateFormat)}</span>
-                      </div>
-                      <button className="doc-action-btn open">Open</button>
+                {/* Documents — pulled from useDriverDocStorage */}
+                <div className="employee-info-section">
+                  <h3>Documents ({docList.length})</h3>
+                  {docList.length > 0 ? (
+                    <div className="modal-documents-list">
+                      {docList.map(doc => doc && (
+                        <div key={doc.id} className="modal-document-item">
+                          <div className="document-icon-small">📄</div>
+                          <div className="document-info-small">
+                            <strong>{doc.label}</strong>
+                            <span>{doc.name} · {doc.size} · {doc.uploadDate}</span>
+                          </div>
+                          <button className="doc-action-btn open" onClick={() => openDoc(doc)}>Open</button>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  ) : (
+                    <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>
+                      No documents uploaded yet. Upload them from the Drivers page.
+                    </p>
+                  )}
                 </div>
-              </div>
 
-              <div className="employee-info-section">
-                <h3>Statements ({selected.statements?.length ?? 0})</h3>
-                <div className="modal-statements-list">
-                  {(selected.statements ?? []).map(s => (
-                    <div key={s.id} className="modal-statement-item">
-                      <div className="statement-icon-small">📋</div>
-                      <div className="statement-info-small">
-                        <strong>{fmtDate(s.date, settings.dateFormat)}</strong>
-                        <span>
-                          {s.type === 'miles' ? fmtPerDist(settings.distanceUnit) : 'Percentage'} — {fmtCurrency(Number(s.amount), settings.currency)}
-                        </span>
-                      </div>
-                      <button className="doc-action-btn open">View</button>
+                {/* Statements — pulled from SavedStatementsContext */}
+                <div className="employee-info-section">
+                  <h3>Statements ({employeeStatements.length})</h3>
+                  {employeeStatements.length > 0 ? (
+                    <div className="modal-statements-list">
+                      {employeeStatements.map(s => (
+                        <div key={s.id} className="modal-statement-item">
+                          <div className="statement-icon-small">📋</div>
+                          <div className="statement-info-small">
+                            <strong>{fmtDate(new Date(s.savedAt), settings.dateFormat)}</strong>
+                            <span>
+                              {s.paymentType === 'miles' ? fmtPerDist(settings.distanceUnit) : 'Percentage'}
+                              {' '}— Total: {fmtCurrency(Number(s.total), settings.currency)}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  ) : (
+                    <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>
+                      No statements saved yet. Generate one from the Statements page.
+                    </p>
+                  )}
                 </div>
+
               </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

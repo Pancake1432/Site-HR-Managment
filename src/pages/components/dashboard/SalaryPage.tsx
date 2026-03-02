@@ -103,15 +103,15 @@ export default function SalaryPage() {
             <tbody>
               {statements.map(s => (
                 <tr key={s.id}>
-                  <td>{fmtDate(new Date(s.savedAt), settings.dateFormat)}</td>
-                  <td><strong>{s.driverName}</strong></td>
-                  <td>
+                  <td data-label="Date">{fmtDate(new Date(s.savedAt), settings.dateFormat)}</td>
+                  <td data-label="Driver"><strong>{s.driverName}</strong></td>
+                  <td data-label="Type">
                     <span className={`salary-badge salary-badge-${s.paymentType}`}>
                       {s.paymentType === 'miles' ? '🛣️ Per Mile' : '📊 Percent'}
                     </span>
                   </td>
-                  <td>{fmtCurrency(s.subtotal, settings.currency)}</td>
-                  <td>
+                  <td data-label="Subtotal">{fmtCurrency(s.subtotal, settings.currency)}</td>
+                  <td data-label="Adjustment">
                     {parseFloat(s.adjustmentAmount || '0') > 0 ? (
                       <span className={s.adjustmentType === 'bonus' ? 'salary-adj-bonus' : 'salary-adj-deduction'}>
                         {s.adjustmentType === 'bonus' ? '+' : '-'}{fmtCurrency(s.adjustment, settings.currency)}
@@ -120,8 +120,8 @@ export default function SalaryPage() {
                       <span style={{ color: 'var(--text-secondary)' }}>—</span>
                     )}
                   </td>
-                  <td><strong style={{ color: 'var(--accent)' }}>{fmtCurrency(s.total, settings.currency)}</strong></td>
-                  <td>
+                  <td data-label="Total"><strong style={{ color: 'var(--accent)' }}>{fmtCurrency(s.total, settings.currency)}</strong></td>
+                  <td data-label="Actions">
                     <div className="salary-row-actions">
                       <button
                         className="salary-action-btn salary-action-pdf"
