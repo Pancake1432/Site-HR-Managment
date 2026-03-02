@@ -22,7 +22,8 @@ export function downloadStatementPDF(
   statement: SavedStatement,
   currency: Currency,
   distanceUnit: DistUnit,
-  dateFormat: DateFmt
+  dateFormat: DateFmt,
+  companyName: string = 'Paks Logistic LLC'
 ) {
   const sym  = CURRENCY_SYMBOLS[currency];
   const dist = distanceUnit;
@@ -105,7 +106,7 @@ export function downloadStatementPDF(
       <div class="total-amount">${fmtMoney(statement.total, currency)}</div>
     </div>
 
-    <div class="footer">Paks Logistic LLC &mdash; Generated on ${date}</div>
+    <div class="footer">${companyName} &mdash; Generated on ${date}</div>
   </div>
   <script>window.onload = () => { window.print(); window.onafterprint = () => window.close(); }</script>
 </body>
