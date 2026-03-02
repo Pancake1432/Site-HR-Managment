@@ -6,7 +6,7 @@ import { useDocumentStorage } from '../../hooks/useDocumentStorage';
 
 export default function DocumentsPage() {
   const { applicants: allApplicantsData } = useCompanyData();
-  const { driverDocuments, addDocument, removeDocument, openDocument } = useDocumentStorage();
+  const { driverDocuments, addDocument, removeDocument, openDocument, downloadDocument } = useDocumentStorage();
 
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -161,6 +161,12 @@ export default function DocumentsPage() {
                           onClick={() => openDocument(doc)}
                         >
                           Open
+                        </button>
+                        <button
+                          className="doc-action-btn open"
+                          onClick={() => downloadDocument(doc)}
+                        >
+                          Download
                         </button>
                         <button
                           className="doc-action-btn delete"

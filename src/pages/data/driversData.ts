@@ -1,4 +1,5 @@
 import { Driver } from '../types/dashboard';
+import { getNewApplicants } from '../services/applicationSubmitService';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // COMPANY DATA MAP
@@ -93,7 +94,16 @@ export const defaultDocuments = [
   { id: 3, name: 'Working Contract', type: 'PDF', uploadDate: '01/15/2024', size: '2.5 MB' },
 ];
 
-/** Returns the dataset for the given companyId, falling back to Paks if unknown */
+/**
+ * Returns the dataset for the given companyId.
+ * Merges any new applicants submitted via the application form.
+ */
 export function getCompanyData(companyId: string) {
-  return allCompanyData[companyId] ?? allCompanyData['company-paks'];
+  const base = allCompanyData[companyId] ?? allCompanyData['company-paks'];
+  const dynamicApplicants = getNewApplicants(companyId);
+
+  return {
+    ...base,
+    applicants: [...base.applicants, ...dynamicApplicants],
+  };
 }
