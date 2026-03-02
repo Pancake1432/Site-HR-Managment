@@ -1,12 +1,13 @@
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Driver } from '../../types/dashboard';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { useDocumentStorage } from '../../hooks/useDocumentStorage';
+import { deleteApplicant } from '../../services/applicationSubmitService';
 
 export default function DocumentsPage() {
-  const { applicants: allApplicantsData } = useCompanyData();
-  const { driverDocuments, addDocument, removeDocument, openDocument } = useDocumentStorage();
+  const { applicants: allApplicantsData, refresh } = useCompanyData();
+  const { driverDocuments, addDocument, removeDocument, openDocument, downloadDocument } = useDocumentStorage();
 
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -69,12 +70,25 @@ export default function DocumentsPage() {
     }
   };
 
-  const handleDelete = (docId: number) => {
+  const handleDeleteDoc = (docId: number) => {
     if (!selectedDriver) return;
     if (window.confirm('Delete this document? This cannot be undone.')) {
       removeDocument(selectedDriver.id, docId);
     }
   };
+
+  const handleDeleteDriver = useCallback((e: React.MouseEvent, driver: Driver) => {
+    e.stopPropagation();
+    if (window.confirm(`Delete ${driver.name} and all their documents?\n\nThis cannot be undone.`)) {
+      deleteApplicant(driver.id);
+      // Close modal if this driver was selected
+      if (selectedDriver?.id === driver.id) {
+        navigate('/dashboard/documents');
+      }
+      // Refresh the applicants list from localStorage
+      refresh();
+    }
+  }, [selectedDriver, navigate, refresh]);
 
   const currentDriverDocs = selectedDriver ? (driverDocuments[selectedDriver.id] || []) : [];
 
@@ -111,7 +125,16 @@ export default function DocumentsPage() {
                   <span>{d.documents.length} Documents</span>
                 </div>
               </div>
-              <button className="open-btn" onClick={() => handleOpen(d)}>Open</button>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button className="open-btn" onClick={() => handleOpen(d)}>Open</button>
+                <button
+                  className="open-btn"
+                  style={{ background: '#e53e3e', color: 'white' }}
+                  onClick={(e) => handleDeleteDriver(e, d)}
+                >
+                  Delete
+                </button>
+              </div>
             </div>
           )) : <div className="no-results">No drivers found</div>}
         </div>
@@ -163,8 +186,14 @@ export default function DocumentsPage() {
                           Open
                         </button>
                         <button
+                          className="doc-action-btn open"
+                          onClick={() => downloadDocument(doc)}
+                        >
+                          Download
+                        </button>
+                        <button
                           className="doc-action-btn delete"
-                          onClick={() => handleDelete(doc.id)}
+                          onClick={() => handleDeleteDoc(doc.id)}
                         >
                           Delete
                         </button>

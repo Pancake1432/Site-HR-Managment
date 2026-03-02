@@ -33,9 +33,19 @@ function persist(docs: Record<number, StoredDoc[]>) {
   try {
     localStorage.setItem(getStorageKey(), JSON.stringify(docs));
   } catch {
-    // localStorage quota exceeded — silently keep in-memory state
     console.warn('localStorage quota exceeded. Documents saved for this session only.');
   }
+}
+
+/** Check if a base64 data URL is HTML content (application PDFs are stored as HTML) */
+function isHtmlDataUrl(base64: string): boolean {
+  return base64.startsWith('data:text/html');
+}
+
+/** Decode a base64 data URL back to its raw string content */
+function decodeBase64DataUrl(dataUrl: string): string {
+  const base64Part = dataUrl.split(',')[1];
+  return decodeURIComponent(escape(atob(base64Part)));
 }
 
 /**
@@ -95,23 +105,63 @@ export function useDocumentStorage() {
   };
 
   const openDocument = (doc: StoredDoc) => {
-    if (doc.base64) {
-      const win = window.open();
-      if (win) {
-        win.document.write(
-          `<style>*{margin:0;padding:0}body,html{height:100%;overflow:hidden}</style>` +
-          `<iframe src="${doc.base64}" style="width:100%;height:100%;border:none;display:block;"></iframe>`
-        );
-        win.document.title = doc.name;
-      }
-    } else {
+    if (!doc.base64) {
       alert(
         `"${doc.name}" is too large to store in the browser.\n\nThe file entry is saved but you need to re-upload the file to open it.`
       );
+      return;
+    }
+
+    const win = window.open();
+    if (!win) return;
+
+    if (isHtmlDataUrl(doc.base64)) {
+      // Application PDFs are stored as HTML — write directly to the new window
+      const html = decodeBase64DataUrl(doc.base64);
+      win.document.write(html);
+      win.document.title = doc.name;
+      win.document.close();
+    } else {
+      // Real PDFs / images — display in an iframe
+      win.document.write(
+        `<style>*{margin:0;padding:0}body,html{height:100%;overflow:hidden}</style>` +
+        `<iframe src="${doc.base64}" style="width:100%;height:100%;border:none;display:block;"></iframe>`
+      );
+      win.document.title = doc.name;
     }
   };
 
-  return { driverDocuments, addDocument, removeDocument, openDocument };
+  const downloadDocument = (doc: StoredDoc) => {
+    if (!doc.base64) {
+      alert(
+        `"${doc.name}" is too large to store in the browser.\n\nRe-upload the file to download it.`
+      );
+      return;
+    }
+
+    if (isHtmlDataUrl(doc.base64)) {
+      // Application PDFs are HTML — open in new window with print dialog so user can Save as PDF
+      const html = decodeBase64DataUrl(doc.base64);
+      const win = window.open('', '_blank', 'width=800,height=1000');
+      if (win) {
+        win.document.write(html);
+        win.document.title = doc.name;
+        win.document.close();
+        // Trigger print after page loads — user can "Save as PDF" from the print dialog
+        win.onload = () => win.print();
+      }
+    } else {
+      // Real PDFs / images — direct download via <a> tag
+      const link = document.createElement('a');
+      link.href = doc.base64;
+      link.download = doc.name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
+
+  return { driverDocuments, addDocument, removeDocument, openDocument, downloadDocument };
 }
 
 function formatFileSize(bytes: number): string {
