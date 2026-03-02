@@ -1,5 +1,5 @@
 import { Driver } from '../types/dashboard';
-import { getNewApplicants, getDeletedApplicantIds } from '../services/applicationSubmitService';
+import { getNewApplicants, getDeletedApplicantIds, getApplicantOverrides } from '../services/applicationSubmitService';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // COMPANY DATA MAP
@@ -98,16 +98,22 @@ export const defaultDocuments = [
  * Returns the dataset for the given companyId.
  * Merges any new applicants submitted via the application form.
  * Filters out any deleted applicants.
+ * Applies equipment overrides.
  */
 export function getCompanyData(companyId: string) {
   const base = allCompanyData[companyId] ?? allCompanyData['company-paks'];
   const dynamicApplicants = getNewApplicants(companyId);
   const deletedIds = getDeletedApplicantIds(companyId);
+  const overrides = getApplicantOverrides(companyId);
 
   const allApplicants = [...base.applicants, ...dynamicApplicants];
-  const filteredApplicants = deletedIds.length > 0
-    ? allApplicants.filter(a => !deletedIds.includes(a.id))
-    : allApplicants;
+
+  const filteredApplicants = allApplicants
+    .filter(a => !deletedIds.includes(a.id))
+    .map(a => {
+      const override = overrides[a.id];
+      return override ? { ...a, ...override } : a;
+    });
 
   return {
     ...base,

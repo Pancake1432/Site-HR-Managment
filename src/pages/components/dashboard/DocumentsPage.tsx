@@ -1,9 +1,11 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Driver } from '../../types/dashboard';
+import { Driver, EquipmentType } from '../../types/dashboard';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { useDocumentStorage } from '../../hooks/useDocumentStorage';
-import { deleteApplicant } from '../../services/applicationSubmitService';
+import { deleteApplicant, saveApplicantOverride } from '../../services/applicationSubmitService';
+
+const EQUIPMENT_OPTIONS: EquipmentType[] = ['Unsigned', 'Van', 'Reefer', 'Flat Bed', 'Any'];
 
 export default function DocumentsPage() {
   const { applicants: allApplicantsData, refresh } = useCompanyData();
@@ -81,16 +83,32 @@ export default function DocumentsPage() {
     e.stopPropagation();
     if (window.confirm(`Delete ${driver.name} and all their documents?\n\nThis cannot be undone.`)) {
       deleteApplicant(driver.id);
-      // Close modal if this driver was selected
       if (selectedDriver?.id === driver.id) {
         navigate('/dashboard/documents');
       }
-      // Refresh the applicants list from localStorage
       refresh();
     }
   }, [selectedDriver, navigate, refresh]);
 
+  const handleEquipmentChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>, driverId: number) => {
+    e.stopPropagation();
+    const newEquipment = e.target.value as EquipmentType;
+    saveApplicantOverride(driverId, { equipment: newEquipment });
+    refresh();
+  }, [refresh]);
+
   const currentDriverDocs = selectedDriver ? (driverDocuments[selectedDriver.id] || []) : [];
+
+  const getEquipmentColor = (equipment: EquipmentType): string => {
+    switch (equipment) {
+      case 'Unsigned': return '#a0aec0';
+      case 'Van':      return '#667eea';
+      case 'Reefer':   return '#48bb78';
+      case 'Flat Bed': return '#ed8936';
+      case 'Any':      return '#9f7aea';
+      default:         return '#a0aec0';
+    }
+  };
 
   return (
     <div className="page">
@@ -118,8 +136,31 @@ export default function DocumentsPage() {
                   <div className="candidate-avatar">👤</div>
                   <div className="document-card-info">
                     <h3>{d.name}</h3>
-                    <p>{d.position} · {d.equipment}</p>
+                    <p>{d.position}</p>
                   </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '8px 0' }}>
+                  <span style={{ fontSize: '12px', color: 'var(--text-secondary, #718096)' }}>Equipment:</span>
+                  <select
+                    value={d.equipment}
+                    onChange={(e) => handleEquipmentChange(e, d.id)}
+                    onClick={(e) => e.stopPropagation()}
+                    style={{
+                      padding: '4px 8px',
+                      borderRadius: '6px',
+                      border: '1px solid var(--border-color, #e2e8f0)',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      color: 'white',
+                      backgroundColor: getEquipmentColor(d.equipment),
+                      cursor: 'pointer',
+                      outline: 'none',
+                    }}
+                  >
+                    {EQUIPMENT_OPTIONS.map(opt => (
+                      <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                  </select>
                 </div>
                 <div className="document-card-stats">
                   <span>{d.documents.length} Documents</span>
@@ -158,6 +199,53 @@ export default function DocumentsPage() {
               <button className="close-btn" onClick={handleClose}>✕</button>
             </div>
             <div className="modal-body">
+              {/* Driver info with editable equipment */}
+              <div className="modal-section">
+                <h3>Driver Information</h3>
+                <div className="info-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '12px' }}>
+                  <div className="info-item">
+                    <span style={{ fontSize: '12px', color: 'var(--text-secondary, #718096)' }}>Position</span>
+                    <span style={{ fontWeight: 500 }}>{selectedDriver.position}</span>
+                  </div>
+                  <div className="info-item">
+                    <span style={{ fontSize: '12px', color: 'var(--text-secondary, #718096)' }}>Status</span>
+                    <span className={`status-badge status-${selectedDriver.status.toLowerCase().replace(' ', '-')}`}>
+                      {selectedDriver.status}
+                    </span>
+                  </div>
+                  <div className="info-item">
+                    <span style={{ fontSize: '12px', color: 'var(--text-secondary, #718096)' }}>Equipment</span>
+                    <select
+                      value={selectedDriver.equipment}
+                      onChange={(e) => {
+                        handleEquipmentChange(e, selectedDriver.id);
+                        setSelectedDriver(prev => prev ? { ...prev, equipment: e.target.value as EquipmentType } : prev);
+                      }}
+                      style={{
+                        padding: '6px 10px',
+                        borderRadius: '6px',
+                        border: '1px solid var(--border-color, #e2e8f0)',
+                        fontSize: '13px',
+                        fontWeight: 600,
+                        color: 'white',
+                        backgroundColor: getEquipmentColor(selectedDriver.equipment),
+                        cursor: 'pointer',
+                        outline: 'none',
+                        width: 'fit-content',
+                      }}
+                    >
+                      {EQUIPMENT_OPTIONS.map(opt => (
+                        <option key={opt} value={opt}>{opt}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="info-item">
+                    <span style={{ fontSize: '12px', color: 'var(--text-secondary, #718096)' }}>Date</span>
+                    <span style={{ fontWeight: 500 }}>{selectedDriver.date}</span>
+                  </div>
+                </div>
+              </div>
+
               <div className="modal-section">
                 <div className="modal-section-header">
                   <h3>Documents ({currentDriverDocs.length})</h3>
