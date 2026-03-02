@@ -18,6 +18,11 @@ function getApplicantsKey(companyId: string): string {
   return `hr_new_applicants_${companyId}`;
 }
 
+/** Key for tracking deleted applicant IDs (covers hardcoded + dynamic) */
+function getDeletedApplicantsKey(companyId: string): string {
+  return `hr_deleted_applicants_${companyId}`;
+}
+
 function getCurrentCompanyId(): string {
   try {
     const raw = localStorage.getItem('currentUser');
@@ -64,6 +69,49 @@ function saveNewApplicant(companyId: string, driver: Driver): void {
   localStorage.setItem(getApplicantsKey(companyId), JSON.stringify(existing));
 }
 
+// ── Deleted applicants tracking ────────────────────────────────────────────
+
+/** Get the set of deleted applicant IDs */
+export function getDeletedApplicantIds(companyId: string): number[] {
+  try {
+    const raw = localStorage.getItem(getDeletedApplicantsKey(companyId));
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Delete an applicant by ID.
+ * - Removes from dynamic applicants list (if it was a form submission)
+ * - Adds to deleted IDs list (so hardcoded ones are also hidden)
+ * - Removes their documents from storage
+ */
+export function deleteApplicant(applicantId: number): void {
+  const companyId = getCurrentCompanyId();
+
+  // 1. Add to deleted IDs list
+  const deletedIds = getDeletedApplicantIds(companyId);
+  if (!deletedIds.includes(applicantId)) {
+    deletedIds.push(applicantId);
+    localStorage.setItem(getDeletedApplicantsKey(companyId), JSON.stringify(deletedIds));
+  }
+
+  // 2. Remove from dynamic applicants (if present)
+  const dynamicApplicants = getNewApplicants(companyId);
+  const filtered = dynamicApplicants.filter(a => a.id !== applicantId);
+  localStorage.setItem(getApplicantsKey(companyId), JSON.stringify(filtered));
+
+  // 3. Remove their documents
+  const docKey = getDocStorageKey(companyId);
+  try {
+    const raw = localStorage.getItem(docKey);
+    const allDocs: Record<number, StoredDoc[]> = raw ? JSON.parse(raw) : {};
+    delete allDocs[applicantId];
+    localStorage.setItem(docKey, JSON.stringify(allDocs));
+  } catch { /* ignore */ }
+}
+
 // ── Read a File as base64 data URL ─────────────────────────────────────────
 
 function readFileAsBase64(file: File): Promise<string> {
@@ -76,8 +124,6 @@ function readFileAsBase64(file: File): Promise<string> {
 }
 
 // ── Store documents into useDocumentStorage's format ───────────────────────
-// useDocumentStorage reads: Record<number, StoredDoc[]>
-// from key: hr_documents_${companyId}
 
 function storeDocuments(
   companyId: string,

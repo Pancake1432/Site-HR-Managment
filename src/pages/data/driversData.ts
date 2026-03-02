@@ -1,5 +1,5 @@
 import { Driver } from '../types/dashboard';
-import { getNewApplicants } from '../services/applicationSubmitService';
+import { getNewApplicants, getDeletedApplicantIds } from '../services/applicationSubmitService';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // COMPANY DATA MAP
@@ -97,13 +97,20 @@ export const defaultDocuments = [
 /**
  * Returns the dataset for the given companyId.
  * Merges any new applicants submitted via the application form.
+ * Filters out any deleted applicants.
  */
 export function getCompanyData(companyId: string) {
   const base = allCompanyData[companyId] ?? allCompanyData['company-paks'];
   const dynamicApplicants = getNewApplicants(companyId);
+  const deletedIds = getDeletedApplicantIds(companyId);
+
+  const allApplicants = [...base.applicants, ...dynamicApplicants];
+  const filteredApplicants = deletedIds.length > 0
+    ? allApplicants.filter(a => !deletedIds.includes(a.id))
+    : allApplicants;
 
   return {
     ...base,
-    applicants: [...base.applicants, ...dynamicApplicants],
+    applicants: filteredApplicants,
   };
 }
