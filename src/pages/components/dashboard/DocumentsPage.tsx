@@ -1,10 +1,11 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Driver, EquipmentType } from '../../types/dashboard';
+import { Driver, EquipmentType, StatusType } from '../../types/dashboard';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { useDocumentStorage, StoredDoc } from '../../hooks/useDocumentStorage';
 import { deleteApplicant, saveApplicantOverride, hireApplicant } from '../../services/applicationSubmitService';
 import EquipmentDropdown from './EquipmentDropdown';
+import StatusDropdown from './StatusDropdown';
 
 /**
  * Check if an applicant has all 3 required documents:
@@ -107,6 +108,14 @@ export default function DocumentsPage() {
     refresh();
   }, [refresh, selectedDriver]);
 
+  const handleStatusChange = useCallback((driverId: number, status: StatusType) => {
+    saveApplicantOverride(driverId, { status });
+    if (selectedDriver?.id === driverId) {
+      setSelectedDriver(prev => prev ? { ...prev, status } : prev);
+    }
+    refresh();
+  }, [refresh, selectedDriver]);
+
   const handleHire = useCallback(() => {
     if (!selectedDriver) return;
     const docs = driverDocuments[selectedDriver.id] || [];
@@ -122,6 +131,7 @@ export default function DocumentsPage() {
   // Determine if the Hired button should show
   const canHire = selectedDriver
     && selectedDriver.status === 'Applied'
+    && (selectedDriver.equipment === 'Van' || selectedDriver.equipment === 'Reefer'|| selectedDriver.equipment === 'Flat Bed')
     && hasAllDocuments(currentDriverDocs);
 
   return (
@@ -153,7 +163,11 @@ export default function DocumentsPage() {
                     <p>{d.position}</p>
                   </div>
                 </div>
-                <div style={{ margin: '8px 0' }}>
+                <div style={{ display: 'flex', gap: '8px', margin: '8px 0', flexWrap: 'wrap' }}>
+                  <StatusDropdown
+                    value={d.status}
+                    onChange={(s) => handleStatusChange(d.id, s)}
+                  />
                   <EquipmentDropdown
                     value={d.equipment}
                     onChange={(eq) => handleEquipmentChange(d.id, eq)}
@@ -187,7 +201,7 @@ export default function DocumentsPage() {
               <button className="close-btn" onClick={handleClose}>✕</button>
             </div>
             <div className="modal-body">
-              {/* Driver info with editable equipment */}
+              {/* Driver info with editable equipment and status */}
               <div className="modal-section">
                 <h3>Driver Information</h3>
                 <div className="info-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '12px' }}>
@@ -196,10 +210,11 @@ export default function DocumentsPage() {
                     <span style={{ fontWeight: 500 }}>{selectedDriver.position}</span>
                   </div>
                   <div className="info-item">
-                    <span style={{ fontSize: '12px', color: 'var(--text-secondary, #718096)' }}>Status</span>
-                    <span className={`status-badge status-${selectedDriver.status.toLowerCase().replace(' ', '-')}`}>
-                      {selectedDriver.status}
-                    </span>
+                    <span style={{ fontSize: '12px', color: 'var(--text-secondary, #718096)', marginBottom: '4px', display: 'block' }}>Status</span>
+                    <StatusDropdown
+                      value={selectedDriver.status}
+                      onChange={(s) => handleStatusChange(selectedDriver.id, s)}
+                    />
                   </div>
                   <div className="info-item">
                     <span style={{ fontSize: '12px', color: 'var(--text-secondary, #718096)', marginBottom: '4px', display: 'block' }}>Equipment</span>

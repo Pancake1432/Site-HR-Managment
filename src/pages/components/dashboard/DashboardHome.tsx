@@ -1,8 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { StatusType } from '../../types/dashboard';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { useLocalOverrides } from '../../hooks/useLocalOverrides';
+import { saveApplicantOverride } from '../../services/applicationSubmitService';
 import StatusDropdown from './StatusDropdown';
 import DashboardCharts from './DashboardCharts';
 import { useSettings, fmtDate, CURRENCY_SYMBOLS } from '../../contexts/SettingsContext';
@@ -10,24 +11,19 @@ import { useSettings, fmtDate, CURRENCY_SYMBOLS } from '../../contexts/SettingsC
 export default function DashboardHome() {
   const navigate = useNavigate();
   const { settings } = useSettings();
-  const { companyDrivers, applicants } = useCompanyData();
+  const { companyDrivers, applicants, refresh } = useCompanyData();
   const { applyOverrides } = useLocalOverrides();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusType | 'all'>('all');
-  const [applicantStatuses, setApplicantStatuses] = useState<Record<number, StatusType>>({});
 
   // Apply locally-saved status overrides so charts stay in sync with DriversPage
   const drivers = useMemo(() => applyOverrides(companyDrivers), [companyDrivers, applyOverrides]);
 
-  const applicantsWithStatus = useMemo(() =>
-    applicants.map(a => ({ ...a, status: applicantStatuses[a.id] || a.status }))
-  , [applicants, applicantStatuses]);
-
   const counts = useMemo(() => ({
-    applied:   applicantsWithStatus.filter(a => a.status === 'Applied').length,
-    contacted: applicantsWithStatus.filter(a => a.status === 'Contacted').length,
-    docs:      applicantsWithStatus.filter(a => a.status === 'Documents Sent').length,
-  }), [applicantsWithStatus]);
+    applied:   applicants.filter(a => a.status === 'Applied').length,
+    contacted: applicants.filter(a => a.status === 'Contacted').length,
+    docs:      applicants.filter(a => a.status === 'Documents Sent').length,
+  }), [applicants]);
 
   const driversReady    = drivers.filter(d => d.driverStatus === 'Ready').length;
   const driversNotReady = drivers.filter(d => d.driverStatus === 'Not Ready').length;
@@ -37,16 +33,18 @@ export default function DashboardHome() {
       acc[d.equipment] = (acc[d.equipment] || 0) + 1; return acc;
     }, {}), [drivers]);
 
-  const filtered = useMemo(() => applicantsWithStatus.filter(a => {
+  const filtered = useMemo(() => applicants.filter(a => {
     const q = searchQuery.toLowerCase();
     const matchSearch = a.firstName.toLowerCase().includes(q)
       || a.lastName.toLowerCase().includes(q)
       || a.name.toLowerCase().includes(q);
     return matchSearch && (statusFilter === 'all' || a.status === statusFilter);
-  }), [searchQuery, statusFilter, applicantsWithStatus]);
+  }), [searchQuery, statusFilter, applicants]);
 
-  const handleStatusChange = (applicantId: number, newStatus: StatusType) =>
-    setApplicantStatuses(prev => ({ ...prev, [applicantId]: newStatus }));
+  const handleStatusChange = useCallback((applicantId: number, newStatus: StatusType) => {
+    saveApplicantOverride(applicantId, { status: newStatus });
+    refresh();
+  }, [refresh]);
 
   const sym = CURRENCY_SYMBOLS[settings.currency];
 
@@ -68,7 +66,7 @@ export default function DashboardHome() {
         <div className="card">
           <div className="card-header"><h2 className="card-title">Recruiting</h2></div>
           <div className="recruiting-stats">
-            <span className="stat-badge">{applicantsWithStatus.length} Applications</span>
+            <span className="stat-badge">{applicants.length} Applications</span>
             <span className="stat-badge">{counts.applied} Applied</span>
             <span className="stat-badge">{counts.contacted} Contacted</span>
             <span className="stat-badge">{counts.docs} Docs Sent</span>
