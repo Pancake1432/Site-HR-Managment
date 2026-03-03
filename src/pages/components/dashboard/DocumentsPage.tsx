@@ -78,20 +78,17 @@ export default function DocumentsPage() {
     }
   };
 
-  const handleDeleteDriver = useCallback((e: React.MouseEvent, driver: Driver) => {
-    e.stopPropagation();
-    if (window.confirm(`Delete ${driver.name} and all their documents?\n\nThis cannot be undone.`)) {
-      deleteApplicant(driver.id);
-      if (selectedDriver?.id === driver.id) {
-        navigate('/dashboard/documents');
-      }
+  const handleDeleteDriver = useCallback(() => {
+    if (!selectedDriver) return;
+    if (window.confirm(`Delete ${selectedDriver.name} and all their documents?\n\nThis cannot be undone.`)) {
+      deleteApplicant(selectedDriver.id);
+      navigate('/dashboard/documents');
       refresh();
     }
   }, [selectedDriver, navigate, refresh]);
 
   const handleEquipmentChange = useCallback((driverId: number, equipment: EquipmentType) => {
     saveApplicantOverride(driverId, { equipment });
-    // Also update selectedDriver if the modal is open for this driver
     if (selectedDriver?.id === driverId) {
       setSelectedDriver(prev => prev ? { ...prev, equipment } : prev);
     }
@@ -139,16 +136,7 @@ export default function DocumentsPage() {
                   <span>{d.documents.length} Documents</span>
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <button className="open-btn" onClick={() => handleOpen(d)}>Open</button>
-                <button
-                  className="open-btn"
-                  style={{ background: '#e53e3e', color: 'white' }}
-                  onClick={(e) => handleDeleteDriver(e, d)}
-                >
-                  Delete
-                </button>
-              </div>
+              <button className="open-btn" onClick={() => handleOpen(d)}>Open</button>
             </div>
           )) : <div className="no-results">No drivers found</div>}
         </div>
@@ -253,6 +241,29 @@ export default function DocumentsPage() {
                     </div>
                   )}
                 </div>
+              </div>
+
+              {/* Delete driver button at the bottom of the modal */}
+              <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid var(--border-color, #e2e8f0)' }}>
+                <button
+                  onClick={handleDeleteDriver}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    borderRadius: '8px',
+                    border: '1px solid #e53e3e',
+                    background: 'transparent',
+                    color: '#e53e3e',
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#e53e3e'; e.currentTarget.style.color = 'white'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#e53e3e'; }}
+                >
+                  🗑️ Delete Driver & All Documents
+                </button>
               </div>
             </div>
           </div>
