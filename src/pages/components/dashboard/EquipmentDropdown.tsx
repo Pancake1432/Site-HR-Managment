@@ -9,13 +9,15 @@ interface EquipmentOption {
   bg: string;
   color: string;
   dot: string;
+  darkBg: string;
+  darkColor: string;
 }
 
 const EQUIPMENT_OPTIONS: EquipmentOption[] = [
-  { value: 'Unsigned', label: 'Unsigned', emoji: '❓', bg: '#f1f5f9', color: '#475569', dot: '#94a3b8' },
-  { value: 'Van',      label: 'Van',      emoji: '🚐', bg: '#eff6ff', color: '#1d4ed8', dot: '#3b82f6' },
-  { value: 'Reefer',   label: 'Reefer',   emoji: '❄️', bg: '#f0fdf4', color: '#065f46', dot: '#10b981' },
-  { value: 'Flat Bed', label: 'Flat Bed', emoji: '🛻', bg: '#fff7ed', color: '#9a3412', dot: '#f97316' },
+  { value: 'Unsigned', label: 'Unsigned', emoji: '❓', bg: '#f1f5f9', color: '#475569', dot: '#94a3b8', darkBg: 'rgba(148,163,184,0.15)', darkColor: '#cbd5e1' },
+  { value: 'Van',      label: 'Van',      emoji: '🚐', bg: '#eff6ff', color: '#1d4ed8', dot: '#3b82f6', darkBg: 'rgba(59,130,246,0.15)',   darkColor: '#93c5fd' },
+  { value: 'Reefer',   label: 'Reefer',   emoji: '❄️', bg: '#f0fdf4', color: '#065f46', dot: '#10b981', darkBg: 'rgba(16,185,129,0.15)',   darkColor: '#6ee7b7' },
+  { value: 'Flat Bed', label: 'Flat Bed', emoji: '🛻', bg: '#fff7ed', color: '#9a3412', dot: '#f97316', darkBg: 'rgba(249,115,22,0.15)',   darkColor: '#fdba74' },
 ];
 
 interface Props {
@@ -26,8 +28,18 @@ interface Props {
 export default function EquipmentDropdown({ value, onChange }: Props) {
   const [open, setOpen] = useState(false);
   const [popoverPos, setPopoverPos] = useState({ top: 0, left: 0 });
+  const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
   const triggerRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
+
+  // Watch for dark mode toggling
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      setIsDark(document.documentElement.classList.contains('dark'));
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
 
   const current = EQUIPMENT_OPTIONS.find(o => o.value === value) ?? EQUIPMENT_OPTIONS[0];
 
@@ -54,6 +66,7 @@ export default function EquipmentDropdown({ value, onChange }: Props) {
     setOpen(prev => !prev);
   };
 
+  // Close on scroll / resize
   useEffect(() => {
     if (!open) return;
     const close = () => setOpen(false);
@@ -65,6 +78,7 @@ export default function EquipmentDropdown({ value, onChange }: Props) {
     };
   }, [open]);
 
+  // Close on outside click
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
@@ -78,6 +92,7 @@ export default function EquipmentDropdown({ value, onChange }: Props) {
     return () => document.removeEventListener('mousedown', handler);
   }, [open]);
 
+  // Close on Escape
   useEffect(() => {
     if (!open) return;
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
@@ -90,12 +105,15 @@ export default function EquipmentDropdown({ value, onChange }: Props) {
     setOpen(false);
   };
 
+  const getTriggerBg = (opt: EquipmentOption) => isDark ? opt.darkBg : opt.bg;
+  const getTriggerColor = (opt: EquipmentOption) => isDark ? opt.darkColor : opt.color;
+
   return (
     <div className="sdd-root">
       <button
         ref={triggerRef}
         className={`sdd-trigger ${open ? 'sdd-trigger--open' : ''}`}
-        style={{ background: current.bg, color: current.color }}
+        style={{ background: getTriggerBg(current), color: getTriggerColor(current) }}
         onClick={handleOpen}
         aria-haspopup="listbox"
         aria-expanded={open}
