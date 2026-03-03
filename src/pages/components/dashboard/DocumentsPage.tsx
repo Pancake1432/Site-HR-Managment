@@ -8,15 +8,11 @@ import EquipmentDropdown from './EquipmentDropdown';
 import StatusDropdown from './StatusDropdown';
 
 /**
- * Check if an applicant has all 3 required documents:
- * 1. Application PDF (name starts with "From-")
- * 2. CDL (first uploaded file that isn't the app PDF)
- * 3. Medical Card (second uploaded file that isn't the app PDF)
+ * Check if an applicant has enough documents to be hired.
+ * Simply requires 3 or more documents (any type — manual uploads or form-generated).
  */
-function hasAllDocuments(docs: StoredDoc[]): boolean {
-  const hasAppPdf = docs.some(d => d.name.startsWith('From-'));
-  const uploads = docs.filter(d => !d.name.startsWith('From-'));
-  return hasAppPdf && uploads.length >= 2;
+function hasEnoughDocuments(docs: StoredDoc[]): boolean {
+  return docs.length >= 3;
 }
 
 export default function DocumentsPage() {
@@ -128,11 +124,13 @@ export default function DocumentsPage() {
 
   const currentDriverDocs = selectedDriver ? (driverDocuments[selectedDriver.id] || []) : [];
 
-  // Determine if the Hired button should show
+  // Determine if the Hired button should show:
+  // 1. Equipment must be assigned (not "Unsigned")
+  // 2. All 3 documents must be present (Application PDF + CDL + Medical Card)
   const canHire = selectedDriver
+    && selectedDriver.equipment !== 'Unsigned'
     && selectedDriver.status === 'Applied'
-    && (selectedDriver.equipment === 'Van' || selectedDriver.equipment === 'Reefer'|| selectedDriver.equipment === 'Flat Bed')
-    && hasAllDocuments(currentDriverDocs);
+    && hasEnoughDocuments(currentDriverDocs);
 
   return (
     <div className="page">

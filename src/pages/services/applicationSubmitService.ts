@@ -1,5 +1,5 @@
 import { ApplicationFormData } from '../types/application';
-import { Driver, EquipmentType } from '../types/dashboard';
+import { Driver, EquipmentType, StatusType } from '../types/dashboard';
 import { StoredDoc } from '../hooks/useDocumentStorage';
 import {
   generateApplicationPDFName,
@@ -127,10 +127,11 @@ export function deleteApplicant(applicantId: number): void {
   } catch { /* ignore */ }
 }
 
-// ── Applicant overrides (equipment, etc.) ──────────────────────────────────
+// ── Applicant overrides (equipment, status, etc.) ──────────────────────────
 
 export interface ApplicantOverride {
   equipment?: EquipmentType;
+  status?: StatusType;
 }
 
 /** Get all applicant overrides for the current company */
@@ -143,7 +144,7 @@ export function getApplicantOverrides(companyId: string): Record<number, Applica
   }
 }
 
-/** Update equipment (or other fields) for an applicant */
+/** Update equipment, status, or other fields for an applicant */
 export function saveApplicantOverride(applicantId: number, fields: ApplicantOverride): void {
   const companyId = getCurrentCompanyId();
   const overrides = getApplicantOverrides(companyId);
@@ -207,10 +208,6 @@ export function hireApplicant(applicant: Driver, documents: StoredDoc[]): void {
   localStorage.setItem(getHiredDriversKey(companyId), JSON.stringify(existingHired));
 
   // ── 2. Transfer documents to useDriverDocStorage format ──
-  // DriverDocSet = { cdl, medicalCard, workingContract }
-  // Application PDF (name starts with "From-") → workingContract slot
-  // First non-PDF-named upload → CDL
-  // Second non-PDF-named upload → Medical Card
   const driverDocKey = getDriverDocStorageKey(companyId);
   let driverDocs: Record<string, { cdl: unknown; medicalCard: unknown; workingContract: unknown }> = {};
 
@@ -237,19 +234,16 @@ export function hireApplicant(applicant: Driver, documents: StoredDoc[]): void {
   }
 
   // ── 3. Remove applicant from Documents page ──
-  // Mark as deleted so they disappear from the applicants list
   const deletedIds = getDeletedApplicantIds(companyId);
   if (!deletedIds.includes(applicant.id)) {
     deletedIds.push(applicant.id);
     localStorage.setItem(getDeletedApplicantsKey(companyId), JSON.stringify(deletedIds));
   }
 
-  // Remove from dynamic applicants list too
   const dynamicApplicants = getNewApplicants(companyId);
-  const filtered = dynamicApplicants.filter(a => a.id !== applicant.id);
-  localStorage.setItem(getApplicantsKey(companyId), JSON.stringify(filtered));
+  const filteredDynamic = dynamicApplicants.filter(a => a.id !== applicant.id);
+  localStorage.setItem(getApplicantsKey(companyId), JSON.stringify(filteredDynamic));
 
-  // Remove their documents from the Documents storage
   const docKey = getDocStorageKey(companyId);
   try {
     const raw = localStorage.getItem(docKey);

@@ -9,12 +9,14 @@ interface StatusOption {
   bg: string;
   color: string;
   dot: string;
+  darkBg: string;
+  darkColor: string;
 }
 
 const STATUS_OPTIONS: StatusOption[] = [
-  { value: 'Applied',        label: 'Applied',   emoji: '📩', bg: '#eff6ff', color: '#1d4ed8', dot: '#3b82f6' },
-  { value: 'Contacted',      label: 'Contacted', emoji: '📞', bg: '#fffbeb', color: '#92400e', dot: '#f59e0b' },
-  { value: 'Documents Sent', label: 'Docs Sent', emoji: '📋', bg: '#f0fdf4', color: '#065f46', dot: '#10b981' },
+  { value: 'Applied',        label: 'Applied',   emoji: '📩', bg: '#eff6ff', color: '#1d4ed8', dot: '#3b82f6', darkBg: 'rgba(59,130,246,0.15)', darkColor: '#93c5fd' },
+  { value: 'Contacted',      label: 'Contacted', emoji: '📞', bg: '#fffbeb', color: '#92400e', dot: '#f59e0b' , darkBg: 'rgba(249,115,22,0.15)', darkColor: '#fdba74' },
+  { value: 'Documents Sent', label: 'Docs Sent', emoji: '📋', bg: '#f0fdf4', color: '#065f46', dot: '#10b981' , darkBg: 'rgba(16,185,129,0.15)', darkColor: '#6ee7b7' },
 ];
 
 interface Props {
@@ -25,8 +27,18 @@ interface Props {
 export default function StatusDropdown({ value, onChange }: Props) {
   const [open, setOpen] = useState(false);
   const [popoverPos, setPopoverPos] = useState({ top: 0, left: 0 });
+  const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
   const triggerRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
+
+    // Watch for dark mode toggling
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      setIsDark(document.documentElement.classList.contains('dark'));
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
 
   const current = STATUS_OPTIONS.find(o => o.value === value)!;
 
@@ -93,12 +105,15 @@ export default function StatusDropdown({ value, onChange }: Props) {
     setOpen(false);
   };
 
+  const getTriggerBg = (opt: StatusOption) => isDark ? opt.darkBg : opt.bg;
+  const getTriggerColor = (opt: StatusOption) => isDark ? opt.darkColor : opt.color;
+
   return (
     <div className="sdd-root">
       <button
         ref={triggerRef}
         className={`sdd-trigger ${open ? 'sdd-trigger--open' : ''}`}
-        style={{ background: current.bg, color: current.color }}
+        style={{ background: getTriggerBg(current), color: getTriggerColor(current) }}
         onClick={handleOpen}
         aria-haspopup="listbox"
         aria-expanded={open}
