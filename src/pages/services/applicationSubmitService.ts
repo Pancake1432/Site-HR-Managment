@@ -13,6 +13,11 @@ function getDocStorageKey(companyId: string): string {
   return `hr_documents_${companyId}`;
 }
 
+/** Same key useDriverDocStorage uses: hr_driver_docs_${companyId} */
+function getDriverDocStorageKey(companyId: string): string {
+  return `hr_driver_docs_${companyId}`;
+}
+
 /** New key for dynamically-added applicants — read by getCompanyData() */
 function getApplicantsKey(companyId: string): string {
   return `hr_new_applicants_${companyId}`;
@@ -26,6 +31,11 @@ function getDeletedApplicantsKey(companyId: string): string {
 /** Key for applicant field overrides (equipment, status, etc.) */
 function getApplicantOverridesKey(companyId: string): string {
   return `hr_applicant_overrides_${companyId}`;
+}
+
+/** Key for hired drivers — merged into companyDrivers by getCompanyData() */
+function getHiredDriversKey(companyId: string): string {
+  return `hr_hired_drivers_${companyId}`;
 }
 
 function getCurrentCompanyId(): string {
@@ -141,6 +151,114 @@ export function saveApplicantOverride(applicantId: number, fields: ApplicantOver
   localStorage.setItem(getApplicantOverridesKey(companyId), JSON.stringify(overrides));
 }
 
+// ── Hired drivers ──────────────────────────────────────────────────────────
+
+/** Get all hired drivers for a company — merged into companyDrivers by getCompanyData() */
+export function getHiredDrivers(companyId: string): Driver[] {
+  try {
+    const raw = localStorage.getItem(getHiredDriversKey(companyId));
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Hire an applicant — moves them from Documents to Drivers:
+ * 1. Creates a Driver entry with isEmployee=true, driverStatus, paymentType, etc.
+ * 2. Saves to hr_hired_drivers — picked up by Drivers page via getCompanyData()
+ * 3. Transfers CDL + Medical Card to hr_driver_docs (useDriverDocStorage format)
+ *    and stores the application PDF as the working contract
+ * 4. Removes the applicant from Documents page (marks as deleted + cleans docs)
+ */
+export function hireApplicant(applicant: Driver, documents: StoredDoc[]): void {
+  const companyId = getCurrentCompanyId();
+
+  // ── 1. Create a new driver ID (200+ range to avoid collisions) ──
+  const existingHired = getHiredDrivers(companyId);
+  const maxId = existingHired.length > 0
+    ? Math.max(...existingHired.map(d => d.id))
+    : 200;
+  const newDriverId = maxId + 1;
+
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-US', {
+    month: '2-digit',
+    day: '2-digit',
+    year: 'numeric',
+  });
+
+  const hiredDriver: Driver = {
+    id: newDriverId,
+    name: applicant.name,
+    firstName: applicant.firstName,
+    lastName: applicant.lastName,
+    position: applicant.position,
+    equipment: applicant.equipment === 'Unsigned' ? 'Van' : applicant.equipment,
+    status: 'Applied',
+    date: dateStr,
+    isEmployee: true,
+    driverStatus: 'Not Ready',
+    paymentType: 'miles',
+    employmentStatus: 'Working',
+  };
+
+  existingHired.push(hiredDriver);
+  localStorage.setItem(getHiredDriversKey(companyId), JSON.stringify(existingHired));
+
+  // ── 2. Transfer documents to useDriverDocStorage format ──
+  // DriverDocSet = { cdl, medicalCard, workingContract }
+  // Application PDF (name starts with "From-") → workingContract slot
+  // First non-PDF-named upload → CDL
+  // Second non-PDF-named upload → Medical Card
+  const driverDocKey = getDriverDocStorageKey(companyId);
+  let driverDocs: Record<string, { cdl: unknown; medicalCard: unknown; workingContract: unknown }> = {};
+
+  try {
+    const raw = localStorage.getItem(driverDocKey);
+    driverDocs = raw ? JSON.parse(raw) : {};
+  } catch { /* fresh */ }
+
+  const appPdf = documents.find(d => d.name.startsWith('From-'));
+  const uploadedDocs = documents.filter(d => !d.name.startsWith('From-'));
+  const cdlDoc = uploadedDocs[0] || null;
+  const medDoc = uploadedDocs[1] || null;
+
+  driverDocs[newDriverId] = {
+    cdl: cdlDoc ? { id: cdlDoc.id, name: cdlDoc.name, type: cdlDoc.type, uploadDate: cdlDoc.uploadDate, size: cdlDoc.size, base64: cdlDoc.base64 } : null,
+    medicalCard: medDoc ? { id: medDoc.id, name: medDoc.name, type: medDoc.type, uploadDate: medDoc.uploadDate, size: medDoc.size, base64: medDoc.base64 } : null,
+    workingContract: appPdf ? { id: appPdf.id, name: appPdf.name, type: appPdf.type, uploadDate: appPdf.uploadDate, size: appPdf.size, base64: appPdf.base64 } : null,
+  };
+
+  try {
+    localStorage.setItem(driverDocKey, JSON.stringify(driverDocs));
+  } catch {
+    console.warn('localStorage quota exceeded storing hired driver docs');
+  }
+
+  // ── 3. Remove applicant from Documents page ──
+  // Mark as deleted so they disappear from the applicants list
+  const deletedIds = getDeletedApplicantIds(companyId);
+  if (!deletedIds.includes(applicant.id)) {
+    deletedIds.push(applicant.id);
+    localStorage.setItem(getDeletedApplicantsKey(companyId), JSON.stringify(deletedIds));
+  }
+
+  // Remove from dynamic applicants list too
+  const dynamicApplicants = getNewApplicants(companyId);
+  const filtered = dynamicApplicants.filter(a => a.id !== applicant.id);
+  localStorage.setItem(getApplicantsKey(companyId), JSON.stringify(filtered));
+
+  // Remove their documents from the Documents storage
+  const docKey = getDocStorageKey(companyId);
+  try {
+    const raw = localStorage.getItem(docKey);
+    const allDocs: Record<number, StoredDoc[]> = raw ? JSON.parse(raw) : {};
+    delete allDocs[applicant.id];
+    localStorage.setItem(docKey, JSON.stringify(allDocs));
+  } catch { /* ignore */ }
+}
+
 // ── Read a File as base64 data URL ─────────────────────────────────────────
 
 function readFileAsBase64(file: File): Promise<string> {
@@ -179,16 +297,6 @@ function storeDocuments(
 
 // ── Main submission function ───────────────────────────────────────────────
 
-/**
- * Submits the application to the dashboard:
- * 1. Generates a unique application ID
- * 2. Creates the application PDF (From-{Name}-{ID}.pdf)
- * 3. Reads CDL and Medical Card files as base64
- * 4. Adds new applicant with equipment "Unsigned" to localStorage
- * 5. Stores ALL documents (PDF + CDL + Medical Card) in hr_documents_${companyId}
- *
- * No downloads — everything lives in the dashboard Documents page.
- */
 export async function submitApplicationToDashboard(
   formData: ApplicationFormData
 ): Promise<{ success: boolean; applicationId: string; pdfFileName: string }> {
@@ -203,20 +311,15 @@ export async function submitApplicationToDashboard(
     year: 'numeric',
   });
 
-  // Generate PDF name: From-{Name}-{ID}.pdf
   const pdfFileName = generateApplicationPDFName(formData.name, applicationId);
-
-  // Create the application PDF content as base64 data URL
   const pdfDataUrl = createApplicationPDFDataUrl(formData, applicationId);
 
-  // Get next available ID (start at 100+ to avoid colliding with hardcoded IDs)
   const existingNew = getNewApplicants(companyId);
   const maxId = existingNew.length > 0
     ? Math.max(...existingNew.map(a => a.id))
     : 100;
   const driverId = maxId + 1;
 
-  // Create the new applicant — tagged "Applied", equipment "Unsigned"
   const driver: Driver = {
     id: driverId,
     name: formData.name,
@@ -224,17 +327,14 @@ export async function submitApplicationToDashboard(
     lastName,
     position: 'Company Driver',
     equipment: 'Unsigned',
-    status: 'Applied',
+    status: 'Documents Sent',
     date: dateStr,
   };
 
-  // 1. Save applicant → getCompanyData() will merge this into applicants list
   saveNewApplicant(companyId, driver);
 
-  // 2. Build the documents array to store
   const documents: StoredDoc[] = [];
 
-  // Application PDF — always stored
   documents.push({
     id: Date.now(),
     name: pdfFileName,
@@ -244,7 +344,6 @@ export async function submitApplicationToDashboard(
     base64: pdfDataUrl,
   });
 
-  // CDL photo/file (if uploaded)
   if (formData.cdlFile) {
     try {
       const cdlBase64 = await readFileAsBase64(formData.cdlFile);
@@ -261,7 +360,6 @@ export async function submitApplicationToDashboard(
     }
   }
 
-  // Medical Card photo/file (if uploaded)
   if (formData.medicalCardFile) {
     try {
       const medBase64 = await readFileAsBase64(formData.medicalCardFile);
@@ -278,7 +376,6 @@ export async function submitApplicationToDashboard(
     }
   }
 
-  // 3. Store ALL documents → useDocumentStorage() will find them on Documents page
   storeDocuments(companyId, driverId, documents);
 
   return { success: true, applicationId, pdfFileName };
