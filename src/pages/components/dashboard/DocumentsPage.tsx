@@ -2,9 +2,21 @@ import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Driver, EquipmentType } from '../../types/dashboard';
 import { useCompanyData } from '../../hooks/useCompanyData';
-import { useDocumentStorage } from '../../hooks/useDocumentStorage';
-import { deleteApplicant, saveApplicantOverride } from '../../services/applicationSubmitService';
+import { useDocumentStorage, StoredDoc } from '../../hooks/useDocumentStorage';
+import { deleteApplicant, saveApplicantOverride, hireApplicant } from '../../services/applicationSubmitService';
 import EquipmentDropdown from './EquipmentDropdown';
+
+/**
+ * Check if an applicant has all 3 required documents:
+ * 1. Application PDF (name starts with "From-")
+ * 2. CDL (first uploaded file that isn't the app PDF)
+ * 3. Medical Card (second uploaded file that isn't the app PDF)
+ */
+function hasAllDocuments(docs: StoredDoc[]): boolean {
+  const hasAppPdf = docs.some(d => d.name.startsWith('From-'));
+  const uploads = docs.filter(d => !d.name.startsWith('From-'));
+  return hasAppPdf && uploads.length >= 2;
+}
 
 export default function DocumentsPage() {
   const { applicants: allApplicantsData, refresh } = useCompanyData();
@@ -95,7 +107,22 @@ export default function DocumentsPage() {
     refresh();
   }, [refresh, selectedDriver]);
 
+  const handleHire = useCallback(() => {
+    if (!selectedDriver) return;
+    const docs = driverDocuments[selectedDriver.id] || [];
+    if (window.confirm(`Hire ${selectedDriver.name}?\n\nThey will be moved to the Drivers section.`)) {
+      hireApplicant(selectedDriver, docs);
+      navigate('/dashboard/documents');
+      refresh();
+    }
+  }, [selectedDriver, driverDocuments, navigate, refresh]);
+
   const currentDriverDocs = selectedDriver ? (driverDocuments[selectedDriver.id] || []) : [];
+
+  // Determine if the Hired button should show
+  const canHire = selectedDriver
+    && selectedDriver.status === 'Applied'
+    && hasAllDocuments(currentDriverDocs);
 
   return (
     <div className="page">
@@ -243,8 +270,34 @@ export default function DocumentsPage() {
                 </div>
               </div>
 
-              {/* Delete driver button at the bottom of the modal */}
-              <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid var(--border-color, #e2e8f0)' }}>
+              {/* Action buttons at the bottom of the modal */}
+              <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid var(--border-color, #e2e8f0)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+
+                {/* ── HIRED BUTTON — only when status is Applied + all 3 docs present ── */}
+                {canHire && (
+                  <button
+                    onClick={handleHire}
+                    style={{
+                      width: '100%',
+                      padding: '12px',
+                      borderRadius: '8px',
+                      border: 'none',
+                      background: 'linear-gradient(135deg, #48bb78 0%, #38a169 100%)',
+                      color: 'white',
+                      fontSize: '14px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      transition: 'all 0.15s',
+                      boxShadow: '0 2px 8px rgba(72, 187, 120, 0.3)',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(72, 187, 120, 0.4)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(72, 187, 120, 0.3)'; }}
+                  >
+                    ✅ Hired — Move to Drivers
+                  </button>
+                )}
+
+                {/* ── DELETE BUTTON ── */}
                 <button
                   onClick={handleDeleteDriver}
                   style={{
