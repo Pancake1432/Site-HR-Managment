@@ -28,6 +28,8 @@ export interface DocFile {
   type: string;
   uploadDate: string;
   size: string;
+  /** Semantic type used to route docs to the correct driver slot on hire */
+  docType?: 'cdl' | 'medicalCard' | 'application';
 }
 
 export interface Statement {

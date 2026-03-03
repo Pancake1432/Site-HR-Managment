@@ -8,7 +8,8 @@ export interface StoredDriverDoc extends DocFile {
 export interface DriverDocSet {
   cdl:             StoredDriverDoc | null;
   medicalCard:     StoredDriverDoc | null;
-  workingContract: StoredDriverDoc | null;
+  applicationPdf:  StoredDriverDoc | null;   // transferred from form on hire
+  workingContract: StoredDriverDoc | null;   // uploaded after in-person signing/scan
 }
 
 const MAX_INLINE_BYTES = 1.5 * 1024 * 1024;
@@ -23,7 +24,7 @@ function getStorageKey(): string {
   }
 }
 
-const EMPTY_SET: DriverDocSet = { cdl: null, medicalCard: null, workingContract: null };
+const EMPTY_SET: DriverDocSet = { cdl: null, medicalCard: null, applicationPdf: null, workingContract: null };
 
 function load(): Record<number, DriverDocSet> {
   try {

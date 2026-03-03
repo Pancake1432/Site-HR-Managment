@@ -1,6 +1,6 @@
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
-import { ApplicationProvider, useApplicationForm } from './contexts/ApplicationContext';
-import { submitApplication, saveDraft, clearDraft } from './services/applicationService';
+import { ApplicationProvider, useApplicationForm } from '../contexts/ApplicationContext';
+import { submitApplication, saveDraft, clearDraft } from '../services/applicationService';
 import { useState } from 'react';
 import '../styles/application.css';
 

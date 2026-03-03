@@ -83,12 +83,13 @@ export default function DriversPage() {
   };
 
   const getDocLabel = (type: string) =>
-    ({ cdl: 'CDL Certificate', medicalCard: 'Medical Card', workingContract: 'Working Contract' }[type] ?? 'Document');
+    ({ cdl: 'CDL Certificate', medicalCard: 'Medical Card', applicationPdf: 'Application (Form)', workingContract: 'Working Contract' }[type] ?? 'Document');
 
   const docDefs = [
-    { key: 'cdl' as const,             icon: '📄', label: 'CDL Certificate',  ref: cdlInputRef      },
-    { key: 'medicalCard' as const,     icon: '🏥', label: 'Medical Card',     ref: medicalInputRef  },
-    { key: 'workingContract' as const, icon: '📝', label: 'Working Contract', ref: contractInputRef },
+    { key: 'cdl' as const,             icon: '📄', label: 'CDL Certificate',   ref: cdlInputRef      },
+    { key: 'medicalCard' as const,     icon: '🏥', label: 'Medical Card',       ref: medicalInputRef  },
+    { key: 'applicationPdf' as const,  icon: '📋', label: 'Application (Form)', ref: contractInputRef, readOnly: true },
+    { key: 'workingContract' as const, icon: '✍️', label: 'Working Contract',   ref: contractInputRef },
   ];
 
   return (
@@ -183,7 +184,7 @@ export default function DriversPage() {
                 <div className="modal-section">
                   <div className="modal-section-header"><h3>Required Documents</h3></div>
                   <div className="driver-documents-grid">
-                    {docDefs.map(({ key, icon, label, ref }) => {
+                    {docDefs.map(({ key, icon, label, ref, readOnly }) => {
                       const doc = docs[key];
                       const uploading = isUploading === key;
                       return (
@@ -194,16 +195,30 @@ export default function DriversPage() {
                               <p className="driver-doc-name">{doc.name}</p>
                               <p className="driver-doc-meta">{doc.size} · {doc.uploadDate}</p>
                               <div className="driver-doc-actions">
-                                <button className="doc-action-btn open"   onClick={() => openDoc(doc)}>View</button>
-                                <button className="doc-action-btn delete" onClick={() => handleDeleteDoc(key)}>Delete</button>
+                                <button className="doc-action-btn open" onClick={() => openDoc(doc)}>View</button>
+                                {!readOnly && (
+                                  <button className="doc-action-btn delete" onClick={() => handleDeleteDoc(key as 'cdl' | 'medicalCard' | 'workingContract')}>Delete</button>
+                                )}
                               </div>
+                            </div>
+                          ) : key === 'workingContract' ? (
+                            <div className="driver-doc-empty">
+                              <p style={{ marginBottom: '6px', fontWeight: 500 }}>⏳ Pending signature &amp; scan</p>
+                              <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '10px' }}>
+                                Upload after contract is signed in person and scanned
+                              </p>
+                              <button className="upload-doc-btn" disabled={uploading} onClick={() => ref.current?.click()}>
+                                {uploading ? '⏳ Uploading...' : '📤 Upload Signed Contract'}
+                              </button>
                             </div>
                           ) : (
                             <div className="driver-doc-empty">
                               <p>No {label} uploaded</p>
-                              <button className="upload-doc-btn" disabled={uploading} onClick={() => ref.current?.click()}>
-                                {uploading ? '⏳ Uploading...' : `📤 Upload ${label}`}
-                              </button>
+                              {!readOnly && (
+                                <button className="upload-doc-btn" disabled={uploading} onClick={() => ref.current?.click()}>
+                                  {uploading ? '⏳ Uploading...' : `📤 Upload ${label}`}
+                                </button>
+                              )}
                             </div>
                           )}
                         </div>

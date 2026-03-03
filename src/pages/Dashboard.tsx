@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
-import { useSettings } from './contexts/SettingsContext';
-import { SavedStatementsProvider } from './contexts/SavedStatementsContext';
-import SettingsModal from './components/dashboard/SettingsModal';
+import { useSettings } from '../contexts/SettingsContext';
+import { SavedStatementsProvider } from '../contexts/SavedStatementsContext';
+import SettingsModal from '../components/dashboard/SettingsModal';
 import '../styles/dashboard.css';
 
 const NAV_ITEMS = [

@@ -209,22 +209,26 @@ export function hireApplicant(applicant: Driver, documents: StoredDoc[]): void {
 
   // ── 2. Transfer documents to useDriverDocStorage format ──
   const driverDocKey = getDriverDocStorageKey(companyId);
-  let driverDocs: Record<string, { cdl: unknown; medicalCard: unknown; workingContract: unknown }> = {};
+  let driverDocs: Record<string, { cdl: unknown; medicalCard: unknown; applicationPdf: unknown; workingContract: unknown }> = {};
 
   try {
     const raw = localStorage.getItem(driverDocKey);
     driverDocs = raw ? JSON.parse(raw) : {};
   } catch { /* fresh */ }
 
-  const appPdf = documents.find(d => d.name.startsWith('From-'));
-  const uploadedDocs = documents.filter(d => !d.name.startsWith('From-'));
-  const cdlDoc = uploadedDocs[0] || null;
-  const medDoc = uploadedDocs[1] || null;
+  // Use docType tags for reliable identification; fall back to name heuristic
+  const cdlDoc        = documents.find(d => d.docType === 'cdl')         || null;
+  const medDoc        = documents.find(d => d.docType === 'medicalCard')  || null;
+  const appPdf        = documents.find(d => d.docType === 'application')  || null;
+
+  const toDriverDoc = (d: StoredDoc | null) =>
+    d ? { id: d.id, name: d.name, type: d.type, uploadDate: d.uploadDate, size: d.size, base64: d.base64 } : null;
 
   driverDocs[newDriverId] = {
-    cdl: cdlDoc ? { id: cdlDoc.id, name: cdlDoc.name, type: cdlDoc.type, uploadDate: cdlDoc.uploadDate, size: cdlDoc.size, base64: cdlDoc.base64 } : null,
-    medicalCard: medDoc ? { id: medDoc.id, name: medDoc.name, type: medDoc.type, uploadDate: medDoc.uploadDate, size: medDoc.size, base64: medDoc.base64 } : null,
-    workingContract: appPdf ? { id: appPdf.id, name: appPdf.name, type: appPdf.type, uploadDate: appPdf.uploadDate, size: appPdf.size, base64: appPdf.base64 } : null,
+    cdl:             toDriverDoc(cdlDoc),
+    medicalCard:     toDriverDoc(medDoc),
+    applicationPdf:  toDriverDoc(appPdf),
+    workingContract: null,  // filled in manually after in-person contract signing & scan
   };
 
   try {
@@ -336,6 +340,7 @@ export async function submitApplicationToDashboard(
     uploadDate: dateStr,
     size: `${Math.round(pdfDataUrl.length / 1024)} KB`,
     base64: pdfDataUrl,
+    docType: 'application',
   });
 
   if (formData.cdlFile) {
@@ -348,6 +353,7 @@ export async function submitApplicationToDashboard(
         uploadDate: dateStr,
         size: formatFileSize(formData.cdlFile.size),
         base64: cdlBase64,
+        docType: 'cdl',
       });
     } catch {
       console.warn('Failed to read CDL file');
@@ -364,6 +370,7 @@ export async function submitApplicationToDashboard(
         uploadDate: dateStr,
         size: formatFileSize(formData.medicalCardFile.size),
         base64: medBase64,
+        docType: 'medicalCard',
       });
     } catch {
       console.warn('Failed to read Medical Card file');
