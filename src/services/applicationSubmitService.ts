@@ -1,39 +1,33 @@
 import { ApplicationFormData } from '../types/application';
 import { Driver, EquipmentType, StatusType } from '../types/dashboard';
-import { StoredDoc } from '../hooks/useDocumentStorage';
+import { DriverDocSet } from '../hooks/useDriverDocStorage';
 import {
   generateApplicationPDFName,
   createApplicationPDFDataUrl,
 } from '../utils/applicationPdfUtils';
 
-// ── Storage keys — MUST match the existing hooks exactly ───────────────────
+// ── Storage keys ────────────────────────────────────────────────────────────
 
-/** Same key useDocumentStorage uses: hr_documents_${companyId} */
-function getDocStorageKey(companyId: string): string {
-  return `hr_documents_${companyId}`;
-}
-
-/** Same key useDriverDocStorage uses: hr_driver_docs_${companyId} */
+/**
+ * SINGLE document storage key used by useDriverDocStorage for BOTH
+ * applicants (Documents tab) and hired drivers (Drivers tab).
+ */
 function getDriverDocStorageKey(companyId: string): string {
   return `hr_driver_docs_${companyId}`;
 }
 
-/** New key for dynamically-added applicants — read by getCompanyData() */
 function getApplicantsKey(companyId: string): string {
   return `hr_new_applicants_${companyId}`;
 }
 
-/** Key for tracking deleted applicant IDs (covers hardcoded + dynamic) */
 function getDeletedApplicantsKey(companyId: string): string {
   return `hr_deleted_applicants_${companyId}`;
 }
 
-/** Key for applicant field overrides (equipment, status, etc.) */
 function getApplicantOverridesKey(companyId: string): string {
   return `hr_applicant_overrides_${companyId}`;
 }
 
-/** Key for hired drivers — merged into companyDrivers by getCompanyData() */
 function getHiredDriversKey(companyId: string): string {
   return `hr_hired_drivers_${companyId}`;
 }
@@ -54,10 +48,7 @@ function generateApplicationId(): string {
 
 function parseFullName(fullName: string): { firstName: string; lastName: string } {
   const parts = fullName.trim().split(/\s+/);
-  return {
-    firstName: parts[0] || '',
-    lastName: parts.slice(1).join(' ') || '',
-  };
+  return { firstName: parts[0] || '', lastName: parts.slice(1).join(' ') || '' };
 }
 
 function formatFileSize(bytes: number): string {
@@ -66,16 +57,30 @@ function formatFileSize(bytes: number): string {
   return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
 }
 
+// ── Driver doc slot storage helpers ────────────────────────────────────────
+
+function loadDriverDocs(companyId: string): Record<number, DriverDocSet> {
+  try {
+    const raw = localStorage.getItem(getDriverDocStorageKey(companyId));
+    return raw ? JSON.parse(raw) : {};
+  } catch { return {}; }
+}
+
+function saveDriverDocs(companyId: string, data: Record<number, DriverDocSet>): void {
+  try {
+    localStorage.setItem(getDriverDocStorageKey(companyId), JSON.stringify(data));
+  } catch {
+    console.warn('localStorage quota exceeded storing driver docs');
+  }
+}
+
 // ── Read/write dynamic applicants ──────────────────────────────────────────
 
-/** Exported so driversData.ts can merge these into the applicants list */
 export function getNewApplicants(companyId: string): Driver[] {
   try {
     const raw = localStorage.getItem(getApplicantsKey(companyId));
     return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
+  } catch { return []; }
 }
 
 function saveNewApplicant(companyId: string, driver: Driver): void {
@@ -86,45 +91,28 @@ function saveNewApplicant(companyId: string, driver: Driver): void {
 
 // ── Deleted applicants tracking ────────────────────────────────────────────
 
-/** Get the set of deleted applicant IDs */
 export function getDeletedApplicantIds(companyId: string): number[] {
   try {
     const raw = localStorage.getItem(getDeletedApplicantsKey(companyId));
     return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
+  } catch { return []; }
 }
 
-/**
- * Delete an applicant by ID.
- * - Removes from dynamic applicants list (if it was a form submission)
- * - Adds to deleted IDs list (so hardcoded ones are also hidden)
- * - Removes their documents from storage
- */
 export function deleteApplicant(applicantId: number): void {
   const companyId = getCurrentCompanyId();
 
-  // 1. Add to deleted IDs list
   const deletedIds = getDeletedApplicantIds(companyId);
   if (!deletedIds.includes(applicantId)) {
     deletedIds.push(applicantId);
     localStorage.setItem(getDeletedApplicantsKey(companyId), JSON.stringify(deletedIds));
   }
 
-  // 2. Remove from dynamic applicants (if present)
-  const dynamicApplicants = getNewApplicants(companyId);
-  const filtered = dynamicApplicants.filter(a => a.id !== applicantId);
-  localStorage.setItem(getApplicantsKey(companyId), JSON.stringify(filtered));
+  const list = getNewApplicants(companyId).filter(a => a.id !== applicantId);
+  localStorage.setItem(getApplicantsKey(companyId), JSON.stringify(list));
 
-  // 3. Remove their documents
-  const docKey = getDocStorageKey(companyId);
-  try {
-    const raw = localStorage.getItem(docKey);
-    const allDocs: Record<number, StoredDoc[]> = raw ? JSON.parse(raw) : {};
-    delete allDocs[applicantId];
-    localStorage.setItem(docKey, JSON.stringify(allDocs));
-  } catch { /* ignore */ }
+  const allDocs = loadDriverDocs(companyId);
+  delete allDocs[applicantId];
+  saveDriverDocs(companyId, allDocs);
 }
 
 // ── Applicant overrides (equipment, status, etc.) ──────────────────────────
@@ -134,17 +122,13 @@ export interface ApplicantOverride {
   status?: StatusType;
 }
 
-/** Get all applicant overrides for the current company */
 export function getApplicantOverrides(companyId: string): Record<number, ApplicantOverride> {
   try {
     const raw = localStorage.getItem(getApplicantOverridesKey(companyId));
     return raw ? JSON.parse(raw) : {};
-  } catch {
-    return {};
-  }
+  } catch { return {}; }
 }
 
-/** Update equipment, status, or other fields for an applicant */
 export function saveApplicantOverride(applicantId: number, fields: ApplicantOverride): void {
   const companyId = getCurrentCompanyId();
   const overrides = getApplicantOverrides(companyId);
@@ -154,39 +138,28 @@ export function saveApplicantOverride(applicantId: number, fields: ApplicantOver
 
 // ── Hired drivers ──────────────────────────────────────────────────────────
 
-/** Get all hired drivers for a company — merged into companyDrivers by getCompanyData() */
 export function getHiredDrivers(companyId: string): Driver[] {
   try {
     const raw = localStorage.getItem(getHiredDriversKey(companyId));
     return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
+  } catch { return []; }
 }
 
 /**
- * Hire an applicant — moves them from Documents to Drivers:
- * 1. Creates a Driver entry with isEmployee=true, driverStatus, paymentType, etc.
- * 2. Saves to hr_hired_drivers — picked up by Drivers page via getCompanyData()
- * 3. Transfers CDL + Medical Card to hr_driver_docs (useDriverDocStorage format)
- *    and stores the application PDF as the working contract
- * 4. Removes the applicant from Documents page (marks as deleted + cleans docs)
+ * Hire an applicant.
+ * Both applicants and drivers share hr_driver_docs_${companyId}.
+ * We copy the applicant's doc slots to the new driver ID, then clean up.
  */
-export function hireApplicant(applicant: Driver, documents: StoredDoc[]): void {
+export function hireApplicant(applicant: Driver, applicantDocs: DriverDocSet): void {
   const companyId = getCurrentCompanyId();
 
-  // ── 1. Create a new driver ID (200+ range to avoid collisions) ──
+  // 1. Create hired driver record
   const existingHired = getHiredDrivers(companyId);
-  const maxId = existingHired.length > 0
-    ? Math.max(...existingHired.map(d => d.id))
-    : 200;
+  const maxId = existingHired.length > 0 ? Math.max(...existingHired.map(d => d.id)) : 200;
   const newDriverId = maxId + 1;
 
-  const now = new Date();
-  const dateStr = now.toLocaleDateString('en-US', {
-    month: '2-digit',
-    day: '2-digit',
-    year: 'numeric',
+  const dateStr = new Date().toLocaleDateString('en-US', {
+    month: '2-digit', day: '2-digit', year: 'numeric',
   });
 
   const hiredDriver: Driver = {
@@ -207,54 +180,27 @@ export function hireApplicant(applicant: Driver, documents: StoredDoc[]): void {
   existingHired.push(hiredDriver);
   localStorage.setItem(getHiredDriversKey(companyId), JSON.stringify(existingHired));
 
-  // ── 2. Transfer documents to useDriverDocStorage format ──
-  const driverDocKey = getDriverDocStorageKey(companyId);
-  let driverDocs: Record<string, { cdl: unknown; medicalCard: unknown; applicationPdf: unknown; workingContract: unknown }> = {};
-
-  try {
-    const raw = localStorage.getItem(driverDocKey);
-    driverDocs = raw ? JSON.parse(raw) : {};
-  } catch { /* fresh */ }
-
-  // Use docType tags for reliable identification; fall back to name heuristic
-  const cdlDoc        = documents.find(d => d.docType === 'cdl')         || null;
-  const medDoc        = documents.find(d => d.docType === 'medicalCard')  || null;
-  const appPdf        = documents.find(d => d.docType === 'application')  || null;
-
-  const toDriverDoc = (d: StoredDoc | null) =>
-    d ? { id: d.id, name: d.name, type: d.type, uploadDate: d.uploadDate, size: d.size, base64: d.base64 } : null;
-
-  driverDocs[newDriverId] = {
-    cdl:             toDriverDoc(cdlDoc),
-    medicalCard:     toDriverDoc(medDoc),
-    applicationPdf:  toDriverDoc(appPdf),
-    workingContract: null,  // filled in manually after in-person contract signing & scan
+  // 2. Transfer doc slots: applicant ID -> new driver ID
+  const allDocs = loadDriverDocs(companyId);
+  allDocs[newDriverId] = {
+    cdl:             applicantDocs.cdl           ?? null,
+    medicalCard:     applicantDocs.medicalCard    ?? null,
+    applicationPdf:  applicantDocs.applicationPdf ?? null,
+    workingContract: null, // uploaded after in-person signing & scan
   };
 
-  try {
-    localStorage.setItem(driverDocKey, JSON.stringify(driverDocs));
-  } catch {
-    console.warn('localStorage quota exceeded storing hired driver docs');
-  }
+  // Remove old applicant slot
+  delete allDocs[applicant.id];
+  saveDriverDocs(companyId, allDocs);
 
-  // ── 3. Remove applicant from Documents page ──
+  // 3. Remove applicant from Documents list
   const deletedIds = getDeletedApplicantIds(companyId);
   if (!deletedIds.includes(applicant.id)) {
     deletedIds.push(applicant.id);
     localStorage.setItem(getDeletedApplicantsKey(companyId), JSON.stringify(deletedIds));
   }
-
-  const dynamicApplicants = getNewApplicants(companyId);
-  const filteredDynamic = dynamicApplicants.filter(a => a.id !== applicant.id);
-  localStorage.setItem(getApplicantsKey(companyId), JSON.stringify(filteredDynamic));
-
-  const docKey = getDocStorageKey(companyId);
-  try {
-    const raw = localStorage.getItem(docKey);
-    const allDocs: Record<number, StoredDoc[]> = raw ? JSON.parse(raw) : {};
-    delete allDocs[applicant.id];
-    localStorage.setItem(docKey, JSON.stringify(allDocs));
-  } catch { /* ignore */ }
+  const filteredList = getNewApplicants(companyId).filter(a => a.id !== applicant.id);
+  localStorage.setItem(getApplicantsKey(companyId), JSON.stringify(filteredList));
 }
 
 // ── Read a File as base64 data URL ─────────────────────────────────────────
@@ -268,33 +214,13 @@ function readFileAsBase64(file: File): Promise<string> {
   });
 }
 
-// ── Store documents into useDocumentStorage's format ───────────────────────
+// ── Main form submission ────────────────────────────────────────────────────
 
-function storeDocuments(
-  companyId: string,
-  driverId: number,
-  documents: StoredDoc[]
-): void {
-  const key = getDocStorageKey(companyId);
-  let allDocs: Record<number, StoredDoc[]> = {};
-
-  try {
-    const raw = localStorage.getItem(key);
-    allDocs = raw ? JSON.parse(raw) : {};
-  } catch { /* fresh start */ }
-
-  const existing = allDocs[driverId] || [];
-  allDocs[driverId] = [...existing, ...documents];
-
-  try {
-    localStorage.setItem(key, JSON.stringify(allDocs));
-  } catch {
-    console.warn('localStorage quota exceeded storing application documents');
-  }
-}
-
-// ── Main submission function ───────────────────────────────────────────────
-
+/**
+ * Called when applicant submits the multi-step form.
+ * Stores all 3 typed document slots directly into hr_driver_docs so the
+ * Documents tab and hire transfer work without any conversion step.
+ */
 export async function submitApplicationToDashboard(
   formData: ApplicationFormData
 ): Promise<{ success: boolean; applicationId: string; pdfFileName: string }> {
@@ -302,22 +228,16 @@ export async function submitApplicationToDashboard(
   const companyId = getCurrentCompanyId();
   const { firstName, lastName } = parseFullName(formData.name);
 
-  const now = new Date();
-  const dateStr = now.toLocaleDateString('en-US', {
-    month: '2-digit',
-    day: '2-digit',
-    year: 'numeric',
+  const dateStr = new Date().toLocaleDateString('en-US', {
+    month: '2-digit', day: '2-digit', year: 'numeric',
   });
 
-  const pdfFileName = generateApplicationPDFName(formData.name, applicationId);
-  const pdfDataUrl = createApplicationPDFDataUrl(formData, applicationId);
-
+  // Assign applicant ID
   const existingNew = getNewApplicants(companyId);
-  const maxId = existingNew.length > 0
-    ? Math.max(...existingNew.map(a => a.id))
-    : 100;
+  const maxId = existingNew.length > 0 ? Math.max(...existingNew.map(a => a.id)) : 100;
   const driverId = maxId + 1;
 
+  // Save applicant record
   const driver: Driver = {
     id: driverId,
     name: formData.name,
@@ -328,56 +248,60 @@ export async function submitApplicationToDashboard(
     status: 'Documents Sent',
     date: dateStr,
   };
-
   saveNewApplicant(companyId, driver);
 
-  const documents: StoredDoc[] = [];
+  // Build Application PDF slot
+  const pdfFileName = generateApplicationPDFName(formData.name, applicationId);
+  const pdfDataUrl = createApplicationPDFDataUrl(formData, applicationId);
 
-  documents.push({
-    id: Date.now(),
-    name: pdfFileName,
-    type: 'PDF',
-    uploadDate: dateStr,
-    size: `${Math.round(pdfDataUrl.length / 1024)} KB`,
-    base64: pdfDataUrl,
-    docType: 'application',
-  });
+  const docSet: DriverDocSet = {
+    applicationPdf: {
+      id: Date.now(),
+      name: pdfFileName,
+      type: 'PDF',
+      uploadDate: dateStr,
+      size: `${Math.round(pdfDataUrl.length / 1024)} KB`,
+      base64: pdfDataUrl,
+    },
+    cdl: null,
+    medicalCard: null,
+    workingContract: null,
+  };
 
+  // Attach CDL if provided
   if (formData.cdlFile) {
     try {
-      const cdlBase64 = await readFileAsBase64(formData.cdlFile);
-      documents.push({
+      const base64 = await readFileAsBase64(formData.cdlFile);
+      docSet.cdl = {
         id: Date.now() + 1,
         name: formData.cdlFile.name,
         type: 'PDF',
         uploadDate: dateStr,
         size: formatFileSize(formData.cdlFile.size),
-        base64: cdlBase64,
-        docType: 'cdl',
-      });
-    } catch {
-      console.warn('Failed to read CDL file');
-    }
+        base64,
+      };
+    } catch { console.warn('Failed to read CDL file'); }
   }
 
+  // Attach Medical Card if provided
   if (formData.medicalCardFile) {
     try {
-      const medBase64 = await readFileAsBase64(formData.medicalCardFile);
-      documents.push({
+      const base64 = await readFileAsBase64(formData.medicalCardFile);
+      docSet.medicalCard = {
         id: Date.now() + 2,
         name: formData.medicalCardFile.name,
         type: 'PDF',
         uploadDate: dateStr,
         size: formatFileSize(formData.medicalCardFile.size),
-        base64: medBase64,
-        docType: 'medicalCard',
-      });
-    } catch {
-      console.warn('Failed to read Medical Card file');
-    }
+        base64,
+      };
+    } catch { console.warn('Failed to read Medical Card file'); }
   }
 
-  storeDocuments(companyId, driverId, documents);
+  // Save all slots into the shared driver doc storage
+  const allDocs = loadDriverDocs(companyId);
+  allDocs[driverId] = docSet;
+  saveDriverDocs(companyId, allDocs);
 
   return { success: true, applicationId, pdfFileName };
 }
