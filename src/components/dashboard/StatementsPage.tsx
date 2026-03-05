@@ -5,6 +5,7 @@ import { useCompanyData } from '../../hooks/useCompanyData';
 import { useSettings, fmtDate, fmtCurrency, fmtDistUnit, CURRENCY_SYMBOLS } from '../../contexts/SettingsContext';
 import { useSavedStatements } from '../../contexts/SavedStatementsContext';
 import { downloadStatementPDF } from '../../utils/pdfUtils';
+import { Emoji } from '../Emoji';
 
 const emptyForm: StatementData = {
   driverId: null, driverName: '',
@@ -119,7 +120,7 @@ export default function StatementsPage() {
                   <label key={v} className={`custom-radio ${form.paymentType === v ? 'active' : ''}`}>
                     <input type="radio" name="paymentType" value={v} checked={form.paymentType === v}
                       onChange={() => set({ paymentType: v })} />
-                    <span className="radio-icon">{v === 'miles' ? '🛣️' : '📊'}</span>
+                    <span className="radio-icon"><Emoji symbol={v === 'miles' ? '🛣️' : '📊'} size={16} /></span>
                     <span>{v === 'miles' ? distUnit.toUpperCase() : 'Percentage'}</span>
                   </label>
                 ))}
@@ -188,7 +189,7 @@ export default function StatementsPage() {
                       checked={form.adjustmentType === v}
                       onChange={() => set({ adjustmentType: v })}
                     />
-                    <span className="radio-icon">{v === 'bonus' ? '➕' : '➖'}</span>
+                    <span className="radio-icon"><Emoji symbol={v === 'bonus' ? '➕' : '➖'} size={16} /></span>
                     <span>{v.charAt(0).toUpperCase() + v.slice(1)}</span>
                   </label>
                 ))}
@@ -269,11 +270,13 @@ export default function StatementsPage() {
 
               {/* ── 3-button action bar ── */}
               <div className="statement-actions">
-                <button className="save-salary-btn" onClick={handleSaveToSalary}>
-                  💾 Save to Salary
+                <button className="save-salary-btn" onClick={handleSaveToSalary}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <Emoji symbol="💾" size={16} /> Save to Salary
                 </button>
-                <button className="download-btn" onClick={handleDownloadPDF}>
-                  📄 Download PDF
+                <button className="download-btn" onClick={handleDownloadPDF}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <Emoji symbol="📄" size={16} /> Download PDF
                 </button>
                 <button className="close-preview-btn" onClick={handleClose}>
                   Close

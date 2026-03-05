@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { UserX, Eye, UserPlus, AlertTriangle } from 'lucide-react';
+import { Emoji } from '../Emoji';
 import { Driver } from '../../types/dashboard';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { useDriverDocStorage } from '../../hooks/useDriverDocStorage';
@@ -31,6 +32,7 @@ const EMPTY_FORM: AddDriverForm = {
 export default function DriversPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { settings } = useSettings();
   const { companyDrivers, refresh } = useCompanyData();
   const { getDriverDocs, uploadDoc, deleteDoc, openDoc } = useDriverDocStorage();
@@ -69,6 +71,16 @@ export default function DriversPage() {
       setSelectedDriver(null);
     }
   }, [id, drivers]);
+
+  // Auto-open Add Driver modal when navigated from dashboard quick action
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('add') === 'true') {
+      setShowAddModal(true);
+      // Clean the query param from the URL without adding a history entry
+      navigate('/dashboard/drivers', { replace: true });
+    }
+  }, [location.search, navigate]);
 
   const filtered = useMemo(() => drivers.filter(d => {
     const q = searchQuery.toLowerCase();
@@ -205,7 +217,7 @@ export default function DriversPage() {
           <span className="stat-badge">{notReadyCount} Not Ready</span>
         </div>
         <div className="search-bar">
-          <span>🔍</span>
+          <span><Emoji symbol="🔍" size={16} /></span>
           <input type="text" placeholder="Search by name..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
         </div>
         <div className="table-header drivers-cols">
@@ -214,7 +226,7 @@ export default function DriversPage() {
         <div className="table-body">
           {filtered.length > 0 ? filtered.map(d => (
             <div key={d.id} className="table-row drivers-cols">
-              <span className="cell-name"><span className="row-avatar">👤</span>{d.name}</span>
+              <span className="cell-name"><span className="row-avatar"><Emoji symbol="👤" size={20} /></span>{d.name}</span>
               <span className="cell" data-label="Position">{d.position}</span>
               <span className="cell" data-label="Equipment"><span className="equip-badge">{d.equipment}</span></span>
               <span className="cell" data-label="Status">
@@ -334,18 +346,14 @@ export default function DriversPage() {
                   {/* CDL */}
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--card-bg, #f9fafb)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span>📄</span>
+                      <Emoji symbol="📄" size={20} />
                       <div>
                         <div style={{ fontSize: 14, fontWeight: 600 }}>CDL Certificate</div>
                         {addCdlFile && <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{addCdlFile.name}</div>}
                       </div>
                     </div>
-                    <button
-                      className="upload-doc-btn"
-                      onClick={() => addCdlRef.current?.click()}
-                      style={{ whiteSpace: 'nowrap' }}
-                    >
-                      {addCdlFile ? '✅ Change' : '📤 Upload'}
+                    <button className="upload-doc-btn" onClick={() => addCdlRef.current?.click()} style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                      {addCdlFile ? <><Emoji symbol="✅" size={14} /> Change</> : <><Emoji symbol="📤" size={14} /> Upload</>}
                     </button>
                     <input ref={addCdlRef} type="file" accept=".pdf,application/pdf" style={{ display: 'none' }} onChange={e => setAddCdlFile(e.target.files?.[0] ?? null)} />
                   </div>
@@ -353,18 +361,14 @@ export default function DriversPage() {
                   {/* Medical Card */}
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--card-bg, #f9fafb)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span>🏥</span>
+                      <Emoji symbol="🏥" size={20} />
                       <div>
                         <div style={{ fontSize: 14, fontWeight: 600 }}>Medical Card</div>
                         {addMedFile && <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{addMedFile.name}</div>}
                       </div>
                     </div>
-                    <button
-                      className="upload-doc-btn"
-                      onClick={() => addMedRef.current?.click()}
-                      style={{ whiteSpace: 'nowrap' }}
-                    >
-                      {addMedFile ? '✅ Change' : '📤 Upload'}
+                    <button className="upload-doc-btn" onClick={() => addMedRef.current?.click()} style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                      {addMedFile ? <><Emoji symbol="✅" size={14} /> Change</> : <><Emoji symbol="📤" size={14} /> Upload</>}
                     </button>
                     <input ref={addMedRef} type="file" accept=".pdf,application/pdf,.jpg,.jpeg,.png,image/*" style={{ display: 'none' }} onChange={e => setAddMedFile(e.target.files?.[0] ?? null)} />
                   </div>
@@ -383,7 +387,10 @@ export default function DriversPage() {
                   disabled={addSaving}
                   style={{ padding: '9px 24px', borderRadius: 8, border: 'none', background: 'var(--primary, #2563eb)', color: '#fff', cursor: addSaving ? 'not-allowed' : 'pointer', fontSize: 14, fontWeight: 600, opacity: addSaving ? 0.7 : 1 }}
                 >
-                  {addSaving ? '⏳ Saving...' : '✅ Add Driver'}
+                  {addSaving
+                    ? <><Emoji symbol="⏳" size={14} style={{ marginRight: 5 }} /> Saving...</>
+                    : <><Emoji symbol="✅" size={14} style={{ marginRight: 5 }} /> Add Driver</>
+                  }
                 </button>
               </div>
             </div>
@@ -432,7 +439,10 @@ export default function DriversPage() {
                       const uploading = isUploading === key;
                       return (
                         <div key={key} className="driver-doc-card">
-                          <div className="driver-doc-header"><div className="driver-doc-icon">{icon}</div><h4>{label}</h4></div>
+                          <div className="driver-doc-header">
+                            <div className="driver-doc-icon"><Emoji symbol={icon} size={22} /></div>
+                            <h4>{label}</h4>
+                          </div>
                           {doc ? (
                             <div className="driver-doc-info">
                               <p className="driver-doc-name">{doc.name}</p>
@@ -446,20 +456,28 @@ export default function DriversPage() {
                             </div>
                           ) : key === 'workingContract' ? (
                             <div className="driver-doc-empty">
-                              <p style={{ marginBottom: '6px', fontWeight: 500 }}>⏳ Pending signature &amp; scan</p>
+                              <p style={{ marginBottom: '6px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 5 }}>
+                                <Emoji symbol="⏳" size={14} /> Pending signature &amp; scan
+                              </p>
                               <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '10px' }}>
                                 Upload after contract is signed in person and scanned
                               </p>
-                              <button className="upload-doc-btn" disabled={uploading} onClick={() => ref.current?.click()}>
-                                {uploading ? '⏳ Uploading...' : '📤 Upload Signed Contract'}
+                              <button className="upload-doc-btn" disabled={uploading} onClick={() => ref.current?.click()}
+                                style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                                {uploading
+                                  ? <><Emoji symbol="⏳" size={13} /> Uploading...</>
+                                  : <><Emoji symbol="📤" size={13} /> Upload Signed Contract</>}
                               </button>
                             </div>
                           ) : (
                             <div className="driver-doc-empty">
                               <p>No {label} uploaded</p>
                               {!readOnly && (
-                                <button className="upload-doc-btn" disabled={uploading} onClick={() => ref.current?.click()}>
-                                  {uploading ? '⏳ Uploading...' : `📤 Upload ${label}`}
+                                <button className="upload-doc-btn" disabled={uploading} onClick={() => ref.current?.click()}
+                                  style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                                  {uploading
+                                    ? <><Emoji symbol="⏳" size={13} /> Uploading...</>
+                                    : <><Emoji symbol="📤" size={13} /> Upload {label}</>}
                                 </button>
                               )}
                             </div>

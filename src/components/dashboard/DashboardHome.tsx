@@ -7,6 +7,7 @@ import { saveApplicantOverride } from '../../services/applicationSubmitService';
 import StatusDropdown from './StatusDropdown';
 import DashboardCharts from './DashboardCharts';
 import { useSettings, fmtDate, CURRENCY_SYMBOLS } from '../../contexts/SettingsContext';
+import { Emoji } from '../Emoji';
 
 export default function DashboardHome() {
   const navigate = useNavigate();
@@ -16,7 +17,6 @@ export default function DashboardHome() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusType | 'all'>('all');
 
-  // Apply locally-saved status overrides so charts stay in sync with DriversPage
   const drivers = useMemo(() => applyOverrides(companyDrivers), [companyDrivers, applyOverrides]);
 
   const counts = useMemo(() => ({
@@ -62,7 +62,7 @@ export default function DashboardHome() {
       />
 
       <div className="content-grid">
-        {/* ── RECRUITING ── */}
+        {/* RECRUITING */}
         <div className="card">
           <div className="card-header"><h2 className="card-title">Recruiting</h2></div>
           <div className="recruiting-stats">
@@ -72,7 +72,7 @@ export default function DashboardHome() {
             <span className="stat-badge">{counts.docs} Docs Sent</span>
           </div>
           <div className="search-bar">
-            <span>🔍</span>
+            <Emoji symbol="🔍" size={16} />
             <input type="text" placeholder="Search through candidates..."
               value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
           </div>
@@ -89,7 +89,10 @@ export default function DashboardHome() {
           <div className="table-body scrollable">
             {filtered.length > 0 ? filtered.map(a => (
               <div key={a.id} className="table-row recruiting-cols">
-                <span className="cell-name"><span className="row-avatar">👤</span>{a.name}</span>
+                <span className="cell-name">
+                  <span className="row-avatar"><Emoji symbol="👤" size={20} /></span>
+                  {a.name}
+                </span>
                 <span className="cell" data-label="Position">{a.position}</span>
                 <span className="cell" data-label="Equipment"><span className="equip-badge">{a.equipment}</span></span>
                 <span className="cell" data-label="Status">
@@ -104,12 +107,12 @@ export default function DashboardHome() {
           </div>
         </div>
 
-        {/* ── QUICK ACTIONS ── */}
+        {/* QUICK ACTIONS */}
         <div className="card">
           <div className="card-header"><h2 className="card-title">Quick Actions</h2></div>
           <div className="quick-actions">
             {[
-              { icon: '➕', label: 'Add New Driver',     action: () => navigate('/apply')                  },
+              { icon: '➕', label: 'Add New Driver',     action: () => navigate('/dashboard/drivers?add=true')     },
               { icon: '📄', label: 'Generate Statement', action: () => navigate('/dashboard/statements')   },
               { icon: '📁', label: 'Manage Documents',   action: () => navigate('/dashboard/documents')    },
               { icon: '👥', label: 'View All Drivers',   action: () => navigate('/dashboard/drivers')      },
@@ -117,14 +120,15 @@ export default function DashboardHome() {
               { icon: '💰', label: 'Process Payroll',    action: () => navigate('/dashboard/salary')       },
             ].map(btn => (
               <button key={btn.label} className="action-btn" onClick={btn.action}>
-                <span className="action-icon">{btn.icon}</span><span>{btn.label}</span>
+                <span className="action-icon"><Emoji symbol={btn.icon} size={20} /></span>
+                <span>{btn.label}</span>
               </button>
             ))}
           </div>
         </div>
       </div>
 
-      {/* ── RECENT ACTIVITY ── */}
+      {/* RECENT ACTIVITY */}
       <div className="card">
         <div className="card-header"><h2 className="card-title">Recent Activities</h2></div>
         <div className="activity-list">
@@ -134,7 +138,7 @@ export default function DashboardHome() {
             { icon: '💵', title: 'Payroll processed',         sub: `Weekly payroll of ${sym}847k completed`,     time: '1 day ago'   },
           ].map(item => (
             <div key={item.title} className="activity-item">
-              <span className="activity-icon">{item.icon}</span>
+              <span className="activity-icon"><Emoji symbol={item.icon} size={22} /></span>
               <div className="activity-content">
                 <strong>{item.title}</strong>
                 <span className="activity-time">{item.sub}</span>

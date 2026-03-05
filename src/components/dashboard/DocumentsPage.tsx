@@ -6,6 +6,7 @@ import { useDriverDocStorage, DriverDocSet } from '../../hooks/useDriverDocStora
 import { deleteApplicant, saveApplicantOverride, hireApplicant } from '../../services/applicationSubmitService';
 import EquipmentDropdown from './EquipmentDropdown';
 import StatusDropdown from './StatusDropdown';
+import { Emoji } from '../Emoji';
 
 /** Count how many of the 3 required slots are filled */
 function filledDocCount(docs: DriverDocSet): number {
@@ -129,7 +130,7 @@ export default function DocumentsPage() {
 
       <div className="card">
         <div className="search-bar">
-          <span>🔍</span>
+          <span><Emoji symbol="🔍" size={16} /></span>
           <input
             type="text"
             placeholder="Search by name..."
@@ -146,7 +147,7 @@ export default function DocumentsPage() {
               <div key={d.id} className="document-card">
                 <div className="document-card-content">
                   <div className="document-card-header">
-                    <div className="candidate-avatar">👤</div>
+                    <div className="candidate-avatar"><Emoji symbol="👤" size={22} /></div>
                     <div className="document-card-info">
                       <h3>{d.name}</h3>
                       <p>{d.position}</p>
@@ -231,7 +232,7 @@ export default function DocumentsPage() {
                       return (
                         <div key={key} className="driver-doc-card">
                           <div className="driver-doc-header">
-                            <div className="driver-doc-icon">{icon}</div>
+                            <div className="driver-doc-icon"><Emoji symbol={icon} size={20} /></div>
                             <h4>{label}</h4>
                           </div>
                           {doc ? (
@@ -259,7 +260,7 @@ export default function DocumentsPage() {
                                     disabled={!!uploading}
                                     onClick={() => ref?.current?.click()}
                                   >
-                                    {uploading ? '⏳ Uploading...' : `📤 Upload ${label}`}
+                                    {uploading ? <><Emoji symbol="⏳" size={14} /> Uploading...</> : <><Emoji symbol="📤" size={14} /> Upload {label}</>}
                                   </button>
                                 </>
                               )}
@@ -280,7 +281,7 @@ export default function DocumentsPage() {
                       onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(72, 187, 120, 0.4)'; }}
                       onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(72, 187, 120, 0.3)'; }}
                     >
-                      ✅ Hired — Move to Drivers
+                      <Emoji symbol="✅" size={16} style={{ marginRight: 6 }} /> Hired — Move to Drivers
                     </button>
                   )}
                   {!canHire && (

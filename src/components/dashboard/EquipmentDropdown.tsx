@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { EquipmentType } from '../../types/dashboard';
+import { Emoji } from '../Emoji';
 
 interface EquipmentOption {
   value: EquipmentType;
@@ -147,7 +148,7 @@ export default function EquipmentDropdown({ value, onChange }: Props) {
                 aria-selected={isSelected}
               >
                 <span className="sdd-option-dot" style={{ background: option.dot }} />
-                <span className="sdd-option-emoji">{option.emoji}</span>
+                <span className="sdd-option-emoji"><Emoji symbol={option.emoji} size={16} /></span>
                 <span className="sdd-option-text">{option.label}</span>
                 {isSelected && (
                   <span className="sdd-option-check">

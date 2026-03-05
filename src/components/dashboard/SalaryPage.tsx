@@ -3,6 +3,7 @@ import { useSavedStatements } from '../../contexts/SavedStatementsContext';
 import { useSettings, fmtCurrency, fmtDate } from '../../contexts/SettingsContext';
 import { SavedStatement } from '../../types/dashboard';
 import { downloadStatementPDF } from '../../utils/pdfUtils';
+import { Emoji } from '../Emoji';
 
 export default function SalaryPage() {
   const { statements, removeStatement, clearStatements } = useSavedStatements();
@@ -25,7 +26,6 @@ export default function SalaryPage() {
     if (confirm('Remove all saved statements? This cannot be undone.')) clearStatements();
   };
 
-  /* ── Empty state ── */
   if (statements.length === 0) {
     return (
       <div className="page">
@@ -35,7 +35,9 @@ export default function SalaryPage() {
         </div>
         <div className="card">
           <div className="in-progress" style={{ padding: '56px 20px', textAlign: 'center' }}>
-            <div style={{ fontSize: 56, marginBottom: 16 }}>💰</div>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+              <Emoji symbol="💰" size={56} />
+            </div>
             <h3 style={{ fontSize: 22, fontWeight: 600, marginBottom: 8 }}>No Statements Saved</h3>
             <p style={{ color: 'var(--text-secondary)', marginBottom: 24 }}>
               Generate a statement and press <strong>Save to Salary</strong> to see it here.
@@ -60,7 +62,6 @@ export default function SalaryPage() {
         <p className="page-subtitle">Saved driver payment statements</p>
       </div>
 
-      {/* ── Summary card ── */}
       <div className="salary-summary-row">
         <div className="card salary-summary-card">
           <div className="salary-summary-label">Total Statements</div>
@@ -78,12 +79,12 @@ export default function SalaryPage() {
         </div>
       </div>
 
-      {/* ── Statements table ── */}
       <div className="card" style={{ marginTop: 20 }}>
         <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h2 className="card-title">Saved Statements</h2>
-          <button className="salary-clear-btn" onClick={handleClearAll}>
-            🗑️ Clear All
+          <button className="salary-clear-btn" onClick={handleClearAll}
+            style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Emoji symbol="🗑️" size={14} /> Clear All
           </button>
         </div>
 
@@ -91,13 +92,8 @@ export default function SalaryPage() {
           <table className="salary-table">
             <thead>
               <tr>
-                <th>Date</th>
-                <th>Driver</th>
-                <th>Type</th>
-                <th>Subtotal</th>
-                <th>Adjustment</th>
-                <th>Total</th>
-                <th>Actions</th>
+                <th>Date</th><th>Driver</th><th>Type</th>
+                <th>Subtotal</th><th>Adjustment</th><th>Total</th><th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -106,8 +102,10 @@ export default function SalaryPage() {
                   <td data-label="Date">{fmtDate(new Date(s.savedAt), settings.dateFormat)}</td>
                   <td data-label="Driver"><strong>{s.driverName}</strong></td>
                   <td data-label="Type">
-                    <span className={`salary-badge salary-badge-${s.paymentType}`}>
-                      {s.paymentType === 'miles' ? '🛣️ Per Mile' : '📊 Percent'}
+                    <span className={`salary-badge salary-badge-${s.paymentType}`}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                      <Emoji symbol={s.paymentType === 'miles' ? '🛣️' : '📊'} size={14} />
+                      {s.paymentType === 'miles' ? 'Per Mile' : 'Percent'}
                     </span>
                   </td>
                   <td data-label="Subtotal">{fmtCurrency(s.subtotal, settings.currency)}</td>
@@ -123,19 +121,13 @@ export default function SalaryPage() {
                   <td data-label="Total"><strong style={{ color: 'var(--accent)' }}>{fmtCurrency(s.total, settings.currency)}</strong></td>
                   <td data-label="Actions">
                     <div className="salary-row-actions">
-                      <button
-                        className="salary-action-btn salary-action-pdf"
-                        title="Download PDF"
-                        onClick={() => handleDownload(s)}
-                      >
-                        📄
+                      <button className="salary-action-btn salary-action-pdf" title="Download PDF"
+                        onClick={() => handleDownload(s)}>
+                        <Emoji symbol="📄" size={16} />
                       </button>
-                      <button
-                        className="salary-action-btn salary-action-delete"
-                        title="Delete"
-                        onClick={() => handleDelete(s.id)}
-                      >
-                        🗑️
+                      <button className="salary-action-btn salary-action-delete" title="Delete"
+                        onClick={() => handleDelete(s.id)}>
+                        <Emoji symbol="🗑️" size={16} />
                       </button>
                     </div>
                   </td>
