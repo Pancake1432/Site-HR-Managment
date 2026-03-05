@@ -203,7 +203,86 @@ export function hireApplicant(applicant: Driver, applicantDocs: DriverDocSet): v
   localStorage.setItem(getApplicantsKey(companyId), JSON.stringify(filteredList));
 }
 
-// ── Read a File as base64 data URL ─────────────────────────────────────────
+// ── Fire (remove) a hired driver ──────────────────────────────────────────
+
+function getFiredDriversKey(companyId: string): string {
+  return `hr_fired_drivers_${companyId}`;
+}
+
+export function getFiredDriverIds(companyId: string): number[] {
+  try {
+    const raw = localStorage.getItem(getFiredDriversKey(companyId));
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
+/**
+ * Fires a driver:
+ * - If they were dynamically hired (via form or manual add), removes them from the hired list.
+ * - For all drivers, adds their ID to the fired list so getCompanyData filters them out.
+ * - Also clears their stored documents.
+ */
+export function fireDriver(driverId: number): void {
+  const companyId = getCurrentCompanyId();
+
+  // 1. Remove from hired drivers list (if they're in it)
+  const hired = getHiredDrivers(companyId).filter(d => d.id !== driverId);
+  localStorage.setItem(getHiredDriversKey(companyId), JSON.stringify(hired));
+
+  // 2. Add to fired list (covers hardcoded base drivers too)
+  const firedIds = getFiredDriverIds(companyId);
+  if (!firedIds.includes(driverId)) {
+    firedIds.push(driverId);
+    localStorage.setItem(getFiredDriversKey(companyId), JSON.stringify(firedIds));
+  }
+
+  // 3. Clear their documents
+  const allDocs = loadDriverDocs(companyId);
+  delete allDocs[driverId];
+  saveDriverDocs(companyId, allDocs);
+}
+
+// ── Manually add a driver directly (phone / quick-add) ─────────────────────
+
+export interface ManualDriverInput {
+  firstName: string;
+  lastName:  string;
+  position:  'Owner Operator' | 'Company Driver';
+  driverStatus: 'Ready' | 'Not Ready';
+  equipment: EquipmentType;
+}
+
+export function addManualDriver(input: ManualDriverInput): number {
+  const companyId = getCurrentCompanyId();
+  const existing  = getHiredDrivers(companyId);
+
+  // Generate an ID well above the hardcoded range (1-200)
+  const maxId    = existing.length > 0 ? Math.max(...existing.map(d => d.id)) : 300;
+  const newId    = maxId + 1;
+  const dateStr  = new Date().toLocaleDateString('en-US', {
+    month: '2-digit', day: '2-digit', year: 'numeric',
+  });
+
+  const driver: Driver = {
+    id: newId,
+    name: `${input.firstName} ${input.lastName}`.trim(),
+    firstName: input.firstName,
+    lastName:  input.lastName,
+    position:  input.position,
+    equipment: input.equipment,
+    status:    'Applied',
+    date:      dateStr,
+    isEmployee:       true,
+    driverStatus:     input.driverStatus,
+    paymentType:      'miles',
+    employmentStatus: 'Working',
+  };
+
+  existing.push(driver);
+  localStorage.setItem(getHiredDriversKey(companyId), JSON.stringify(existing));
+  return newId;
+}
+
 
 function readFileAsBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {

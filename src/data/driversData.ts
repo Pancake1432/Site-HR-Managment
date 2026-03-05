@@ -1,5 +1,5 @@
 import { Driver } from '../types/dashboard';
-import { getNewApplicants, getDeletedApplicantIds, getApplicantOverrides, getHiredDrivers } from '../services/applicationSubmitService';
+import { getNewApplicants, getDeletedApplicantIds, getApplicantOverrides, getHiredDrivers, getFiredDriverIds } from '../services/applicationSubmitService';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // COMPANY DATA MAP
@@ -107,6 +107,7 @@ export function getCompanyData(companyId: string) {
   const deletedIds = getDeletedApplicantIds(companyId);
   const overrides = getApplicantOverrides(companyId);
   const hiredDrivers = getHiredDrivers(companyId);
+  const firedIds     = getFiredDriverIds(companyId);
 
   // ── Applicants: merge dynamic + filter deleted + apply overrides ──
   const allApplicants = [...base.applicants, ...dynamicApplicants];
@@ -118,8 +119,9 @@ export function getCompanyData(companyId: string) {
       return override ? { ...a, ...override } : a;
     });
 
-  // ── Company Drivers: merge hardcoded + hired ──
-  const allDrivers = [...base.companyDrivers, ...hiredDrivers];
+  // ── Company Drivers: merge hardcoded + hired, then remove fired ──
+  const allDrivers = [...base.companyDrivers, ...hiredDrivers]
+    .filter(d => !firedIds.includes(d.id));
 
   return {
     ...base,

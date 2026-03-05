@@ -12,7 +12,7 @@ export interface DriverDocSet {
   workingContract: StoredDriverDoc | null;   // uploaded after in-person signing/scan
 }
 
-const MAX_INLINE_BYTES = 1.5 * 1024 * 1024;
+const MAX_INLINE_BYTES = 3 * 1024 * 1024; // 3 MB
 
 function getStorageKey(): string {
   try {
@@ -65,8 +65,9 @@ export function useDriverDocStorage() {
     dateStr: string,
   ): Promise<void> =>
     new Promise((resolve, reject) => {
-      if (!file.type.includes('pdf')) {
-        reject(new Error('Please upload PDF files only'));
+      const allowed = file.type.includes('pdf') || file.type.startsWith('image/');
+      if (!allowed) {
+        reject(new Error('Please upload a PDF or image file (JPG, PNG, etc.)'));
         return;
       }
       const reader = new FileReader();
@@ -103,13 +104,25 @@ export function useDriverDocStorage() {
 
   const openDoc = (doc: StoredDriverDoc) => {
     if (doc.base64) {
-      const win = window.open();
-      if (win) {
-        win.document.write(
-          `<style>*{margin:0;padding:0}body,html{height:100%;overflow:hidden}</style>` +
-          `<iframe src="${doc.base64}" style="width:100%;height:100%;border:none;display:block;"></iframe>`
-        );
-        win.document.title = doc.name;
+      try {
+        // Convert base64 data URL → Blob → object URL (avoids popup blockers)
+        const [header, data] = doc.base64.split(',');
+        const mime = header.match(/:(.*?);/)?.[1] ?? 'application/octet-stream';
+        const bytes = atob(data);
+        const arr = new Uint8Array(bytes.length);
+        for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+        const blob = new Blob([arr], { type: mime });
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        a.href     = url;
+        a.target   = '_blank';
+        a.rel      = 'noopener noreferrer';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 10_000);
+      } catch {
+        alert(`Could not open "${doc.name}". Please try re-uploading the file.`);
       }
     } else {
       alert(`"${doc.name}" is too large to store in the browser.\nRe-upload the file to view it.`);

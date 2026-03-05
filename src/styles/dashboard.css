@@ -210,7 +210,7 @@
   grid-template-columns: 150px 140px 110px 120px 80px 80px;
 }
 .drivers-cols {
-  grid-template-columns: 200px 1fr 110px 120px 100px 130px;
+  grid-template-columns: 200px 1fr 110px 120px 100px 210px;
 }
 /* Employees: name | position | payment | status | action */
 .employees-cols {
