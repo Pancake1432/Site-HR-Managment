@@ -1,33 +1,29 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { StatusType } from '../../types/dashboard';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { useLocalOverrides } from '../../hooks/useLocalOverrides';
+import { saveApplicantOverride } from '../../services/applicationSubmitService';
 import StatusDropdown from './StatusDropdown';
 import DashboardCharts from './DashboardCharts';
 import { useSettings, fmtDate, CURRENCY_SYMBOLS } from '../../contexts/SettingsContext';
+import { Emoji } from '../Emoji';
 
 export default function DashboardHome() {
   const navigate = useNavigate();
   const { settings } = useSettings();
-  const { companyDrivers, applicants } = useCompanyData();
+  const { companyDrivers, applicants, refresh } = useCompanyData();
   const { applyOverrides } = useLocalOverrides();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusType | 'all'>('all');
-  const [applicantStatuses, setApplicantStatuses] = useState<Record<number, StatusType>>({});
 
-  // Apply locally-saved status overrides so charts stay in sync with DriversPage
   const drivers = useMemo(() => applyOverrides(companyDrivers), [companyDrivers, applyOverrides]);
 
-  const applicantsWithStatus = useMemo(() =>
-    applicants.map(a => ({ ...a, status: applicantStatuses[a.id] || a.status }))
-  , [applicants, applicantStatuses]);
-
   const counts = useMemo(() => ({
-    applied:   applicantsWithStatus.filter(a => a.status === 'Applied').length,
-    contacted: applicantsWithStatus.filter(a => a.status === 'Contacted').length,
-    docs:      applicantsWithStatus.filter(a => a.status === 'Documents Sent').length,
-  }), [applicantsWithStatus]);
+    applied:   applicants.filter(a => a.status === 'Applied').length,
+    contacted: applicants.filter(a => a.status === 'Contacted').length,
+    docs:      applicants.filter(a => a.status === 'Documents Sent').length,
+  }), [applicants]);
 
   const driversReady    = drivers.filter(d => d.driverStatus === 'Ready').length;
   const driversNotReady = drivers.filter(d => d.driverStatus === 'Not Ready').length;
@@ -37,16 +33,18 @@ export default function DashboardHome() {
       acc[d.equipment] = (acc[d.equipment] || 0) + 1; return acc;
     }, {}), [drivers]);
 
-  const filtered = useMemo(() => applicantsWithStatus.filter(a => {
+  const filtered = useMemo(() => applicants.filter(a => {
     const q = searchQuery.toLowerCase();
     const matchSearch = a.firstName.toLowerCase().includes(q)
       || a.lastName.toLowerCase().includes(q)
       || a.name.toLowerCase().includes(q);
     return matchSearch && (statusFilter === 'all' || a.status === statusFilter);
-  }), [searchQuery, statusFilter, applicantsWithStatus]);
+  }), [searchQuery, statusFilter, applicants]);
 
-  const handleStatusChange = (applicantId: number, newStatus: StatusType) =>
-    setApplicantStatuses(prev => ({ ...prev, [applicantId]: newStatus }));
+  const handleStatusChange = useCallback((applicantId: number, newStatus: StatusType) => {
+    saveApplicantOverride(applicantId, { status: newStatus });
+    refresh();
+  }, [refresh]);
 
   const sym = CURRENCY_SYMBOLS[settings.currency];
 
@@ -64,17 +62,17 @@ export default function DashboardHome() {
       />
 
       <div className="content-grid">
-        {/* ── RECRUITING ── */}
+        {/* RECRUITING */}
         <div className="card">
           <div className="card-header"><h2 className="card-title">Recruiting</h2></div>
           <div className="recruiting-stats">
-            <span className="stat-badge">{applicantsWithStatus.length} Applications</span>
+            <span className="stat-badge">{applicants.length} Applications</span>
             <span className="stat-badge">{counts.applied} Applied</span>
             <span className="stat-badge">{counts.contacted} Contacted</span>
             <span className="stat-badge">{counts.docs} Docs Sent</span>
           </div>
           <div className="search-bar">
-            <span>🔍</span>
+            <Emoji symbol="🔍" size={16} />
             <input type="text" placeholder="Search through candidates..."
               value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
           </div>
@@ -91,7 +89,10 @@ export default function DashboardHome() {
           <div className="table-body scrollable">
             {filtered.length > 0 ? filtered.map(a => (
               <div key={a.id} className="table-row recruiting-cols">
-                <span className="cell-name"><span className="row-avatar">👤</span>{a.name}</span>
+                <span className="cell-name">
+                  <span className="row-avatar"><Emoji symbol="👤" size={20} /></span>
+                  {a.name}
+                </span>
                 <span className="cell" data-label="Position">{a.position}</span>
                 <span className="cell" data-label="Equipment"><span className="equip-badge">{a.equipment}</span></span>
                 <span className="cell" data-label="Status">
@@ -106,12 +107,12 @@ export default function DashboardHome() {
           </div>
         </div>
 
-        {/* ── QUICK ACTIONS ── */}
+        {/* QUICK ACTIONS */}
         <div className="card">
           <div className="card-header"><h2 className="card-title">Quick Actions</h2></div>
           <div className="quick-actions">
             {[
-              { icon: '➕', label: 'Add New Driver',     action: () => navigate('/apply')                  },
+              { icon: '➕', label: 'Add New Driver',     action: () => navigate('/dashboard/drivers?add=true')     },
               { icon: '📄', label: 'Generate Statement', action: () => navigate('/dashboard/statements')   },
               { icon: '📁', label: 'Manage Documents',   action: () => navigate('/dashboard/documents')    },
               { icon: '👥', label: 'View All Drivers',   action: () => navigate('/dashboard/drivers')      },
@@ -119,14 +120,15 @@ export default function DashboardHome() {
               { icon: '💰', label: 'Process Payroll',    action: () => navigate('/dashboard/salary')       },
             ].map(btn => (
               <button key={btn.label} className="action-btn" onClick={btn.action}>
-                <span className="action-icon">{btn.icon}</span><span>{btn.label}</span>
+                <span className="action-icon"><Emoji symbol={btn.icon} size={20} /></span>
+                <span>{btn.label}</span>
               </button>
             ))}
           </div>
         </div>
       </div>
 
-      {/* ── RECENT ACTIVITY ── */}
+      {/* RECENT ACTIVITY */}
       <div className="card">
         <div className="card-header"><h2 className="card-title">Recent Activities</h2></div>
         <div className="activity-list">
@@ -136,7 +138,7 @@ export default function DashboardHome() {
             { icon: '💵', title: 'Payroll processed',         sub: `Weekly payroll of ${sym}847k completed`,     time: '1 day ago'   },
           ].map(item => (
             <div key={item.title} className="activity-item">
-              <span className="activity-icon">{item.icon}</span>
+              <span className="activity-icon"><Emoji symbol={item.icon} size={22} /></span>
               <div className="activity-content">
                 <strong>{item.title}</strong>
                 <span className="activity-time">{item.sub}</span>

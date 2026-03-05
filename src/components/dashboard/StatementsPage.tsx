@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { StatementData, SavedStatement, PaymentType } from '../../types/dashboard';
 import { useCompanyData } from '../../hooks/useCompanyData';
+import { useLocalOverrides } from '../../hooks/useLocalOverrides';
 import { useSettings, fmtDate, fmtCurrency, fmtDistUnit, CURRENCY_SYMBOLS } from '../../contexts/SettingsContext';
 import { useSavedStatements } from '../../contexts/SavedStatementsContext';
 import { downloadStatementPDF } from '../../utils/pdfUtils';
+import { Emoji } from '../Emoji';
 
 const emptyForm: StatementData = {
   driverId: null, driverName: '',
@@ -19,9 +21,13 @@ export default function StatementsPage() {
   const { settings } = useSettings();
   const { addStatement } = useSavedStatements();
   const { companyDrivers: companyDriversData, companyName } = useCompanyData();
+  const { applyOverrides } = useLocalOverrides();
   const navigate = useNavigate();
   const [form, setForm] = useState<StatementData>(emptyForm);
   const [showPreview, setShowPreview] = useState(false);
+
+  // Apply local overrides (paymentType, status, etc.) on top of base driver data
+  const drivers = applyOverrides(companyDriversData);
 
   const sym      = CURRENCY_SYMBOLS[settings.currency];
   const distUnit = fmtDistUnit(settings.distanceUnit);
@@ -103,11 +109,19 @@ export default function StatementsPage() {
               <label>Select Driver</label>
               <select value={form.driverId ?? ''}
                 onChange={e => {
-                  const d = companyDriversData.find(d => d.id === parseInt(e.target.value));
-                  set({ driverId: d?.id ?? null, driverName: d?.name ?? '' });
+                  const d = drivers.find(d => d.id === parseInt(e.target.value));
+                  set({
+                    driverId:    d?.id ?? null,
+                    driverName:  d?.name ?? '',
+                    paymentType: d?.paymentType ?? 'miles',
+                  });
                 }}>
                 <option value="">Choose a driver...</option>
-                {companyDriversData.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                {drivers.map(d => (
+                  <option key={d.id} value={d.id}>
+                    {d.name} — {d.paymentType === 'miles' ? 'Per Mile' : 'Percent'}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -119,7 +133,7 @@ export default function StatementsPage() {
                   <label key={v} className={`custom-radio ${form.paymentType === v ? 'active' : ''}`}>
                     <input type="radio" name="paymentType" value={v} checked={form.paymentType === v}
                       onChange={() => set({ paymentType: v })} />
-                    <span className="radio-icon">{v === 'miles' ? '🛣️' : '📊'}</span>
+                    <span className="radio-icon"><Emoji symbol={v === 'miles' ? '🛣️' : '📊'} size={16} /></span>
                     <span>{v === 'miles' ? distUnit.toUpperCase() : 'Percentage'}</span>
                   </label>
                 ))}
@@ -188,7 +202,7 @@ export default function StatementsPage() {
                       checked={form.adjustmentType === v}
                       onChange={() => set({ adjustmentType: v })}
                     />
-                    <span className="radio-icon">{v === 'bonus' ? '➕' : '➖'}</span>
+                    <span className="radio-icon"><Emoji symbol={v === 'bonus' ? '➕' : '➖'} size={16} /></span>
                     <span>{v.charAt(0).toUpperCase() + v.slice(1)}</span>
                   </label>
                 ))}
@@ -269,11 +283,13 @@ export default function StatementsPage() {
 
               {/* ── 3-button action bar ── */}
               <div className="statement-actions">
-                <button className="save-salary-btn" onClick={handleSaveToSalary}>
-                  💾 Save to Salary
+                <button className="save-salary-btn" onClick={handleSaveToSalary}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <Emoji symbol="💾" size={16} /> Save to Salary
                 </button>
-                <button className="download-btn" onClick={handleDownloadPDF}>
-                  📄 Download PDF
+                <button className="download-btn" onClick={handleDownloadPDF}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <Emoji symbol="📄" size={16} /> Download PDF
                 </button>
                 <button className="close-preview-btn" onClick={handleClose}>
                   Close

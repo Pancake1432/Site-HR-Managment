@@ -210,7 +210,7 @@
   grid-template-columns: 150px 140px 110px 120px 80px 80px;
 }
 .drivers-cols {
-  grid-template-columns: 200px 1fr 110px 120px 100px 130px;
+  grid-template-columns: 200px 1fr 110px 120px 100px 210px;
 }
 /* Employees: name | position | payment | status | action */
 .employees-cols {
@@ -572,6 +572,7 @@
   z-index: 999;
 }
 .settings-icon:hover { transform: rotate(90deg) scale(1.1); }
+.settings-icon img { filter: brightness(0) invert(1); }
 
 /* ── CANDIDATE AVATAR (legacy) ───────────────────────────────────────── */
 .candidate-avatar {
