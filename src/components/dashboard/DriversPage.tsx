@@ -9,9 +9,10 @@ import { useLocalOverrides } from '../../hooks/useLocalOverrides';
 import { useSettings, fmtDate } from '../../contexts/SettingsContext';
 import { addManualDriver, fireDriver } from '../../services/applicationSubmitService';
 
-const POSITIONS  = ['Owner Operator', 'Company Driver'] as const;
-const EQUIPMENTS = ['Van', 'Reefer', 'Flat Bed', 'Unsigned'] as const;
-const STATUSES   = ['Ready', 'Not Ready'] as const;
+const POSITIONS    = ['Owner Operator', 'Company Driver'] as const;
+const EQUIPMENTS   = ['Van', 'Reefer', 'Flat Bed', 'Unsigned'] as const;
+const STATUSES     = ['Ready', 'Not Ready'] as const;
+const PAYMENT_TYPES = ['miles', 'percent'] as const;
 
 interface AddDriverForm {
   firstName:    string;
@@ -19,6 +20,7 @@ interface AddDriverForm {
   position:     typeof POSITIONS[number];
   driverStatus: typeof STATUSES[number];
   equipment:    typeof EQUIPMENTS[number];
+  paymentType:  typeof PAYMENT_TYPES[number];
 }
 
 const EMPTY_FORM: AddDriverForm = {
@@ -27,6 +29,7 @@ const EMPTY_FORM: AddDriverForm = {
   position:     'Company Driver',
   driverStatus: 'Not Ready',
   equipment:    'Van',
+  paymentType:  'miles',
 };
 
 export default function DriversPage() {
@@ -121,6 +124,8 @@ export default function DriversPage() {
 
   // ── Status toggle ─────────────────────────────────────────────────────────
   const toggleDriverStatus = (driver: Driver) => {
+    // Fired drivers are permanently Not Ready — no toggling allowed
+    if (driver.employmentStatus === 'Fired') return;
     const next = driver.driverStatus === 'Ready' ? 'Not Ready' : 'Ready';
     saveOverride(driver.id, { driverStatus: next });
     if (selectedDriver?.id === driver.id) {
@@ -232,8 +237,12 @@ export default function DriversPage() {
               <span className="cell" data-label="Status">
                 <button
                   className={`status-badge status-driver-${d.driverStatus?.toLowerCase().replace(' ', '-')}`}
-                  style={{ cursor: 'pointer', border: 'none', background: 'none' }}
-                  title="Click to toggle status"
+                  style={{
+                    cursor: d.employmentStatus === 'Fired' ? 'not-allowed' : 'pointer',
+                    border: 'none', background: 'none',
+                    opacity: d.employmentStatus === 'Fired' ? 0.6 : 1,
+                  }}
+                  title={d.employmentStatus === 'Fired' ? 'Terminated — status locked' : 'Click to toggle status'}
                   onClick={() => toggleDriverStatus(d)}
                 >
                   {d.driverStatus}
@@ -311,7 +320,14 @@ export default function DriversPage() {
                     <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>Position</label>
                     <select
                       value={addForm.position}
-                      onChange={e => setAddForm(f => ({ ...f, position: e.target.value as typeof POSITIONS[number] }))}
+                      onChange={e => {
+                        const pos = e.target.value as typeof POSITIONS[number];
+                        setAddForm(f => ({
+                          ...f,
+                          position: pos,
+                          paymentType: pos === 'Owner Operator' ? 'percent' : f.paymentType,
+                        }));
+                      }}
                       style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', fontSize: 14, background: 'var(--input-bg, #fff)', color: 'var(--text-primary)' }}
                     >
                       {POSITIONS.map(p => <option key={p}>{p}</option>)}
@@ -336,6 +352,20 @@ export default function DriversPage() {
                     >
                       {EQUIPMENTS.map(eq => <option key={eq}>{eq}</option>)}
                     </select>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4, gridColumn: '1 / -1' }}>
+                    <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>Payment Type</label>
+                    <div style={{ display: 'flex', gap: 10 }}>
+                      {(addForm.position === 'Owner Operator' ? ['percent'] : PAYMENT_TYPES).map(pt => (
+                        <label key={pt} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '8px 16px', borderRadius: 8, border: `2px solid ${addForm.paymentType === pt ? 'var(--accent, #667eea)' : 'var(--border)'}`, cursor: addForm.position === 'Owner Operator' ? 'default' : 'pointer', flex: 1, justifyContent: 'center', background: addForm.paymentType === pt ? 'rgba(102,126,234,0.08)' : 'transparent', transition: 'all 0.15s' }}>
+                          <input type="radio" name="addPaymentType" value={pt} checked={addForm.paymentType === pt} onChange={() => setAddForm(f => ({ ...f, paymentType: pt as typeof PAYMENT_TYPES[number] }))} style={{ display: 'none' }} />
+                          <Emoji symbol={pt === 'miles' ? '🛣️' : '📊'} size={16} />
+                          <span style={{ fontSize: 14, fontWeight: 600, color: addForm.paymentType === pt ? 'var(--accent, #667eea)' : 'var(--text-primary)' }}>
+                            {pt === 'miles' ? 'Per Mile' : 'Per Percent'}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -419,8 +449,12 @@ export default function DriversPage() {
                       <span className="info-value">
                         <button
                           className={`status-badge status-driver-${selectedDriver.driverStatus?.toLowerCase().replace(' ', '-')}`}
-                          style={{ cursor: 'pointer', border: 'none', background: 'none' }}
-                          title="Click to toggle"
+                          style={{
+                            cursor: selectedDriver.employmentStatus === 'Fired' ? 'not-allowed' : 'pointer',
+                            border: 'none', background: 'none',
+                            opacity: selectedDriver.employmentStatus === 'Fired' ? 0.6 : 1,
+                          }}
+                          title={selectedDriver.employmentStatus === 'Fired' ? 'Terminated — status locked' : 'Click to toggle'}
                           onClick={() => toggleDriverStatus(selectedDriver)}
                         >
                           {selectedDriver.driverStatus}

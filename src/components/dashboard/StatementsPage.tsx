@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { StatementData, SavedStatement, PaymentType } from '../../types/dashboard';
 import { useCompanyData } from '../../hooks/useCompanyData';
+import { useLocalOverrides } from '../../hooks/useLocalOverrides';
 import { useSettings, fmtDate, fmtCurrency, fmtDistUnit, CURRENCY_SYMBOLS } from '../../contexts/SettingsContext';
 import { useSavedStatements } from '../../contexts/SavedStatementsContext';
 import { downloadStatementPDF } from '../../utils/pdfUtils';
@@ -20,9 +21,13 @@ export default function StatementsPage() {
   const { settings } = useSettings();
   const { addStatement } = useSavedStatements();
   const { companyDrivers: companyDriversData, companyName } = useCompanyData();
+  const { applyOverrides } = useLocalOverrides();
   const navigate = useNavigate();
   const [form, setForm] = useState<StatementData>(emptyForm);
   const [showPreview, setShowPreview] = useState(false);
+
+  // Apply local overrides (paymentType, status, etc.) on top of base driver data
+  const drivers = applyOverrides(companyDriversData);
 
   const sym      = CURRENCY_SYMBOLS[settings.currency];
   const distUnit = fmtDistUnit(settings.distanceUnit);
@@ -104,11 +109,19 @@ export default function StatementsPage() {
               <label>Select Driver</label>
               <select value={form.driverId ?? ''}
                 onChange={e => {
-                  const d = companyDriversData.find(d => d.id === parseInt(e.target.value));
-                  set({ driverId: d?.id ?? null, driverName: d?.name ?? '' });
+                  const d = drivers.find(d => d.id === parseInt(e.target.value));
+                  set({
+                    driverId:    d?.id ?? null,
+                    driverName:  d?.name ?? '',
+                    paymentType: d?.paymentType ?? 'miles',
+                  });
                 }}>
                 <option value="">Choose a driver...</option>
-                {companyDriversData.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                {drivers.map(d => (
+                  <option key={d.id} value={d.id}>
+                    {d.name} — {d.paymentType === 'miles' ? 'Per Mile' : 'Percent'}
+                  </option>
+                ))}
               </select>
             </div>
 

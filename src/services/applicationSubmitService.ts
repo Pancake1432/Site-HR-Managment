@@ -250,6 +250,7 @@ export interface ManualDriverInput {
   position:  'Owner Operator' | 'Company Driver';
   driverStatus: 'Ready' | 'Not Ready';
   equipment: EquipmentType;
+  paymentType: 'miles' | 'percent';
 }
 
 export function addManualDriver(input: ManualDriverInput): number {
@@ -274,7 +275,7 @@ export function addManualDriver(input: ManualDriverInput): number {
     date:      dateStr,
     isEmployee:       true,
     driverStatus:     input.driverStatus,
-    paymentType:      'miles',
+    paymentType:      input.paymentType,
     employmentStatus: 'Working',
   };
 
