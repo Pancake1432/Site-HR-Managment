@@ -186,9 +186,19 @@ export default function StatementsPage() {
               </div>
             </>}
 
-            {/* Adjustment type */}
-            <div className="form-group full-width">
-              <label>Adjustment Type</label>
+            {/* ── Adjustment — works for both Per Mile AND Percent drivers ── */}
+            <div className="form-group full-width" style={{
+              borderTop: '1px solid var(--border)',
+              paddingTop: 16,
+              marginTop: 4,
+            }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                <Emoji symbol="⚙️" size={15} />
+                Adjustment
+                <span style={{ fontSize: 12, fontWeight: 400, color: 'var(--text-secondary)' }}>
+                  (optional — applies to all payment types)
+                </span>
+              </label>
               <div className="custom-radio-group">
                 {(['bonus', 'deduction'] as const).map(v => (
                   <label
@@ -213,7 +223,7 @@ export default function StatementsPage() {
               <label>Adjustment Amount ({sym})</label>
               <input
                 type="number"
-                placeholder="Enter amount"
+                placeholder="0.00 (leave blank to skip)"
                 value={form.adjustmentAmount}
                 onChange={e => set({ adjustmentAmount: e.target.value })}
                 onWheel={e => e.currentTarget.blur()}
@@ -224,11 +234,35 @@ export default function StatementsPage() {
               <label>Adjustment Reason</label>
               <input
                 type="text"
-                placeholder="Enter reason"
+                placeholder="e.g. Performance bonus, fuel deduction…"
                 value={form.adjustmentReason}
                 onChange={e => set({ adjustmentReason: e.target.value })}
               />
             </div>
+
+            {/* Live adjustment preview — visible for BOTH payment types */}
+            {parseFloat(form.adjustmentAmount || '0') > 0 && (
+              <div className="form-group full-width">
+                <div style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '10px 16px', borderRadius: 10,
+                  background: form.adjustmentType === 'bonus'
+                    ? 'rgba(56,161,105,0.08)' : 'rgba(229,62,62,0.08)',
+                  border: `1px solid ${form.adjustmentType === 'bonus' ? 'rgba(56,161,105,0.3)' : 'rgba(229,62,62,0.3)'}`,
+                }}>
+                  <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+                    {form.adjustmentType === 'bonus' ? '➕ Bonus' : '➖ Deduction'}
+                    {form.adjustmentReason ? ` — ${form.adjustmentReason}` : ''}
+                  </span>
+                  <span style={{
+                    fontSize: 14, fontWeight: 700,
+                    color: form.adjustmentType === 'bonus' ? '#38a169' : '#e53e3e',
+                  }}>
+                    {form.adjustmentType === 'bonus' ? '+' : '-'}{sym}{parseFloat(form.adjustmentAmount || '0').toFixed(2)}
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
           <button className="generate-btn" onClick={handleGenerate}>Generate Statement</button>
         </div>

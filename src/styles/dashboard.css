@@ -2310,6 +2310,27 @@ html.compact .activity-item     { padding: 10px; }
   gap: 16px;
   margin-bottom: 4px;
 }
+.salary-summary-4col {
+  grid-template-columns: repeat(4, 1fr);
+}
+.salary-charts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 16px;
+}
+.salary-heatmap-card {
+  grid-column: 1 / -1;
+}
+/* dark-mode heatmap empty cell */
+html.dark .salary-heatmap-card rect[fill="var(--heatmap-empty, #ebedf0)"] { fill: #2d3748; }
+html.dark { --heatmap-empty: #2d3748; }
+
+@media (max-width: 900px) {
+  .salary-summary-4col { grid-template-columns: 1fr 1fr; }
+  .salary-charts-grid  { grid-template-columns: 1fr; }
+  .salary-heatmap-card { grid-column: 1; }
+}
 .salary-summary-card { text-align: center; padding: 24px 16px; }
 .salary-summary-card.salary-summary-total { background: var(--gradient); color: white; }
 .salary-summary-label { font-size: 13px; font-weight: 500; color: var(--text-secondary); margin-bottom: 6px; }
