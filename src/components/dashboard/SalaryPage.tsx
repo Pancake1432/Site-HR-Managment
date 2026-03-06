@@ -30,7 +30,6 @@ function WeeklyPayStrip({
     const d = new Date();
     d.setHours(0, 0, 0, 0);
     const dow = d.getDay(); // 0=Sun … 6=Sat
-    const diff = dow <= 5 ? dow - 5 : dow - 12; // days back to Friday
     d.setDate(d.getDate() - (dow === 5 ? 0 : (dow < 5 ? dow + 2 : dow - 5)));
     return d;
   }, []);
@@ -91,13 +90,14 @@ function WeeklyPayStrip({
 
   // Month label positions
   const monthLabels = useMemo(() => {
-    const labels: { label: string; idx: number }[] = [];
+    const labels: { label: string; idx: number; key: string }[] = [];
     let lastMonth = -1;
     weeks.forEach((w, i) => {
       if (w.fri.getMonth() !== lastMonth) {
         labels.push({
           label: w.fri.toLocaleString('default', { month: 'short' }),
           idx: i,
+          key: w.key,
         });
         lastMonth = w.fri.getMonth();
       }
@@ -116,7 +116,7 @@ function WeeklyPayStrip({
       <div style={{ display: 'flex', marginBottom: 6, position: 'relative', height: 16 }}>
         {monthLabels.map((m) => (
           <span
-            key={m.key ?? m.label + m.idx}
+            key={m.key}
             style={{
               position: 'absolute',
               left: m.idx * (CELL + GAP),
@@ -229,7 +229,7 @@ export default function SalaryPage() {
   const { settings } = useSettings();
   const navigate = useNavigate();
 
-  const [selectedDriver, setSelectedDriver] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedStatement, setSelectedStatement] = useState<SavedStatement | null>(null);
 
   const totalPaid = statements
@@ -244,18 +244,11 @@ export default function SalaryPage() {
     .reduce((sum, s) => sum + parseFloat(s.adjustmentAmount || '0'), 0)
     .toFixed(2);
 
-  const uniqueDrivers = useMemo(
-    () => [...new Set(statements.map((s) => s.driverName))].sort(),
-    [statements]
-  );
-
-  const filteredStatements = useMemo(
-    () =>
-      selectedDriver === 'all'
-        ? statements
-        : statements.filter((s) => s.driverName === selectedDriver),
-    [statements, selectedDriver]
-  );
+  const filteredStatements = useMemo(() => {
+    if (!searchQuery.trim()) return statements;
+    const q = searchQuery.toLowerCase();
+    return statements.filter((s) => s.driverName.toLowerCase().includes(q));
+  }, [statements, searchQuery]);
 
   const handleDownload = (s: SavedStatement) =>
     downloadStatementPDF(s, settings.currency, settings.distanceUnit, settings.dateFormat);
@@ -371,28 +364,37 @@ export default function SalaryPage() {
             gap: 10,
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
             <h2 className="card-title">Saved Statements</h2>
-            <select
-              value={selectedDriver}
-              onChange={(e) => setSelectedDriver(e.target.value)}
-              style={{
-                padding: '6px 12px',
-                borderRadius: 8,
-                border: '1px solid var(--border)',
-                background: 'var(--bg-card-secondary)',
-                color: 'var(--text-primary)',
-                fontSize: 13,
-                cursor: 'pointer',
-              }}
-            >
-              <option value="all">All Drivers ({statements.length})</option>
-              {uniqueDrivers.map((name) => (
-                <option key={name} value={name}>
-                  {name} ({statements.filter((s) => s.driverName === name).length})
-                </option>
-              ))}
-            </select>
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              padding: '6px 12px', borderRadius: 8,
+              border: '1px solid var(--border)',
+              background: 'var(--bg-card-secondary)',
+              fontSize: 13,
+            }}>
+              <span style={{ color: 'var(--text-secondary)', fontSize: 14 }}>🔍</span>
+              <input
+                type="text"
+                placeholder="Search driver…"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                style={{
+                  border: 'none', background: 'transparent',
+                  outline: 'none', fontSize: 13,
+                  color: 'var(--text-primary)', width: 140,
+                }}
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  style={{
+                    border: 'none', background: 'none', cursor: 'pointer',
+                    color: 'var(--text-secondary)', fontSize: 14, padding: 0, lineHeight: 1,
+                  }}
+                >✕</button>
+              )}
+            </div>
           </div>
           <button
             className="salary-clear-btn"
@@ -403,8 +405,9 @@ export default function SalaryPage() {
           </button>
         </div>
 
-        {/* Per-driver summary banner */}
-        {selectedDriver !== 'all' &&
+        {/* Per-driver summary banner — shown when search filters to one driver */}
+        {searchQuery.trim() && filteredStatements.length > 0 &&
+          new Set(filteredStatements.map(s => s.driverName)).size === 1 &&
           (() => {
             const ds = filteredStatements;
             const dTotal = ds.reduce((s, st) => s + parseFloat(st.total || '0'), 0);
@@ -435,7 +438,7 @@ export default function SalaryPage() {
                 }}
               >
                 {[
-                  { label: 'Driver', value: selectedDriver, color: 'var(--text-primary)' },
+                  { label: 'Driver', value: ds[0].driverName, color: 'var(--text-primary)' },
                   { label: 'Statements', value: String(ds.length), color: 'var(--text-primary)' },
                   {
                     label: 'Total Earned',
