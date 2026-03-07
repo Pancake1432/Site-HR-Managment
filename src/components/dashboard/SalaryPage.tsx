@@ -9,12 +9,16 @@ import { Emoji } from '../Emoji';
 // ── Weekly Pay Strip ────────────────────────────────────────────────────────
 // One cell per Friday (pay day), spanning the last 52 weeks.
 // Color intensity = total $ paid that week. Hover shows date range + amount.
+const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
 function WeeklyPayStrip({
   statements,
   currency,
+  payDay,
 }: {
   statements: SavedStatement[];
   currency: string;
+  payDay: number;
 }) {
   const [tooltip, setTooltip] = useState<{
     x: number;
@@ -25,14 +29,15 @@ function WeeklyPayStrip({
   const WEEKS = 52;
   const sym = currency === 'EUR' ? '€' : '$';
 
-  // Find the most recent Friday (today counts if it IS Friday)
-  const latestFriday = useMemo(() => {
+  // Find the most recent pay day (based on settings)
+  const latestPayDay = useMemo(() => {
     const d = new Date();
     d.setHours(0, 0, 0, 0);
-    const dow = d.getDay(); // 0=Sun … 6=Sat
-    d.setDate(d.getDate() - (dow === 5 ? 0 : (dow < 5 ? dow + 2 : dow - 5)));
+    const dow = d.getDay();
+    const diff = (dow - payDay + 7) % 7;
+    d.setDate(d.getDate() - diff);
     return d;
-  }, []);
+  }, [payDay]);
 
   // Build a map: fridayISO -> { total, count, drivers }
   const weekMap = useMemo(() => {
@@ -40,11 +45,11 @@ function WeeklyPayStrip({
     statements.forEach((s) => {
       const d = new Date(s.savedAt);
       d.setHours(0, 0, 0, 0);
-      // Find the Friday of that week (Mon-Sun week ending Friday)
+      // Find the pay day of that week
       const dow = d.getDay();
-      const daysToFri = dow <= 5 ? 5 - dow : 6; // distance forward to Friday
+      const daysToPayDay = (payDay - dow + 7) % 7;
       const fri = new Date(d);
-      fri.setDate(d.getDate() + daysToFri);
+      fri.setDate(d.getDate() + daysToPayDay);
       const key = fri.toISOString().slice(0, 10);
       if (!map[key]) map[key] = { total: 0, count: 0, drivers: new Set() };
       map[key].total += parseFloat(s.total || '0');
@@ -52,13 +57,13 @@ function WeeklyPayStrip({
       map[key].drivers.add(s.driverName);
     });
     return map;
-  }, [statements]);
+  }, [statements, payDay]);
 
   // Build ordered array of WEEKS weeks, newest on the right
   const weeks = useMemo(() => {
     return Array.from({ length: WEEKS }, (_, i) => {
-      const fri = new Date(latestFriday);
-      fri.setDate(latestFriday.getDate() - (WEEKS - 1 - i) * 7);
+      const fri = new Date(latestPayDay);
+      fri.setDate(latestPayDay.getDate() - (WEEKS - 1 - i) * 7);
       const key = fri.toISOString().slice(0, 10);
       const data = weekMap[key];
 
@@ -75,7 +80,7 @@ function WeeklyPayStrip({
         drivers: data?.drivers ?? new Set<string>(),
       };
     });
-  }, [latestFriday, weekMap]);
+  }, [latestPayDay, weekMap]);
 
   const maxTotal = Math.max(...weeks.map((w) => w.total), 1);
 
@@ -147,16 +152,16 @@ function WeeklyPayStrip({
             }}
             onMouseEnter={(e) => {
               const r = e.currentTarget.getBoundingClientRect();
-              const prevFri = new Date(w.fri);
-              prevFri.setDate(w.fri.getDate() - 7);
+              const prevPayDay = new Date(w.fri);
+              prevPayDay.setDate(w.fri.getDate() - 7);
               const lines =
                 w.count === 0
                   ? [
-                      `${fmtShort(prevFri)} – ${fmtShort(w.fri)}`,
+                      `${fmtShort(prevPayDay)} – ${fmtShort(w.fri)}`,
                       'No payouts this week',
                     ]
                   : [
-                      `📅 ${fmtShort(prevFri)} – ${fmtShort(w.fri)}`,
+                      `📅 ${fmtShort(prevPayDay)} – ${fmtShort(w.fri)}`,
                       `💰 ${sym}${w.total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} paid out`,
                       `📋 ${w.count} statement${w.count !== 1 ? 's' : ''}`,
                       `👤 ${[...w.drivers].join(', ')}`,
@@ -344,11 +349,11 @@ export default function SalaryPage() {
               whiteSpace: 'nowrap',
             }}
           >
-            📅 Paid every Friday
+            📅 Paid every {DAY_NAMES[parseInt(settings.payDay)]}
           </span>
         </div>
         <div style={{ overflowX: 'auto', paddingBottom: 4 }}>
-          <WeeklyPayStrip statements={statements} currency={settings.currency} />
+          <WeeklyPayStrip statements={statements} currency={settings.currency} payDay={parseInt(settings.payDay)} />
         </div>
       </div>
 

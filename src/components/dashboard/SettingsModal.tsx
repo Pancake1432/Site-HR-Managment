@@ -1,7 +1,7 @@
 import {
   useSettings,
-  CURRENCY_LABELS, DIST_LABELS, DATE_LABELS,
-  Currency, DistUnit, DateFmt,
+  CURRENCY_LABELS, DIST_LABELS, DATE_LABELS, PAY_DAY_LABELS,
+  Currency, DistUnit, DateFmt, PayDay,
 } from '../../contexts/SettingsContext';
 import { Emoji } from '../Emoji';
 
@@ -129,6 +129,19 @@ export default function SettingsModal({ onClose }: Props) {
               value={settings.dateFormat}
               options={DATE_LABELS as Record<DateFmt, string>}
               onChange={v => update('dateFormat', v)}
+            />
+          </div>
+
+
+          {/* ── PAYROLL ── */}
+          <SectionHeader icon="💵" title="Payroll" />
+          <div className="stg-card">
+            <SegmentRow<PayDay>
+              label="Pay Day"
+              sub="The weekly day drivers are paid — used on the Salary activity chart"
+              value={settings.payDay}
+              options={PAY_DAY_LABELS as Record<PayDay, string>}
+              onChange={v => update('payDay', v)}
             />
           </div>
 
