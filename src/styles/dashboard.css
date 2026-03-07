@@ -210,7 +210,7 @@
   grid-template-columns: 150px 140px 110px 120px 80px 80px;
 }
 .drivers-cols {
-  grid-template-columns: 200px 1fr 110px 120px 100px 130px;
+  grid-template-columns: 200px 1fr 110px 120px 100px 210px;
 }
 /* Employees: name | position | payment | status | action */
 .employees-cols {
@@ -572,6 +572,7 @@
   z-index: 999;
 }
 .settings-icon:hover { transform: rotate(90deg) scale(1.1); }
+.settings-icon img { filter: brightness(0) invert(1); }
 
 /* ── CANDIDATE AVATAR (legacy) ───────────────────────────────────────── */
 .candidate-avatar {
@@ -2308,6 +2309,27 @@ html.compact .activity-item     { padding: 10px; }
   grid-template-columns: repeat(3, 1fr);
   gap: 16px;
   margin-bottom: 4px;
+}
+.salary-summary-4col {
+  grid-template-columns: repeat(4, 1fr);
+}
+.salary-charts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 16px;
+}
+.salary-heatmap-card {
+  grid-column: 1 / -1;
+}
+/* dark-mode heatmap empty cell */
+html.dark .salary-heatmap-card rect[fill="var(--heatmap-empty, #ebedf0)"] { fill: #2d3748; }
+html.dark { --heatmap-empty: #2d3748; }
+
+@media (max-width: 900px) {
+  .salary-summary-4col { grid-template-columns: 1fr 1fr; }
+  .salary-charts-grid  { grid-template-columns: 1fr; }
+  .salary-heatmap-card { grid-column: 1; }
 }
 .salary-summary-card { text-align: center; padding: 24px 16px; }
 .salary-summary-card.salary-summary-total { background: var(--gradient); color: white; }

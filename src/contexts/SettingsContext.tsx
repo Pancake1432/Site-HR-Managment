@@ -3,12 +3,14 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 export type Currency = 'USD' | 'EUR';
 export type DistUnit = 'miles' | 'km';
 export type DateFmt  = 'MM/DD/YY' | 'DD/MM/YY';
+export type PayDay   = '0' | '1' | '2' | '3' | '4' | '5' | '6'; // Sun=0 … Sat=6
 
 export interface AppSettings {
   darkMode:           boolean;
   currency:           Currency;
   distanceUnit:       DistUnit;
   dateFormat:         DateFmt;
+  payDay:             PayDay;
   compactView:        boolean;
   emailNotifications: boolean;
   autoSave:           boolean;
@@ -19,6 +21,7 @@ const DEFAULTS: AppSettings = {
   currency:           'USD',
   distanceUnit:       'miles',
   dateFormat:         'MM/DD/YY',
+  payDay:             '5',   // Friday
   compactView:        false,
   emailNotifications: true,
   autoSave:           true,
@@ -54,6 +57,10 @@ export const CURRENCY_SYMBOLS: Record<Currency, string> = { USD: '$', EUR: '€'
 export const CURRENCY_LABELS:  Record<Currency, string> = { USD: 'US Dollar ($)', EUR: 'Euro (€)' };
 export const DIST_LABELS:      Record<DistUnit, string> = { miles: 'Miles (mi)', km: 'Kilometres (km)' };
 export const DATE_LABELS:      Record<DateFmt,  string> = { 'MM/DD/YY': 'MM/DD/YY (US)', 'DD/MM/YY': 'DD/MM/YY (EU)' };
+export const PAY_DAY_LABELS:   Record<PayDay,   string> = {
+  '0': 'Sunday', '1': 'Monday', '2': 'Tuesday', '3': 'Wednesday',
+  '4': 'Thursday', '5': 'Friday', '6': 'Saturday',
+};
 
 /* ─────────────────────────────────────────────────────────────────
    FORMAT HELPERS — import these in any component

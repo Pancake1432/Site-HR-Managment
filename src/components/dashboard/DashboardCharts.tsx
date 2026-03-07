@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { Emoji } from '../Emoji';
 
 /* ─────────────────────────────────────────────
    TYPES
@@ -137,7 +138,7 @@ function BarChart({ items }: BarChartProps) {
       {items.map((item) => (
         <div key={item.label} className="dc-bar-row">
           <div className="dc-bar-meta">
-            <span className="dc-bar-emoji">{item.emoji}</span>
+            <span className="dc-bar-emoji"><Emoji symbol={item.emoji} size={18} /></span>
             <span className="dc-bar-label">{item.label}</span>
             <span className="dc-bar-count">{item.value}</span>
           </div>

@@ -1,14 +1,15 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { getCompanyData } from '../data/driversData';
 
 /**
  * Reads the logged-in user's companyId from localStorage and returns
  * the matching driver/applicant datasets.
  *
- * Uses useState so the data can be refreshed after mutations (e.g. deleting an applicant).
+ * Uses useState + useEffect to guarantee fresh data on every mount
+ * (tab switch, page navigation) and supports manual refresh after mutations.
  */
 export function useCompanyData() {
-  const getInitialData = () => {
+  const loadData = useCallback(() => {
     try {
       const raw = localStorage.getItem('currentUser');
       const user = raw ? JSON.parse(raw) : null;
@@ -17,14 +18,19 @@ export function useCompanyData() {
     } catch {
       return getCompanyData('company-paks');
     }
-  };
-
-  const [data, setData] = useState(getInitialData);
-
-  /** Call this after any mutation (add/delete applicant) to refresh the list */
-  const refresh = useCallback(() => {
-    setData(getInitialData());
   }, []);
+
+  const [data, setData] = useState(loadData);
+
+  // Re-read from localStorage on every mount (handles tab switches / navigation)
+  useEffect(() => {
+    setData(loadData());
+  }, [loadData]);
+
+  /** Call after any mutation (add/delete/hire/override) to refresh the list */
+  const refresh = useCallback(() => {
+    setData(loadData());
+  }, [loadData]);
 
   return { ...data, refresh };
 }

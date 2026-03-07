@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { z } from 'zod';
 import '../styles/auth.css';
+import { Emoji } from '../components/Emoji';
 
 // ── Zod schema ──────────────────────────────────────────────────────────────
 const loginSchema = z.object({
@@ -86,7 +87,7 @@ function LoginPage() {
     <div className="auth-container">
       <div className="auth-box">
         <div className="auth-header">
-          <div className="logo-icon">🏢</div>
+          <div className="logo-icon"><Emoji symbol="🏢" size={28} /></div>
           <h1>Welcome Back</h1>
           <p>Sign in to your HR Manager account</p>
         </div>

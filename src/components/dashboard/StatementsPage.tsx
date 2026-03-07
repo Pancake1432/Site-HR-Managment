@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { StatementData, SavedStatement, PaymentType } from '../../types/dashboard';
 import { useCompanyData } from '../../hooks/useCompanyData';
+import { useLocalOverrides } from '../../hooks/useLocalOverrides';
 import { useSettings, fmtDate, fmtCurrency, fmtDistUnit, CURRENCY_SYMBOLS } from '../../contexts/SettingsContext';
 import { useSavedStatements } from '../../contexts/SavedStatementsContext';
 import { downloadStatementPDF } from '../../utils/pdfUtils';
+import { Emoji } from '../Emoji';
 
 const emptyForm: StatementData = {
   driverId: null, driverName: '',
@@ -19,9 +21,15 @@ export default function StatementsPage() {
   const { settings } = useSettings();
   const { addStatement } = useSavedStatements();
   const { companyDrivers: companyDriversData, companyName } = useCompanyData();
+  const { applyOverrides } = useLocalOverrides();
   const navigate = useNavigate();
   const [form, setForm] = useState<StatementData>(emptyForm);
   const [showPreview, setShowPreview] = useState(false);
+  const [driverSearch, setDriverSearch] = useState('');
+  const [showDriverList, setShowDriverList] = useState(false);
+
+  // Apply local overrides (paymentType, status, etc.) on top of base driver data
+  const drivers = applyOverrides(companyDriversData);
 
   const sym      = CURRENCY_SYMBOLS[settings.currency];
   const distUnit = fmtDistUnit(settings.distanceUnit);
@@ -98,17 +106,102 @@ export default function StatementsPage() {
           <div className="card-header"><h2 className="card-title">Create Statement</h2></div>
           <div className="form-grid">
 
-            {/* Driver select */}
-            <div className="form-group full-width">
+            {/* Driver autocomplete */}
+            <div className="form-group full-width" style={{ position: 'relative' }}>
               <label>Select Driver</label>
-              <select value={form.driverId ?? ''}
-                onChange={e => {
-                  const d = companyDriversData.find(d => d.id === parseInt(e.target.value));
-                  set({ driverId: d?.id ?? null, driverName: d?.name ?? '' });
-                }}>
-                <option value="">Choose a driver...</option>
-                {companyDriversData.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-              </select>
+              <div style={{ position: 'relative' }}>
+                <span style={{
+                  position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)',
+                  fontSize: 15, color: 'var(--text-secondary)', pointerEvents: 'none', zIndex: 1,
+                }}>🔍</span>
+                <input
+                  type="text"
+                  placeholder="Search and select a driver…"
+                  value={driverSearch || form.driverName}
+                  onFocus={() => { setDriverSearch(form.driverName || ''); setShowDriverList(true); }}
+                  onChange={e => { setDriverSearch(e.target.value); setShowDriverList(true); set({ driverId: null, driverName: '' }); }}
+                  onBlur={() => setTimeout(() => setShowDriverList(false), 150)}
+                  style={{
+                    width: '100%', padding: '11px 40px 11px 38px',
+                    borderRadius: 8, border: '1px solid var(--border)',
+                    background: 'var(--input-bg, #fff)', color: 'var(--text-primary)',
+                    fontSize: 14, boxSizing: 'border-box', outline: 'none',
+                    transition: 'border-color 0.2s',
+                  }}
+                  onFocusCapture={e => (e.currentTarget.style.borderColor = 'var(--accent, #667eea)')}
+                  onBlurCapture={e => (e.currentTarget.style.borderColor = 'var(--border)')}
+                />
+                {(driverSearch || form.driverName) && (
+                  <button
+                    onMouseDown={e => { e.preventDefault(); setDriverSearch(''); setShowDriverList(false); set({ driverId: null, driverName: '' }); }}
+                    style={{
+                      position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
+                      border: 'none', background: 'none', cursor: 'pointer',
+                      color: 'var(--text-secondary)', fontSize: 16, padding: 4, lineHeight: 1,
+                    }}
+                  >✕</button>
+                )}
+              </div>
+
+              {/* Dropdown list */}
+              {showDriverList && (() => {
+                const filtered = drivers.filter(d =>
+                  !driverSearch || d.name.toLowerCase().includes(driverSearch.toLowerCase())
+                );
+                return (
+                  <div style={{
+                    position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0,
+                    background: 'var(--card-bg, #fff)', border: '1px solid var(--border)',
+                    borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+                    zIndex: 100, maxHeight: 260, overflowY: 'auto',
+                  }}>
+                    {filtered.length === 0 ? (
+                      <div style={{ padding: '14px 16px', fontSize: 14, color: 'var(--text-secondary)', textAlign: 'center' }}>
+                        No drivers found
+                      </div>
+                    ) : filtered.map(d => (
+                      <div
+                        key={d.id}
+                        onMouseDown={() => {
+                          set({ driverId: d.id, driverName: d.name, paymentType: d.paymentType ?? 'miles' });
+                          setDriverSearch('');
+                          setShowDriverList(false);
+                        }}
+                        style={{
+                          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                          padding: '10px 16px', cursor: 'pointer',
+                          borderBottom: '1px solid var(--border)',
+                          transition: 'background 0.12s',
+                        }}
+                        onMouseEnter={e => (e.currentTarget.style.background = 'var(--hover)')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <div style={{
+                            width: 32, height: 32, borderRadius: '50%',
+                            background: 'linear-gradient(135deg, #667eea, #764ba2)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: 13, color: '#fff', fontWeight: 700, flexShrink: 0,
+                          }}>
+                            {d.name.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>{d.name}</div>
+                            <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{d.position}</div>
+                          </div>
+                        </div>
+                        <span style={{
+                          fontSize: 11, fontWeight: 600, padding: '3px 8px', borderRadius: 20,
+                          background: d.paymentType === 'miles' ? 'rgba(49,130,206,0.1)' : 'rgba(128,90,213,0.1)',
+                          color: d.paymentType === 'miles' ? '#3182ce' : '#805ad5',
+                        }}>
+                          {d.paymentType === 'miles' ? '🛣️ Per Mile' : '📊 Percent'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Payment type */}
@@ -119,7 +212,7 @@ export default function StatementsPage() {
                   <label key={v} className={`custom-radio ${form.paymentType === v ? 'active' : ''}`}>
                     <input type="radio" name="paymentType" value={v} checked={form.paymentType === v}
                       onChange={() => set({ paymentType: v })} />
-                    <span className="radio-icon">{v === 'miles' ? '🛣️' : '📊'}</span>
+                    <span className="radio-icon"><Emoji symbol={v === 'miles' ? '🛣️' : '📊'} size={16} /></span>
                     <span>{v === 'miles' ? distUnit.toUpperCase() : 'Percentage'}</span>
                   </label>
                 ))}
@@ -172,9 +265,16 @@ export default function StatementsPage() {
               </div>
             </>}
 
-            {/* Adjustment type */}
-            <div className="form-group full-width">
-              <label>Adjustment Type</label>
+            {/* ── Adjustment — works for both Per Mile AND Percent drivers ── */}
+            <div className="form-group full-width" style={{
+              borderTop: '1px solid var(--border)',
+              paddingTop: 16,
+              marginTop: 4,
+            }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                <Emoji symbol="⚙️" size={15} />
+                Adjustment
+              </label>
               <div className="custom-radio-group">
                 {(['bonus', 'deduction'] as const).map(v => (
                   <label
@@ -188,7 +288,7 @@ export default function StatementsPage() {
                       checked={form.adjustmentType === v}
                       onChange={() => set({ adjustmentType: v })}
                     />
-                    <span className="radio-icon">{v === 'bonus' ? '➕' : '➖'}</span>
+                    <span className="radio-icon"><Emoji symbol={v === 'bonus' ? '➕' : '➖'} size={16} /></span>
                     <span>{v.charAt(0).toUpperCase() + v.slice(1)}</span>
                   </label>
                 ))}
@@ -199,7 +299,7 @@ export default function StatementsPage() {
               <label>Adjustment Amount ({sym})</label>
               <input
                 type="number"
-                placeholder="Enter amount"
+                placeholder="0.00 (leave blank to skip)"
                 value={form.adjustmentAmount}
                 onChange={e => set({ adjustmentAmount: e.target.value })}
                 onWheel={e => e.currentTarget.blur()}
@@ -210,11 +310,35 @@ export default function StatementsPage() {
               <label>Adjustment Reason</label>
               <input
                 type="text"
-                placeholder="Enter reason"
+                placeholder="e.g. Performance bonus, fuel deduction…"
                 value={form.adjustmentReason}
                 onChange={e => set({ adjustmentReason: e.target.value })}
               />
             </div>
+
+            {/* Live adjustment preview — visible for BOTH payment types */}
+            {parseFloat(form.adjustmentAmount || '0') > 0 && (
+              <div className="form-group full-width">
+                <div style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '10px 16px', borderRadius: 10,
+                  background: form.adjustmentType === 'bonus'
+                    ? 'rgba(56,161,105,0.08)' : 'rgba(229,62,62,0.08)',
+                  border: `1px solid ${form.adjustmentType === 'bonus' ? 'rgba(56,161,105,0.3)' : 'rgba(229,62,62,0.3)'}`,
+                }}>
+                  <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+                    {form.adjustmentType === 'bonus' ? '➕ Bonus' : '➖ Deduction'}
+                    {form.adjustmentReason ? ` — ${form.adjustmentReason}` : ''}
+                  </span>
+                  <span style={{
+                    fontSize: 14, fontWeight: 700,
+                    color: form.adjustmentType === 'bonus' ? '#38a169' : '#e53e3e',
+                  }}>
+                    {form.adjustmentType === 'bonus' ? '+' : '-'}{sym}{parseFloat(form.adjustmentAmount || '0').toFixed(2)}
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
           <button className="generate-btn" onClick={handleGenerate}>Generate Statement</button>
         </div>
@@ -269,11 +393,13 @@ export default function StatementsPage() {
 
               {/* ── 3-button action bar ── */}
               <div className="statement-actions">
-                <button className="save-salary-btn" onClick={handleSaveToSalary}>
-                  💾 Save to Salary
+                <button className="save-salary-btn" onClick={handleSaveToSalary}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <Emoji symbol="💾" size={16} /> Save to Salary
                 </button>
-                <button className="download-btn" onClick={handleDownloadPDF}>
-                  📄 Download PDF
+                <button className="download-btn" onClick={handleDownloadPDF}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <Emoji symbol="📄" size={16} /> Download PDF
                 </button>
                 <button className="close-preview-btn" onClick={handleClose}>
                   Close

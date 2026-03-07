@@ -3,7 +3,7 @@ export type StatusType = 'Applied' | 'Contacted' | 'Documents Sent';
 export type DriverStatusType = 'Ready' | 'Not Ready';
 export type PaymentType = 'miles' | 'percent';
 export type EmploymentStatus = 'Working' | 'Fired';
-export type EquipmentType = 'Van' | 'Reefer' | 'Flat Bed' | 'Any';
+export type EquipmentType = 'Unsigned' | 'Van' | 'Reefer' | 'Flat Bed';
 
 export interface Driver {
   id: number;
@@ -28,6 +28,8 @@ export interface DocFile {
   type: string;
   uploadDate: string;
   size: string;
+  /** Semantic type used to route docs to the correct driver slot on hire */
+  docType?: 'cdl' | 'medicalCard' | 'application';
 }
 
 export interface Statement {

@@ -1,19 +1,18 @@
 import {
   useSettings,
-  CURRENCY_LABELS, DIST_LABELS, DATE_LABELS,
-  Currency, DistUnit, DateFmt,
+  CURRENCY_LABELS, DIST_LABELS, DATE_LABELS, PAY_DAY_LABELS,
+  Currency, DistUnit, DateFmt, PayDay,
 } from '../../contexts/SettingsContext';
+import { Emoji } from '../Emoji';
 
 interface Props {
   onClose: () => void;
 }
 
-/* ── Reusable sub-components ── */
-
 function SectionHeader({ icon, title }: { icon: string; title: string }) {
   return (
     <div className="stg-section-header">
-      <span className="stg-section-icon">{icon}</span>
+      <span className="stg-section-icon"><Emoji symbol={icon} size={16} /></span>
       <span className="stg-section-title">{title}</span>
     </div>
   );
@@ -79,7 +78,7 @@ export default function SettingsModal({ onClose }: Props) {
         {/* Header */}
         <div className="modal-header">
           <div className="stg-modal-title-wrap">
-            <span className="stg-modal-icon">⚙️</span>
+            <span className="stg-modal-icon"><Emoji symbol="⚙️" size={20} /></span>
             <h2>Settings</h2>
           </div>
           <button className="close-btn" onClick={onClose}>✕</button>
@@ -130,6 +129,19 @@ export default function SettingsModal({ onClose }: Props) {
               value={settings.dateFormat}
               options={DATE_LABELS as Record<DateFmt, string>}
               onChange={v => update('dateFormat', v)}
+            />
+          </div>
+
+
+          {/* ── PAYROLL ── */}
+          <SectionHeader icon="💵" title="Payroll" />
+          <div className="stg-card">
+            <SegmentRow<PayDay>
+              label="Pay Day"
+              sub="The weekly day drivers are paid — used on the Salary activity chart"
+              value={settings.payDay}
+              options={PAY_DAY_LABELS as Record<PayDay, string>}
+              onChange={v => update('payDay', v)}
             />
           </div>
 

@@ -1,7 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App'
-import { SettingsProvider } from './pages/contexts/SettingsContext'
+import { SettingsProvider } from './contexts/SettingsContext'
 import './styles/global.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

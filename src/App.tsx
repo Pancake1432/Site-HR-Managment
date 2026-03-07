@@ -3,26 +3,26 @@ import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';
 import ApplicationForm from './pages/ApplicationForm';
-import NotFoundPage from './pages/errors/NotFoundPage';
-import ForbiddenPage from './pages/errors/ForbiddenPage';
-import ServerErrorPage from './pages/errors/ServerErrorPage';
-import MaintenancePage from './pages/errors/MaintenancePage';
-import ErrorBoundary from './pages/errors/ErrorBoundary';
-import ProtectedRoute, { PublicOnlyRoute } from './pages/components/ProtectedRoute';
+import NotFoundPage from './errors/NotFoundPage';
+import ForbiddenPage from './errors/ForbiddenPage';
+import ServerErrorPage from './errors/ServerErrorPage';
+import MaintenancePage from './errors/MaintenancePage';
+import ErrorBoundary from './errors/ErrorBoundary';
+import ProtectedRoute, { PublicOnlyRoute } from './components/ProtectedRoute';
 
-import DashboardHome  from './pages/components/dashboard/DashboardHome';
-import DriversPage    from './pages/components/dashboard/DriversPage';
-import DocumentsPage  from './pages/components/dashboard/DocumentsPage';
-import StatementsPage from './pages/components/dashboard/StatementsPage';
-import SalaryPage     from './pages/components/dashboard/SalaryPage';
-import EmployeesPage  from './pages/components/dashboard/EmployeesPage';
+import DashboardHome  from './components/dashboard/DashboardHome';
+import DriversPage    from './components/dashboard/DriversPage';
+import DocumentsPage  from './components/dashboard/DocumentsPage';
+import StatementsPage from './components/dashboard/StatementsPage';
+import SalaryPage     from './components/dashboard/SalaryPage';
+import EmployeesPage  from './components/dashboard/EmployeesPage';
 
-import InfoStep              from './pages/components/application/InfoStep';
-import PersonalInfoStep      from './pages/components/application/PersonalInfoStep';
-import DrivingExperienceStep from './pages/components/application/DrivingExperienceStep';
-import WorkPreferencesStep   from './pages/components/application/WorkPreferencesStep';
-import AvailabilityStep      from './pages/components/application/AvailabilityStep';
-import DocumentsStep         from './pages/components/application/DocumentsStep';
+import InfoStep              from './components/application/InfoStep';
+import PersonalInfoStep      from './components/application/PersonalInfoStep';
+import DrivingExperienceStep from './components/application/DrivingExperienceStep';
+import WorkPreferencesStep   from './components/application/WorkPreferencesStep';
+import AvailabilityStep      from './components/application/AvailabilityStep';
+import DocumentsStep         from './components/application/DocumentsStep';
 
 function App() {
   return (

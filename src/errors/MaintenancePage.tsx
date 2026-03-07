@@ -1,11 +1,8 @@
 import { useNavigate } from 'react-router-dom';
-import '../../styles/errors.css';
+import '../styles/errors.css';
 
-interface ServerErrorPageProps {
-  errorMessage?: string;
-}
 
-export default function ServerErrorPage({ errorMessage }: ServerErrorPageProps) {
+export default function MaintenancePage() {
   const navigate = useNavigate();
 
   return (
@@ -17,28 +14,22 @@ export default function ServerErrorPage({ errorMessage }: ServerErrorPageProps) 
       <div className="error-content">
         <div className="error-status-pill">
           <span className="error-status-dot" />
-          500 · Server Error
+          503 · Service Unavailable
         </div>
 
-        <div className="error-code" data-text="500">500</div>
+        <div className="error-code" data-text="503">503</div>
 
-        <h1 className="error-title">Something broke on our end</h1>
+        <h1 className="error-title">Down for maintenance</h1>
 
         <p className="error-description">
-          An unexpected error occurred on the server. Our team has been
-          notified. Please try again in a moment — it usually clears up quickly.
+          We're performing scheduled maintenance to improve your experience.
         </p>
 
-        {errorMessage && (
-          <div className="error-detail-card">
-            <div className="error-detail-label">Error Details</div>
-            <code>{errorMessage}</code>
-          </div>
-        )}
+        <div className="error-divider" />
 
         <div className="error-actions">
           <button className="error-btn-primary" onClick={() => window.location.reload()}>
-            ↻ Reload Page
+            ↻ Check Again
           </button>
           <button className="error-btn-secondary" onClick={() => navigate('/')}>
             ← Home
