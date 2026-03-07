@@ -9,7 +9,7 @@ export default function DocumentsStep() {
 
   return (
     <div className="step active">
-      <h2>Step 5 of 5: Upload Documents (Optional)</h2>
+      <h2>Step 5 of 5: Upload Documents</h2>
       <div className="upload-section">
         <p className="upload-note">
           You can upload your CDL and Medical Card now, or send them later via email to dispatch@pakslogistic.com
@@ -17,7 +17,7 @@ export default function DocumentsStep() {
         <div className="upload-form">
           <div className="upload-block">
             <label htmlFor="cdl" className="upload-label">
-              📁 Upload Your CDL (Optional)
+              📁 Upload Your CDL
             </label>
             <input
               type="file"
@@ -32,7 +32,7 @@ export default function DocumentsStep() {
 
           <div className="upload-block">
             <label htmlFor="medicalCard" className="upload-label">
-              📁 Upload Your Medical Card (Optional)
+              📁 Upload Your Medical Card
             </label>
             <input
               type="file"
