@@ -27,6 +27,8 @@ export default function DocumentsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
   const [isUploading, setIsUploading] = useState<string | null>(null);
+  const [hireHovered, setHireHovered] = useState(false);
+  const [deleteHovered, setDeleteHovered] = useState(false);
 
   const cdlInputRef     = useRef<HTMLInputElement>(null);
   const medInputRef     = useRef<HTMLInputElement>(null);
@@ -277,9 +279,9 @@ export default function DocumentsPage() {
                   {canHire && (
                     <button
                       onClick={handleHire}
-                      style={{ width: '100%', padding: '12px', borderRadius: '8px', border: 'none', background: 'linear-gradient(135deg, #48bb78 0%, #38a169 100%)', color: 'white', fontSize: '14px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s', boxShadow: '0 2px 8px rgba(72, 187, 120, 0.3)' }}
-                      onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(72, 187, 120, 0.4)'; }}
-                      onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(72, 187, 120, 0.3)'; }}
+                      onMouseEnter={() => setHireHovered(true)}
+                      onMouseLeave={() => setHireHovered(false)}
+                      style={{ width: '100%', padding: '12px', borderRadius: '8px', border: 'none', background: 'linear-gradient(135deg, #48bb78 0%, #38a169 100%)', color: 'white', fontSize: '14px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s', boxShadow: hireHovered ? '0 4px 16px rgba(72, 187, 120, 0.4)' : '0 2px 8px rgba(72, 187, 120, 0.3)', transform: hireHovered ? 'translateY(-1px)' : 'translateY(0)' }}
                     >
                       <Emoji symbol="✅" size={16} style={{ marginRight: 6 }} /> Hired — Move to Drivers
                     </button>
@@ -295,9 +297,9 @@ export default function DocumentsPage() {
                   )}
                   <button
                     onClick={handleDeleteDriver}
-                    style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #e53e3e', background: 'transparent', color: '#e53e3e', fontSize: '14px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s' }}
-                    onMouseEnter={e => { e.currentTarget.style.background = '#e53e3e'; e.currentTarget.style.color = 'white'; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#e53e3e'; }}
+                    onMouseEnter={() => setDeleteHovered(true)}
+                    onMouseLeave={() => setDeleteHovered(false)}
+                    style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #e53e3e', background: deleteHovered ? '#e53e3e' : 'transparent', color: deleteHovered ? 'white' : '#e53e3e', fontSize: '14px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s' }}
                   >
                     🗑️ Delete Applicant & All Documents
                   </button>

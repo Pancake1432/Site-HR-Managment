@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+// Note: useEffect is still used for persisting settings to localStorage.
 
 export type Currency = 'USD' | 'EUR';
 export type DistUnit = 'miles' | 'km';
@@ -47,7 +48,20 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const update = <K extends keyof AppSettings>(key: K, val: AppSettings[K]) =>
     setSettings(prev => ({ ...prev, [key]: val }));
 
-  return <Ctx.Provider value={{ settings, update }}>{children}</Ctx.Provider>;
+  // Theme classes are applied via a React-managed wrapper div.
+  // CSS selectors use `.dark` and `.compact` (not `html.dark`).
+  const themeClass = [
+    settings.darkMode    ? 'dark'    : '',
+    settings.compactView ? 'compact' : '',
+  ].filter(Boolean).join(' ') || undefined;
+
+  return (
+    <Ctx.Provider value={{ settings, update }}>
+      <div className={themeClass} style={{ display: 'contents' }}>
+        {children}
+      </div>
+    </Ctx.Provider>
+  );
 }
 
 export const useSettings = () => useContext(Ctx);
