@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { StatusType } from '../../types/dashboard';
 import { Emoji } from '../Emoji';
+import { useSettings } from '../../contexts/SettingsContext';
 
 interface StatusOption {
   value: StatusType;
@@ -28,18 +29,10 @@ interface Props {
 export default function StatusDropdown({ value, onChange }: Props) {
   const [open, setOpen] = useState(false);
   const [popoverPos, setPopoverPos] = useState({ top: 0, left: 0 });
-  const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
+  const { settings } = useSettings();
+  const isDark = settings.darkMode;
   const triggerRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
-
-    // Watch for dark mode toggling
-  useEffect(() => {
-    const observer = new MutationObserver(() => {
-      setIsDark(document.documentElement.classList.contains('dark'));
-    });
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
-    return () => observer.disconnect();
-  }, []);
 
   const current = STATUS_OPTIONS.find(o => o.value === value)!;
 
