@@ -105,8 +105,7 @@ export function useDriverDocStorage() {
   const openDoc = (doc: StoredDriverDoc) => {
     if (doc.base64) {
       try {
-        // Convert base64 data URL → Blob → object URL, then open in a new tab.
-        // Uses window.open() instead of a manually created anchor element.
+        // Convert base64 data URL → Blob → object URL (avoids popup blockers)
         const [header, data] = doc.base64.split(',');
         const mime = header.match(/:(.*?);/)?.[1] ?? 'application/octet-stream';
         const bytes = atob(data);
@@ -114,7 +113,13 @@ export function useDriverDocStorage() {
         for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
         const blob = new Blob([arr], { type: mime });
         const url  = URL.createObjectURL(blob);
-        window.open(url, '_blank', 'noopener,noreferrer');
+        const a    = document.createElement('a');
+        a.href     = url;
+        a.target   = '_blank';
+        a.rel      = 'noopener noreferrer';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
         setTimeout(() => URL.revokeObjectURL(url), 10_000);
       } catch {
         alert(`Could not open "${doc.name}". Please try re-uploading the file.`);

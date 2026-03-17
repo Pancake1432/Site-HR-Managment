@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
+import { useSettings } from '../contexts/SettingsContext';
 import { SavedStatementsProvider } from '../contexts/SavedStatementsContext';
 import SettingsModal from '../components/dashboard/SettingsModal';
 import { Emoji } from '../components/Emoji';
@@ -17,12 +18,25 @@ const NAV_ITEMS = [
 function DashboardLayout() {
   const navigate     = useNavigate();
   const location     = useLocation();
+  const { settings } = useSettings();
   const [showSettings, setShowSettings] = useState(false);
 
   const activePath = NAV_ITEMS
     .slice()
     .reverse()
     .find(item => location.pathname.startsWith(item.path))?.path ?? '/dashboard';
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', settings.darkMode);
+  }, [settings.darkMode]);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('compact', settings.compactView);
+  }, [settings.compactView]);
+
+  useEffect(() => {
+    return () => { document.documentElement.classList.remove('dark', 'compact'); };
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('currentUser');

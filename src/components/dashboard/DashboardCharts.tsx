@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { Emoji } from '../Emoji';
 
 /* ─────────────────────────────────────────────
@@ -21,8 +21,8 @@ interface BarItem {
    ANIMATED COUNTER HOOK
 ───────────────────────────────────────────── */
 function useAnimatedNumber(target: number, duration = 600) {
-  const [count, setCount] = useState(target);
-  const prev = useRef(target);
+  const ref = useRef<HTMLSpanElement>(null);
+  const prev = useRef(0);
 
   useEffect(() => {
     const start = prev.current;
@@ -34,7 +34,7 @@ function useAnimatedNumber(target: number, duration = 600) {
       const progress = Math.min(elapsed / duration, 1);
       const ease = 1 - Math.pow(1 - progress, 3);
       const current = Math.round(start + (end - start) * ease);
-      setCount(current);
+      if (ref.current) ref.current.textContent = String(current);
       if (progress < 1) requestAnimationFrame(tick);
       else prev.current = end;
     };
@@ -42,7 +42,7 @@ function useAnimatedNumber(target: number, duration = 600) {
     requestAnimationFrame(tick);
   }, [target, duration]);
 
-  return count;
+  return ref;
 }
 
 /* ─────────────────────────────────────────────
@@ -57,7 +57,7 @@ interface DonutProps {
 }
 
 function DonutChart({ slices, size = 140, thickness = 22, centerLabel, centerValue }: DonutProps) {
-  const count = useAnimatedNumber(centerValue ?? 0);
+  const countRef = useAnimatedNumber(centerValue ?? 0);
   const r = (size - thickness) / 2;
   const circumference = 2 * Math.PI * r;
   const total = slices.reduce((s, d) => s + d.value, 0);
@@ -117,7 +117,7 @@ function DonutChart({ slices, size = 140, thickness = 22, centerLabel, centerVal
         )}
       </svg>
       <div className="dc-donut-center">
-        <span className="dc-donut-value">{count}</span>
+        <span className="dc-donut-value" ref={countRef}>{centerValue ?? 0}</span>
         {centerLabel && <span className="dc-donut-sub">{centerLabel}</span>}
       </div>
     </div>

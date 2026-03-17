@@ -54,7 +54,6 @@ export default function DriversPage() {
 
   // ── Fire Driver confirmation state ────────────────────────────────────────
   const [fireConfirmDriver, setFireConfirmDriver] = useState<Driver | null>(null);
-  const [terminateHoverId, setTerminateHoverId] = useState<string | null>(null);
 
   const addCdlRef = useRef<HTMLInputElement>(null);
   const addMedRef = useRef<HTMLInputElement>(null);
@@ -260,8 +259,6 @@ export default function DriversPage() {
                 </button>
                 <button
                   onClick={() => setFireConfirmDriver(d)}
-                  onMouseEnter={() => setTerminateHoverId(String(d.id))}
-                  onMouseLeave={() => setTerminateHoverId(null)}
                   style={{
                     display: 'flex', alignItems: 'center', gap: '5px',
                     padding: '6px 12px', borderRadius: '8px', border: 'none',
@@ -269,8 +266,9 @@ export default function DriversPage() {
                     color: '#fff', cursor: 'pointer', fontSize: '13px', fontWeight: 600,
                     boxShadow: '0 1px 3px rgba(239,68,68,0.35)', whiteSpace: 'nowrap',
                     transition: 'opacity 0.15s',
-                    opacity: terminateHoverId === String(d.id) ? 0.85 : 1,
                   }}
+                  onMouseEnter={e => (e.currentTarget.style.opacity = '0.85')}
+                  onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
                   title="Terminate this driver"
                 >
                   <UserX size={13} /> Terminate

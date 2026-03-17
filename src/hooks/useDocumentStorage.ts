@@ -112,17 +112,22 @@ export function useDocumentStorage() {
       return;
     }
 
-    // Convert stored content to a Blob URL and open in a new tab.
-    // Avoids direct DOM manipulation (win.document.write / innerHTML).
+    const win = window.open();
+    if (!win) return;
+
     if (isHtmlDataUrl(doc.base64)) {
+      // Application PDFs are stored as HTML — write directly to the new window
       const html = decodeBase64DataUrl(doc.base64);
-      const blob = new Blob([html], { type: 'text/html' });
-      const url  = URL.createObjectURL(blob);
-      window.open(url, '_blank', 'noopener,noreferrer');
-      setTimeout(() => URL.revokeObjectURL(url), 30_000);
+      win.document.write(html);
+      win.document.title = doc.name;
+      win.document.close();
     } else {
-      // Real PDFs / images — open the base64 data URL directly in a new tab.
-      window.open(doc.base64, '_blank', 'noopener,noreferrer');
+      // Real PDFs / images — display in an iframe
+      win.document.write(
+        `<style>*{margin:0;padding:0}body,html{height:100%;overflow:hidden}</style>` +
+        `<iframe src="${doc.base64}" style="width:100%;height:100%;border:none;display:block;"></iframe>`
+      );
+      win.document.title = doc.name;
     }
   };
 
@@ -134,26 +139,25 @@ export function useDocumentStorage() {
       return;
     }
 
-    // Open the document in a new tab from a Blob URL so the user can save it.
-    // For HTML-based application PDFs the browser's Save-as-PDF / print dialog is available.
     if (isHtmlDataUrl(doc.base64)) {
+      // Application PDFs are HTML — open in new window with print dialog so user can Save as PDF
       const html = decodeBase64DataUrl(doc.base64);
-      const blob = new Blob([html], { type: 'text/html' });
-      const url  = URL.createObjectURL(blob);
-      window.open(url, '_blank', 'noopener,noreferrer');
-      setTimeout(() => URL.revokeObjectURL(url), 30_000);
+      const win = window.open('', '_blank', 'width=800,height=1000');
+      if (win) {
+        win.document.write(html);
+        win.document.title = doc.name;
+        win.document.close();
+        // Trigger print after page loads — user can "Save as PDF" from the print dialog
+        win.onload = () => win.print();
+      }
     } else {
-      // Real PDFs / images: create a Blob URL and open in new tab.
-      // The browser offers native Save / Download options from there.
-      const [header, data] = doc.base64.split(',');
-      const mime = header.match(/:(.*?);/)?.[1] ?? 'application/octet-stream';
-      const bytes = atob(data);
-      const arr   = new Uint8Array(bytes.length);
-      for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
-      const blob  = new Blob([arr], { type: mime });
-      const url   = URL.createObjectURL(blob);
-      window.open(url, '_blank', 'noopener,noreferrer');
-      setTimeout(() => URL.revokeObjectURL(url), 30_000);
+      // Real PDFs / images — direct download via <a> tag
+      const link = document.createElement('a');
+      link.href = doc.base64;
+      link.download = doc.name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
   };
 
