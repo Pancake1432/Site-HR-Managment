@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSavedStatements } from '../../contexts/SavedStatementsContext';
 import { useSettings, fmtCurrency, fmtDate } from '../../contexts/SettingsContext';
@@ -173,28 +173,6 @@ function WeeklyPayStrip({
         ))}
       </div>
 
-      {/* Legend */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 4,
-          marginTop: 10,
-          justifyContent: 'flex-end',
-        }}
-      >
-        <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Less</span>
-        {['var(--heatmap-empty, #ebedf0)', '#9be9a8', '#40c463', '#30a14e', '#216e39'].map(
-          (c, i) => (
-            <div
-              key={i}
-              style={{ width: CELL, height: CELL, borderRadius: 3, background: c }}
-            />
-          )
-        )}
-        <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>More</span>
-      </div>
-
       {/* Tooltip */}
       {tooltip && (
         <div
@@ -236,6 +214,13 @@ export default function SalaryPage() {
 
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedStatement, setSelectedStatement] = useState<SavedStatement | null>(null);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   const totalPaid = statements
     .reduce((sum, s) => sum + parseFloat(s.total || '0'), 0)
@@ -303,26 +288,31 @@ export default function SalaryPage() {
       </div>
 
       {/* ── 4 summary cards ── */}
-      <div className="salary-summary-row salary-summary-4col">
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)',
+        gap: isMobile ? 10 : 16,
+        marginBottom: 16,
+      }}>
         <div className="card salary-summary-card">
           <div className="salary-summary-label">Total Statements</div>
           <div className="salary-summary-value">{statements.length}</div>
         </div>
         <div className="card salary-summary-card salary-summary-total">
           <div className="salary-summary-label">Total Paid Out</div>
-          <div className="salary-summary-value">
+          <div className="salary-summary-value" style={{ fontSize: isMobile ? 16 : undefined, wordBreak: 'break-all' }}>
             {fmtCurrency(totalPaid, settings.currency)}
           </div>
         </div>
         <div className="card salary-summary-card" style={{ borderTop: '3px solid #38a169' }}>
           <div className="salary-summary-label">Total Bonuses</div>
-          <div className="salary-summary-value" style={{ color: '#38a169', fontSize: 22 }}>
+          <div className="salary-summary-value" style={{ color: '#38a169', fontSize: isMobile ? 16 : 22, wordBreak: 'break-all' }}>
             +{fmtCurrency(totalBonuses, settings.currency)}
           </div>
         </div>
         <div className="card salary-summary-card" style={{ borderTop: '3px solid #e53e3e' }}>
           <div className="salary-summary-label">Total Deductions</div>
-          <div className="salary-summary-value" style={{ color: '#e53e3e', fontSize: 22 }}>
+          <div className="salary-summary-value" style={{ color: '#e53e3e', fontSize: isMobile ? 16 : 22, wordBreak: 'break-all' }}>
             -{fmtCurrency(totalDeductions, settings.currency)}
           </div>
         </div>
@@ -352,8 +342,16 @@ export default function SalaryPage() {
             📅 Paid every {DAY_NAMES[parseInt(settings.payDay)]}
           </span>
         </div>
-        <div style={{ overflowX: 'auto', paddingBottom: 4 }}>
+        <div className="heatmap-scroll" style={{ overflowX: 'auto', paddingBottom: 4 }}>
           <WeeklyPayStrip statements={statements} currency={settings.currency} payDay={parseInt(settings.payDay)} />
+        </div>
+        {/* Legend — outside scroll so it stays static */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 10, justifyContent: 'flex-end' }}>
+          <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Less</span>
+          {['var(--heatmap-empty, #ebedf0)', '#9be9a8', '#40c463', '#30a14e', '#216e39'].map((c, i) => (
+            <div key={i} style={{ width: 18, height: 18, borderRadius: 3, background: c, flexShrink: 0 }} />
+          ))}
+          <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>More</span>
         </div>
       </div>
 
@@ -490,100 +488,113 @@ export default function SalaryPage() {
             );
           })()}
 
-        <div className="salary-table-wrapper">
-          <table className="salary-table">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Driver</th>
-                <th>Type</th>
-                <th>Subtotal</th>
-                <th>Adjustment</th>
-                <th>Total</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredStatements.map((s) => (
-                <tr
-                  key={s.id}
-                  style={{ cursor: 'pointer' }}
-                  onClick={() => setSelectedStatement(s)}
-                >
-                  <td data-label="Date">
+        {isMobile ? (
+          /* ── Mobile: statement cards ── */
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {filteredStatements.map((s) => (
+              <div
+                key={s.id}
+                onClick={() => setSelectedStatement(s)}
+                style={{
+                  background: 'var(--bg-card-secondary)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 12,
+                  padding: '14px 16px',
+                  cursor: 'pointer',
+                }}
+              >
+                {/* Driver name + payment badge */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                  <strong style={{ color: 'var(--text-primary)', fontSize: 15 }}>{s.driverName}</strong>
+                  <span className={`salary-badge salary-badge-${s.paymentType}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    <Emoji symbol={s.paymentType === 'miles' ? '🛣️' : '📊'} size={12} />
+                    {s.paymentType === 'miles' ? 'Per Mile' : 'Percent'}
+                  </span>
+                </div>
+                {/* Date + Total */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                  <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
                     {fmtDate(new Date(s.savedAt), settings.dateFormat)}
-                  </td>
-                  <td data-label="Driver">
-                    <strong>{s.driverName}</strong>
-                  </td>
-                  <td data-label="Type">
-                    <span
-                      className={`salary-badge salary-badge-${s.paymentType}`}
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}
-                    >
-                      <Emoji symbol={s.paymentType === 'miles' ? '🛣️' : '📊'} size={14} />
-                      {s.paymentType === 'miles' ? 'Per Mile' : 'Percent'}
+                  </span>
+                  <strong style={{ color: 'var(--accent)', fontSize: 17 }}>
+                    {fmtCurrency(s.total, settings.currency)}
+                  </strong>
+                </div>
+                {/* Subtotal + Adjustment */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12, color: 'var(--text-secondary)', marginBottom: 12 }}>
+                  <span>Subtotal: {fmtCurrency(s.subtotal, settings.currency)}</span>
+                  {parseFloat(s.adjustmentAmount || '0') > 0 && (
+                    <span className={s.adjustmentType === 'bonus' ? 'salary-adj-bonus' : 'salary-adj-deduction'}>
+                      {s.adjustmentType === 'bonus' ? '+' : '−'}{fmtCurrency(s.adjustmentAmount, settings.currency)}
                     </span>
-                  </td>
-                  <td data-label="Subtotal">
-                    {fmtCurrency(s.subtotal, settings.currency)}
-                  </td>
-                  <td data-label="Adjustment">
-                    {parseFloat(s.adjustmentAmount || '0') > 0 ? (
-                      <span
-                        className={
-                          s.adjustmentType === 'bonus'
-                            ? 'salary-adj-bonus'
-                            : 'salary-adj-deduction'
-                        }
-                      >
-                        {s.adjustmentType === 'bonus' ? '+' : '-'}
-                        {fmtCurrency(s.adjustmentAmount, settings.currency)}
-                        {s.adjustmentReason && (
-                          <span
-                            style={{
-                              fontSize: 11,
-                              fontWeight: 400,
-                              marginLeft: 4,
-                              color: 'var(--text-secondary)',
-                            }}
-                          >
-                            ({s.adjustmentReason})
-                          </span>
-                        )}
-                      </span>
-                    ) : (
-                      <span style={{ color: 'var(--text-secondary)' }}>—</span>
-                    )}
-                  </td>
-                  <td data-label="Total">
-                    <strong style={{ color: 'var(--accent)' }}>
-                      {fmtCurrency(s.total, settings.currency)}
-                    </strong>
-                  </td>
-                  <td data-label="Actions" onClick={(e) => e.stopPropagation()}>
-                    <div className="salary-row-actions">
-                      <button
-                        className="salary-action-btn salary-action-pdf"
-                        title="Download PDF"
-                        onClick={() => handleDownload(s)}
-                      >
-                        <Emoji symbol="📄" size={16} />
-                      </button>
-                      <button
-                        className="salary-action-btn salary-action-delete"
-                        title="Delete"
-                        onClick={() => handleDelete(s.id)}
-                      >
-                        <Emoji symbol="🗑️" size={16} />
-                      </button>
-                    </div>
-                  </td>
+                  )}
+                </div>
+                {/* Action buttons */}
+                <div style={{ display: 'flex', gap: 8 }} onClick={e => e.stopPropagation()}>
+                  <button
+                    className="salary-action-btn salary-action-pdf"
+                    title="Download PDF"
+                    style={{ flex: 1, width: 'auto' }}
+                    onClick={() => handleDownload(s)}
+                  ><Emoji symbol="📄" size={16} /></button>
+                  <button
+                    className="salary-action-btn salary-action-delete"
+                    title="Delete"
+                    style={{ flex: 1, width: 'auto' }}
+                    onClick={() => handleDelete(s.id)}
+                  ><Emoji symbol="🗑️" size={16} /></button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          /* ── Desktop: standard table ── */
+          <div className="salary-table-wrapper">
+            <table className="salary-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Driver</th>
+                  <th>Type</th>
+                  <th>Subtotal</th>
+                  <th>Adjustment</th>
+                  <th>Total</th>
+                  <th>Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {filteredStatements.map((s) => (
+                  <tr key={s.id} style={{ cursor: 'pointer' }} onClick={() => setSelectedStatement(s)}>
+                    <td data-label="Date">{fmtDate(new Date(s.savedAt), settings.dateFormat)}</td>
+                    <td data-label="Driver"><strong>{s.driverName}</strong></td>
+                    <td data-label="Type">
+                      <span className={`salary-badge salary-badge-${s.paymentType}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                        <Emoji symbol={s.paymentType === 'miles' ? '🛣️' : '📊'} size={14} />
+                        {s.paymentType === 'miles' ? 'Per Mile' : 'Percent'}
+                      </span>
+                    </td>
+                    <td data-label="Subtotal">{fmtCurrency(s.subtotal, settings.currency)}</td>
+                    <td data-label="Adjustment">
+                      {parseFloat(s.adjustmentAmount || '0') > 0 ? (
+                        <span className={s.adjustmentType === 'bonus' ? 'salary-adj-bonus' : 'salary-adj-deduction'}>
+                          {s.adjustmentType === 'bonus' ? '+' : '-'}{fmtCurrency(s.adjustmentAmount, settings.currency)}
+                          {s.adjustmentReason && <span style={{ fontSize: 11, fontWeight: 400, marginLeft: 4, color: 'var(--text-secondary)' }}>({s.adjustmentReason})</span>}
+                        </span>
+                      ) : <span style={{ color: 'var(--text-secondary)' }}>—</span>}
+                    </td>
+                    <td data-label="Total"><strong style={{ color: 'var(--accent)' }}>{fmtCurrency(s.total, settings.currency)}</strong></td>
+                    <td data-label="Actions" onClick={(e) => e.stopPropagation()}>
+                      <div className="salary-row-actions">
+                        <button className="salary-action-btn salary-action-pdf" title="Download PDF" onClick={() => handleDownload(s)}><Emoji symbol="📄" size={16} /></button>
+                        <button className="salary-action-btn salary-action-delete" title="Delete" onClick={() => handleDelete(s.id)}><Emoji symbol="🗑️" size={16} /></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* ── Statement detail modal ── */}
