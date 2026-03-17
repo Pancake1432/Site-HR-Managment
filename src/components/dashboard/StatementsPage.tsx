@@ -27,6 +27,8 @@ export default function StatementsPage() {
   const [showPreview, setShowPreview] = useState(false);
   const [driverSearch, setDriverSearch] = useState('');
   const [showDriverList, setShowDriverList] = useState(false);
+  const [isDriverInputFocused, setIsDriverInputFocused] = useState(false);
+  const [hoveredDriverId, setHoveredDriverId] = useState<string | null>(null);
 
   // Apply local overrides (paymentType, status, etc.) on top of base driver data
   const drivers = applyOverrides(companyDriversData);
@@ -124,12 +126,13 @@ export default function StatementsPage() {
                   style={{
                     width: '100%', padding: '11px 40px 11px 38px',
                     borderRadius: 8, border: '1px solid var(--border)',
-                    background: 'var(--input-bg, #fff)', color: 'var(--text-primary)',
+                    background: 'var(--bg-card-secondary)', color: 'var(--text-primary)',
                     fontSize: 14, boxSizing: 'border-box', outline: 'none',
                     transition: 'border-color 0.2s',
+                    borderColor: isDriverInputFocused ? 'var(--accent, #667eea)' : 'var(--border)',
                   }}
-                  onFocusCapture={e => (e.currentTarget.style.borderColor = 'var(--accent, #667eea)')}
-                  onBlurCapture={e => (e.currentTarget.style.borderColor = 'var(--border)')}
+                  onFocusCapture={() => setIsDriverInputFocused(true)}
+                  onBlurCapture={() => setIsDriverInputFocused(false)}
                 />
                 {(driverSearch || form.driverName) && (
                   <button
@@ -167,14 +170,15 @@ export default function StatementsPage() {
                           setDriverSearch('');
                           setShowDriverList(false);
                         }}
+                        onMouseEnter={() => setHoveredDriverId(d.id)}
+                        onMouseLeave={() => setHoveredDriverId(null)}
                         style={{
                           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                           padding: '10px 16px', cursor: 'pointer',
                           borderBottom: '1px solid var(--border)',
                           transition: 'background 0.12s',
+                          background: hoveredDriverId === d.id ? 'var(--hover)' : 'transparent',
                         }}
-                        onMouseEnter={e => (e.currentTarget.style.background = 'var(--hover)')}
-                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                       >
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                           <div style={{
