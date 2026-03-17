@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSavedStatements } from '../../contexts/SavedStatementsContext';
 import { useSettings, fmtCurrency, fmtDate } from '../../contexts/SettingsContext';
