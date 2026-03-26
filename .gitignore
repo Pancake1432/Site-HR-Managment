@@ -1,35 +1,31 @@
-# Dependencies
-node_modules
-/.pnp
-.pnp.js
-
-# Testing
-/coverage
-
-# Production
-/build
-/dist
-
-# Misc
+# --- GLOBAL / OS ---
 .DS_Store
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# Logs
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-lerna-debug.log*
-.pnpm-debug.log*
-
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
+Thumbs.db
+.vscode/
+.idea/
+*.user
 *.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+.vs/
+
+# --- BACKEND (C# / .NET) ---
+# Look inside any folder for these:
+**/bin/
+**/obj/
+**/*.db
+**/*.db-shm
+**/*.db-wal
+
+# Secrets - DO NOT SHARE
+**/appsettings.Production.json
+**/secrets.json
+
+# --- FRONTEND (React / Vite) ---
+**/node_modules/
+**/dist/
+**/build/
+**/.vite/
+
+# Environment Variables - DO NOT SHARE
+**/.env
+**/.env.local
+**/.env.production
