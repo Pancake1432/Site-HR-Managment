@@ -1,22 +1,31 @@
-# Dependencies
-node_modules/
-
-# Build output
-dist/
-build/
-
-# Environment variables — nu trimite pe GitHub
-.env
-.env.local
-.env.production
-
-# Vite cache
-.vite/
-
-# Editor
-.vscode/
-.idea/
-
-# OS
+# --- GLOBAL / OS ---
 .DS_Store
 Thumbs.db
+.vscode/
+.idea/
+*.user
+*.suo
+.vs/
+
+# --- BACKEND (C# / .NET) ---
+# Look inside any folder for these:
+**/bin/
+**/obj/
+**/*.db
+**/*.db-shm
+**/*.db-wal
+
+# Secrets - DO NOT SHARE
+**/appsettings.Production.json
+**/secrets.json
+
+# --- FRONTEND (React / Vite) ---
+**/node_modules/
+**/dist/
+**/build/
+**/.vite/
+
+# Environment Variables - DO NOT SHARE
+**/.env
+**/.env.local
+**/.env.production
