@@ -34,8 +34,8 @@ export default function AccountingDashboard() {
         {[
           { icon: '👥', label: 'Active Employees', value: stats.working, color: '#48bb78' },
           { icon: '📋', label: 'Total Statements',  value: statements.length, color: 'var(--accent)' },
-          { icon: '💵', label: 'Total Paid Out',     value: `${sym}${fmtCurrency(stats.totalPaid, settings.currency)}`, color: '#f6ad55' },
-          { icon: '📊', label: 'Avg per Statement',  value: `${sym}${fmtCurrency(stats.avgPay, settings.currency)}`, color: '#76e4f7' },
+          { icon: '💵', label: 'Total Paid Out',     value: `${fmtCurrency(stats.totalPaid, settings.currency)}`, color: '#f6ad55' },
+          { icon: '📊', label: 'Avg per Statement',  value: `${fmtCurrency(stats.avgPay, settings.currency)}`, color: '#76e4f7' },
         ].map(stat => (
           <div key={stat.label} className="card" style={{ padding: '20px', textAlign: 'center' }}>
             <div style={{ fontSize: 32, marginBottom: 8 }}><Emoji symbol={stat.icon} size={32} /></div>
@@ -98,8 +98,8 @@ export default function AccountingDashboard() {
                 <strong>Statement for {s.driverName}</strong>
                 <span className="activity-time">
                   {s.paymentType === 'miles'
-                    ? `${s.miles} miles × ${sym}${s.ratePerMile}/mi`
-                    : `${s.percent}% of ${sym}${s.grossAmount}`}
+                    ? `${s.miles} miles × ${s.ratePerMile}/mi`
+                    : `${s.percent}% of ${s.grossAmount}`}
                   {' → '}<strong style={{ color: '#48bb78' }}>{sym}{fmtCurrency(parseFloat(String(s.total)) || 0, settings.currency)}</strong>
                 </span>
               </div>

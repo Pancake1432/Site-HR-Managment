@@ -1,7 +1,31 @@
+import { useState } from 'react';
 import { useApplicationForm } from '../../contexts/ApplicationContext';
+
+function validateEmail(email: string): string {
+  if (!email) return 'Email is required';
+  if (!email.includes('@')) return 'Email must contain @';
+  const parts = email.split('@');
+  if (!parts[1] || !parts[1].includes('.')) return 'Email must contain a domain like .com';
+  if (parts[1].startsWith('.') || parts[1].endsWith('.')) return 'Invalid domain format';
+  return '';
+}
+
+function validatePhone(phone: string): string {
+  const digits = phone.replace(/\D/g, '');
+  if (!digits) return 'Phone number is required';
+  if (digits.length < 10) return 'Phone number must be 10 digits';
+  return '';
+}
+
+function validateZip(zip: string): string {
+  if (!zip) return 'ZIP code is required';
+  if (!/^\d{5}$/.test(zip)) return 'ZIP code must be 5 digits';
+  return '';
+}
 
 export default function PersonalInfoStep() {
   const { formData, updateField } = useApplicationForm();
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   const formatPhoneNumber = (value: string) => {
     const digits = value.replace(/\D/g, '').substring(0, 10);
@@ -13,83 +37,114 @@ export default function PersonalInfoStep() {
     });
   };
 
-  const handlePhoneChange = (value: string) => {
-    updateField('phone', formatPhoneNumber(value));
-  };
+  const touch = (field: string) => setTouched(prev => ({ ...prev, [field]: true }));
+
+  const emailError  = touched.email  ? validateEmail(formData.email)   : '';
+  const phoneError  = touched.phone  ? validatePhone(formData.phone)   : '';
+  const zipError    = touched.zip    ? validateZip(formData.zip)       : '';
+  const nameError   = touched.name   && !formData.name.trim()  ? 'Full name is required'  : '';
+  const cityError   = touched.city   && !formData.city.trim()  ? 'City is required'        : '';
+  const stateError  = touched.state  && !formData.state.trim() ? 'State is required'       : '';
+  const familyError = touched.family && !formData.familyStatus  ? 'Please select a status' : '';
 
   return (
     <div className="step active">
       <h2>Step 1 of 5: Personal Information</h2>
       <div className="form-fields">
+
+        {/* Full Name */}
         <div className="form-group">
-          <label>Full Name</label>
+          <label>Full Name <span style={{ color: 'var(--error, #ef4444)' }}>*</span></label>
           <input
             type="text"
             value={formData.name}
             onChange={e => updateField('name', e.target.value)}
+            onBlur={() => touch('name')}
             placeholder="John Smith"
-            required
+            style={nameError ? { borderColor: '#ef4444' } : {}}
           />
+          {nameError && <span style={{ color: '#ef4444', fontSize: 12 }}>{nameError}</span>}
         </div>
 
+        {/* Phone */}
         <div className="form-group">
-          <label>Phone Number</label>
+          <label>Phone Number <span style={{ color: '#ef4444' }}>*</span></label>
           <input
             type="tel"
             value={formData.phone}
-            onChange={e => handlePhoneChange(e.target.value)}
+            onChange={e => updateField('phone', formatPhoneNumber(e.target.value))}
+            onBlur={() => touch('phone')}
             placeholder="000-000-0000"
             maxLength={12}
-            required
+            style={phoneError ? { borderColor: '#ef4444' } : {}}
           />
+          {phoneError && <span style={{ color: '#ef4444', fontSize: 12 }}>{phoneError}</span>}
         </div>
 
+        {/* Email */}
         <div className="form-group">
-          <label>Email Address</label>
+          <label>Email Address <span style={{ color: '#ef4444' }}>*</span></label>
           <input
-            type="email"
+            type="text"
             value={formData.email}
             onChange={e => updateField('email', e.target.value)}
+            onBlur={() => touch('email')}
             placeholder="mail@example.com"
-            required
+            style={emailError ? { borderColor: '#ef4444' } : {}}
           />
+          {emailError && <span style={{ color: '#ef4444', fontSize: 12 }}>{emailError}</span>}
         </div>
 
+        {/* City / State / Zip */}
         <div className="form-group">
-          <label>Where are you living now? City, State, Zip</label>
+          <label>Where are you living now? City, State, Zip <span style={{ color: '#ef4444' }}>*</span></label>
           <div className="address-fields">
-            <input
-              type="text"
-              value={formData.city}
-              onChange={e => updateField('city', e.target.value)}
-              placeholder="City"
-              required
-            />
-            <input
-              type="text"
-              value={formData.state}
-              onChange={e => updateField('state', e.target.value)}
-              placeholder="State"
-              maxLength={2}
-              required
-            />
-            <input
-              type="text"
-              value={formData.zip}
-              onChange={e => updateField('zip', e.target.value)}
-              placeholder="Zip"
-              maxLength={5}
-              required
-            />
+            <div>
+              <input
+                type="text"
+                value={formData.city}
+                onChange={e => updateField('city', e.target.value)}
+                onBlur={() => touch('city')}
+                placeholder="City"
+                style={cityError ? { borderColor: '#ef4444' } : {}}
+              />
+              {cityError && <span style={{ color: '#ef4444', fontSize: 12 }}>{cityError}</span>}
+            </div>
+            <div>
+              <input
+                type="text"
+                value={formData.state}
+                onChange={e => updateField('state', e.target.value.toUpperCase())}
+                onBlur={() => touch('state')}
+                placeholder="ST"
+                maxLength={2}
+                style={stateError ? { borderColor: '#ef4444' } : {}}
+              />
+              {stateError && <span style={{ color: '#ef4444', fontSize: 12 }}>{stateError}</span>}
+            </div>
+            <div>
+              <input
+                type="text"
+                value={formData.zip}
+                onChange={e => updateField('zip', e.target.value.replace(/\D/g, '').substring(0, 5))}
+                onBlur={() => touch('zip')}
+                placeholder="00000"
+                maxLength={5}
+                style={zipError ? { borderColor: '#ef4444' } : {}}
+              />
+              {zipError && <span style={{ color: '#ef4444', fontSize: 12 }}>{zipError}</span>}
+            </div>
           </div>
         </div>
 
+        {/* Family Status */}
         <div className="form-group">
-          <label>Current Family Status</label>
+          <label>Current Family Status <span style={{ color: '#ef4444' }}>*</span></label>
           <select
             value={formData.familyStatus}
             onChange={e => updateField('familyStatus', e.target.value)}
-            required
+            onBlur={() => touch('family')}
+            style={familyError ? { borderColor: '#ef4444' } : {}}
           >
             <option value="">Select...</option>
             <option value="single">Single</option>
@@ -97,7 +152,9 @@ export default function PersonalInfoStep() {
             <option value="divorced">Divorced</option>
             <option value="widowed">Widowed</option>
           </select>
+          {familyError && <span style={{ color: '#ef4444', fontSize: 12 }}>{familyError}</span>}
         </div>
+
       </div>
     </div>
   );
