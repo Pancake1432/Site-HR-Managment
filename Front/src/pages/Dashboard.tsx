@@ -7,7 +7,6 @@ import SettingsModal from '../components/dashboard/SettingsModal';
 import { Emoji } from '../components/Emoji';
 import '../styles/dashboard.css';
 
-// Admin sees all pages
 const ADMIN_NAV = [
   { path: '/dashboard',            icon: '📊', label: 'Dashboard'  },
   { path: '/dashboard/documents',  icon: '📄', label: 'Documents'  },
@@ -17,7 +16,6 @@ const ADMIN_NAV = [
   { path: '/dashboard/employees',  icon: '👥', label: 'Employees'  },
 ];
 
-// Accounting sees only financial pages
 const ACCOUNTING_NAV = [
   { path: '/dashboard',            icon: '📊', label: 'Dashboard'  },
   { path: '/dashboard/statements', icon: '📋', label: 'Statements' },
@@ -50,7 +48,6 @@ function DashboardLayout() {
     return () => { document.documentElement.classList.remove('dark', 'compact'); };
   }, []);
 
-  // Redirect accounting users away from restricted pages
   useEffect(() => {
     if (isAccounting) {
       const restricted = ['/dashboard/documents', '/dashboard/drivers'];
@@ -65,8 +62,6 @@ function DashboardLayout() {
     window.location.href = '/login';
   };
 
-  const activeItem = NAV_ITEMS.find(i => i.path === activePath);
-
   return (
     <div className="container">
       {/* SIDEBAR */}
@@ -76,10 +71,27 @@ function DashboardLayout() {
           <span>HR Manager</span>
         </div>
 
-        {/* Role badge */}
+        {/* Accounting badge — improved */}
         {isAccounting && (
-          <div style={{ padding: '4px 16px 8px', fontSize: 11, color: 'var(--accent)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1 }}>
-            📊 Accounting
+          <div style={{
+            margin: '0 10px 16px',
+            padding: '6px 10px',
+            background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+            borderRadius: '8px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            boxShadow: '0 2px 8px rgba(99,102,241,0.4)',
+          }}>
+            <span style={{ fontSize: 14 }}>📊</span>
+            <div>
+              <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: '1px', lineHeight: 1 }}>
+                Logged in as
+              </div>
+              <div style={{ fontSize: 12, color: '#fff', fontWeight: 700, letterSpacing: '0.5px' }}>
+                Accounting
+              </div>
+            </div>
           </div>
         )}
 
@@ -136,7 +148,7 @@ function DashboardLayout() {
       </nav>
 
       {/* Settings button */}
-      <button className="settings-fab" onClick={() => setShowSettings(true)} aria-label="Settings">
+      <button className="settings-icon" onClick={() => setShowSettings(true)} aria-label="Settings">
         ⚙️
       </button>
 

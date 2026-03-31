@@ -49,12 +49,20 @@ export function useCompanyData(): CompanyData {
     } catch (err) {
       console.error('useCompanyData fetch error:', err);
     } finally {
-      loadingRef.current = false;
+      loadingRef.current = false; // ← make sure this resets
     }
-  }, []); // ← empty deps — stable reference, no re-render loops
+  }, []);
 
+  useEffect(() => { load(); }, [load]);
+
+  // Refresh every 5s + when tab regains focus
   useEffect(() => {
-    load();
+    const interval = setInterval(load, 5000);
+    window.addEventListener('focus', load);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', load);
+    };
   }, [load]);
 
   return { companyDrivers, applicants, companyName, refresh: load };
