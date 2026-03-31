@@ -1,4 +1,4 @@
-namespace HRDashboard.API.Models
+namespace HRDashboard.Domain.Entities
 {
     public class Applicant
     {

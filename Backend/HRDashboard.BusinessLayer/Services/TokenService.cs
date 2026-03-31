@@ -1,23 +1,29 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using HRDashboard.API.Models;
+using HRDashboard.Domain.Entities;
+using HRDashboard.Domain.Settings;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
-namespace HRDashboard.API.Services
+namespace HRDashboard.BusinessLayer.Services
 {
+    /// <summary>
+    /// Serviciu JWT — foloseste IOptions&lt;JwtOptions&gt; in loc de IConfiguration direct.
+    /// JwtOptions este populat automat din sectiunea "Jwt" din appsettings.json.
+    /// </summary>
     public class TokenService
     {
-        private readonly IConfiguration _config;
+        private readonly JwtOptions _jwt;
 
-        public TokenService(IConfiguration config)
+        public TokenService(IOptions<JwtOptions> jwtOptions)
         {
-            _config = config;
+            _jwt = jwtOptions.Value;
         }
 
         public string GenerateToken(User user)
         {
-            var key   = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
+            var key   = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwt.Key));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
             var claims = new[]
@@ -31,10 +37,10 @@ namespace HRDashboard.API.Services
             };
 
             var token = new JwtSecurityToken(
-                issuer:   _config["Jwt:Issuer"],
-                audience: _config["Jwt:Audience"],
-                claims:   claims,
-                expires:  DateTime.UtcNow.AddHours(8),
+                issuer:             _jwt.Issuer,
+                audience:           _jwt.Audience,
+                claims:             claims,
+                expires:            DateTime.UtcNow.AddHours(_jwt.ExpireHours),
                 signingCredentials: creds
             );
 
@@ -42,8 +48,7 @@ namespace HRDashboard.API.Services
         }
 
         /// <summary>
-        /// Extrage companyId din token-ul JWT curent al request-ului.
-        /// Folosit în fiecare controller pentru izolarea datelor per companie.
+        /// Extrage companyId din JWT-ul curent al request-ului.
         /// </summary>
         public static string GetCompanyId(ClaimsPrincipal user)
             => user.FindFirstValue("companyId") ?? "";

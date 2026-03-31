@@ -1,6 +1,10 @@
-using HRDashboard.API.Data;
-using HRDashboard.API.Models;
+using HRDashboard.BusinessLayer.Services;
+using HRDashboard.DataAccess.Context;
+using HRDashboard.Domain.Entities;
+using HRDashboard.Domain.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace HRDashboard.API.Controllers
 {
@@ -8,11 +12,16 @@ namespace HRDashboard.API.Controllers
     [Route("api/[controller]")]
     public class ApplicationsController : ControllerBase
     {
-        private readonly AppDbContext _db;
-        public ApplicationsController(AppDbContext db) { _db = db; }
+        private readonly AppDbContext         _db;
+        private readonly IApplicantRepository _applicants;
 
-        // POST /api/applications
-        // Apelat de formularul multi-step (nu necesită autentificare — e public)
+        public ApplicationsController(AppDbContext db, IApplicantRepository applicants)
+        {
+            _db         = db;
+            _applicants = applicants;
+        }
+
+        // POST /api/applications — public (no auth)
         [HttpPost]
         public async Task<IActionResult> Submit([FromBody] Application app)
         {
@@ -20,7 +29,6 @@ namespace HRDashboard.API.Controllers
             app.SubmittedAt = DateTime.UtcNow;
             app.Status      = "pending";
 
-            // Creăm și applicant-ul în tabelul Applicants (vizibil în Documents tab)
             var parts     = app.Name.Trim().Split(' ', 2);
             var applicant = new Applicant
             {
@@ -38,18 +46,19 @@ namespace HRDashboard.API.Controllers
             _db.Applicants.Add(applicant);
             await _db.SaveChangesAsync();
 
-            return Ok(new { applicationId = app.Id, applicantId = applicant.Id, message = "Application submitted successfully." });
+            return Ok(new { applicationId = app.Id, applicantId = applicant.Id, message = "Application submitted." });
         }
 
-        // GET /api/applications (protected — pentru admin)
-        [Microsoft.AspNetCore.Authorization.Authorize]
+        // GET /api/applications — protected
         [HttpGet]
+        [Authorize]
         public async Task<IActionResult> GetAll()
         {
-            var companyId = Services.TokenService.GetCompanyId(User);
-            var apps      = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions
-                .ToListAsync(_db.Applications.Where(a => a.CompanyId == companyId)
-                .OrderByDescending(a => a.SubmittedAt));
+            var companyId = TokenService.GetCompanyId(User);
+            var apps = await _db.Applications
+                .Where(a => a.CompanyId == companyId)
+                .OrderByDescending(a => a.SubmittedAt)
+                .ToListAsync();
             return Ok(apps);
         }
     }

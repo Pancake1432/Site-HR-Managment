@@ -17,7 +17,7 @@ Thumbs.db
 
 # Secrets - DO NOT SHARE
 **/appsettings.Production.json
-**/secrets.json
+**/appsettings.Development.json
 
 # --- FRONTEND (React / Vite) ---
 **/node_modules/

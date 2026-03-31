@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #pragma warning disable CA1814 // Prefer jagged arrays over multidimensional
 
-namespace HRDashboard.API.Migrations
+namespace HRDashboard.DataAccess.Migrations
 {
     /// <inheritdoc />
     public partial class InitialCreate : Migration
@@ -119,8 +119,7 @@ namespace HRDashboard.API.Migrations
                 {
                     Id = table.Column<string>(type: "TEXT", nullable: false),
                     CompanyId = table.Column<string>(type: "TEXT", nullable: false),
-                    SavedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    DriverId = table.Column<int>(type: "INTEGER", nullable: true),
+                    DriverId = table.Column<int>(type: "INTEGER", nullable: false),
                     DriverName = table.Column<string>(type: "TEXT", nullable: false),
                     PaymentType = table.Column<string>(type: "TEXT", nullable: false),
                     Miles = table.Column<string>(type: "TEXT", nullable: false),
@@ -130,9 +129,10 @@ namespace HRDashboard.API.Migrations
                     AdjustmentType = table.Column<string>(type: "TEXT", nullable: false),
                     AdjustmentAmount = table.Column<string>(type: "TEXT", nullable: false),
                     AdjustmentReason = table.Column<string>(type: "TEXT", nullable: false),
-                    Subtotal = table.Column<string>(type: "TEXT", nullable: false),
                     Adjustment = table.Column<string>(type: "TEXT", nullable: false),
-                    Total = table.Column<string>(type: "TEXT", nullable: false)
+                    Subtotal = table.Column<string>(type: "TEXT", nullable: false),
+                    Total = table.Column<string>(type: "TEXT", nullable: false),
+                    SavedAt = table.Column<DateTime>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -196,8 +196,8 @@ namespace HRDashboard.API.Migrations
                 columns: new[] { "Id", "CompanyId", "CompanyName", "Email", "Name", "PasswordHash", "Role" },
                 values: new object[,]
                 {
-                    { 1, "company-paks", "Paks Logistic LLC", "dispatch@pakslogistic.com", "Paks Admin", "$2a$11$qMhH9D/9ChooA9oa/ypZeeovCBIyMsSyzia4FxSyF.4NmDKRSkYDi", "admin" },
-                    { 4, "company-paks", "Paks Logistic LLC", "accounting@pakslogistic.com", "Paks Accounting", "$2a$11$4pMNHldxdgGbIsR767HKcuYlr3AgPf2FglCFWyRyHjAkeMVdBAAxi", "accounting" }
+                    { 1, "company-paks", "Paks Logistic LLC", "dispatch@pakslogistic.com", "Paks Admin", "$2a$11$6D1V/5sQqG6DdwN5yuVKjOUzCtGgybazNcYXyfJZT9t2nwCnjUdia", "admin" },
+                    { 4, "company-paks", "Paks Logistic LLC", "accounting@pakslogistic.com", "Paks Accounting", "$2a$11$v7SN8nFpOdQhhGYGA6k8y.plu9KV/hHjZxfeBsk3qdj8rREx87sm6", "accounting" }
                 });
         }
 

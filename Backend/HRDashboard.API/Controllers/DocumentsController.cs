@@ -1,9 +1,9 @@
-using HRDashboard.API.Data;
-using HRDashboard.API.Models;
-using HRDashboard.API.Services;
+using HRDashboard.BusinessLayer.Services;
+using HRDashboard.Domain.DTOs;
+using HRDashboard.Domain.Entities;
+using HRDashboard.Domain.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace HRDashboard.API.Controllers
 {
@@ -11,77 +11,50 @@ namespace HRDashboard.API.Controllers
     [Route("api/[controller]")]
     public class DocumentsController : ControllerBase
     {
-        private readonly AppDbContext _db;
-        public DocumentsController(AppDbContext db) { _db = db; }
+        private readonly IDocumentRepository _repo;
+        public DocumentsController(IDocumentRepository repo) { _repo = repo; }
 
-        // GET /api/documents/{driverId}
-        // Returns all documents for a driver/applicant (protected)
+        private string CompanyId => TokenService.GetCompanyId(User);
+
+        // GET /api/documents/{driverId} — protected
         [HttpGet("{driverId}")]
         [Authorize]
         public async Task<IActionResult> GetByDriver(int driverId)
-        {
-            var companyId = TokenService.GetCompanyId(User);
-            var docs = await _db.Documents
-                .Where(d => d.DriverId == driverId && d.CompanyId == companyId)
-                .ToListAsync();
-            return Ok(docs);
-        }
+            => Ok(await _repo.GetByDriverAsync(driverId, CompanyId));
 
-        // POST /api/documents
-        // Upload a document (protected - for admin uploads)
+        // POST /api/documents — protected (admin upload)
         [HttpPost]
         [Authorize]
         public async Task<IActionResult> Upload([FromBody] Document doc)
         {
-            doc.CompanyId  = TokenService.GetCompanyId(User);
-            doc.UploadDate = DateTime.Now.ToString("MM/dd/yyyy");
-            _db.Documents.Add(doc);
-            await _db.SaveChangesAsync();
-            return Ok(doc);
+            doc.CompanyId = CompanyId;
+            return Ok(await _repo.CreateAsync(doc));
         }
 
-        // POST /api/documents/public
-        // Upload documents from application form (no auth - public)
+        // POST /api/documents/public — public (from application form)
         [HttpPost("public")]
         public async Task<IActionResult> UploadPublic([FromBody] PublicDocumentRequest req)
         {
             var doc = new Document
             {
-                CompanyId  = "company-paks",
-                DriverId   = req.DriverId,
-                DocType    = req.DocType,
-                Name       = req.Name,
-                FileType   = req.FileType ?? "PDF",
-                UploadDate = DateTime.Now.ToString("MM/dd/yyyy"),
-                Size       = req.Size ?? "",
-                Base64     = req.Base64,
+                CompanyId = "company-paks",
+                DriverId  = req.DriverId,
+                DocType   = req.DocType,
+                Name      = req.Name,
+                FileType  = req.FileType ?? "PDF",
+                Size      = req.Size ?? "",
+                Base64    = req.Base64,
             };
-            _db.Documents.Add(doc);
-            await _db.SaveChangesAsync();
-            return Ok(doc);
+            return Ok(await _repo.CreatePublicAsync(doc));
         }
 
-        // DELETE /api/documents/{id}
+        // DELETE /api/documents/{id} — protected
         [HttpDelete("{id}")]
         [Authorize]
         public async Task<IActionResult> Delete(int id)
         {
-            var companyId = TokenService.GetCompanyId(User);
-            var doc = await _db.Documents
-                .FirstOrDefaultAsync(d => d.Id == id && d.CompanyId == companyId);
-            if (doc == null) return NotFound();
-            _db.Documents.Remove(doc);
-            await _db.SaveChangesAsync();
-            return Ok(new { message = "Document deleted." });
+            var ok = await _repo.DeleteAsync(id, CompanyId);
+            return ok ? Ok(new { message = "Document deleted." }) : NotFound();
         }
     }
-
-    public record PublicDocumentRequest(
-        int    DriverId,
-        string DocType,
-        string Name,
-        string Base64,
-        string? FileType,
-        string? Size
-    );
 }

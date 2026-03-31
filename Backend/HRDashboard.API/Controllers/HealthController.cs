@@ -6,11 +6,13 @@ namespace HRDashboard.API.Controllers
     [Route("api/[controller]")]
     public class HealthController : ControllerBase
     {
+        // GET /api/health — public, no auth required
+        // Used by frontend HealthGuard to check if backend is online
         [HttpGet]
         public IActionResult Get() => Ok(new
         {
             status  = "healthy",
-            version = "1.0.0",
+            version = "2.0.0",
             time    = DateTime.UtcNow
         });
     }

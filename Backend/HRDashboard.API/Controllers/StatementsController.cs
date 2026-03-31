@@ -1,9 +1,7 @@
-using HRDashboard.API.Data;
-using HRDashboard.API.Models;
-using HRDashboard.API.Services;
+using HRDashboard.Domain.Entities;
+using HRDashboard.Domain.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace HRDashboard.API.Controllers
 {
@@ -12,55 +10,38 @@ namespace HRDashboard.API.Controllers
     [Authorize]
     public class StatementsController : ControllerBase
     {
-        private readonly AppDbContext _db;
-        public StatementsController(AppDbContext db) { _db = db; }
+        private readonly IStatementRepository _repo;
+        public StatementsController(IStatementRepository repo) { _repo = repo; }
+
+        private string CompanyId => BusinessLayer.Services.TokenService.GetCompanyId(User);
 
         // GET /api/statements
         [HttpGet]
         public async Task<IActionResult> GetAll()
-        {
-            var companyId  = TokenService.GetCompanyId(User);
-            var statements = await _db.SavedStatements
-                .Where(s => s.CompanyId == companyId)
-                .OrderByDescending(s => s.SavedAt)
-                .ToListAsync();
-            return Ok(statements);
-        }
+            => Ok(await _repo.GetAllAsync(CompanyId));
 
         // POST /api/statements
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] SavedStatement statement)
         {
-            statement.CompanyId = TokenService.GetCompanyId(User);
-            statement.Id        = $"stmt-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}";
+            statement.CompanyId = CompanyId;
             statement.SavedAt   = DateTime.UtcNow;
-            _db.SavedStatements.Add(statement);
-            await _db.SaveChangesAsync();
-            return Ok(statement);
+            return Ok(await _repo.CreateAsync(statement));
         }
 
         // DELETE /api/statements/{id}
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(string id)
         {
-            var companyId = TokenService.GetCompanyId(User);
-            var statement = await _db.SavedStatements
-                .FirstOrDefaultAsync(s => s.Id == id && s.CompanyId == companyId);
-            if (statement == null) return NotFound();
-
-            _db.SavedStatements.Remove(statement);
-            await _db.SaveChangesAsync();
-            return Ok(new { message = "Statement removed." });
+            var ok = await _repo.DeleteAsync(id, CompanyId);
+            return ok ? Ok(new { message = "Statement deleted." }) : NotFound();
         }
 
-        // DELETE /api/statements  (clear all for company)
+        // DELETE /api/statements — delete all
         [HttpDelete]
-        public async Task<IActionResult> ClearAll()
+        public async Task<IActionResult> DeleteAll()
         {
-            var companyId  = TokenService.GetCompanyId(User);
-            var statements = _db.SavedStatements.Where(s => s.CompanyId == companyId);
-            _db.SavedStatements.RemoveRange(statements);
-            await _db.SaveChangesAsync();
+            await _repo.DeleteAllAsync(CompanyId);
             return Ok(new { message = "All statements cleared." });
         }
     }

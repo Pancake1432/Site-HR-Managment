@@ -1,6 +1,9 @@
 using System.Text;
-using HRDashboard.API.Data;
-using HRDashboard.API.Services;
+using HRDashboard.BusinessLayer.Services;
+using HRDashboard.DataAccess.Context;
+using HRDashboard.DataAccess.Repositories;
+using HRDashboard.Domain.Interfaces;
+using HRDashboard.Domain.Settings;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -8,96 +11,103 @@ using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Configuration.AddJsonFile("secrets.json", optional: true, reloadOnChange: true);
+// ── JWT Options pattern ───────────────────────────────────────────────────────
+// Citeste "Jwt" din appsettings.json -> mapeaza la JwtOptions
+// Serviciile primesc IOptions<JwtOptions>, NU IConfiguration direct
+builder.Services.Configure<JwtOptions>(
+    builder.Configuration.GetSection(JwtOptions.SectionName));
 
-// ── Controllers ───────────────────────────────────────────────────────────────
+var jwtOptions = builder.Configuration
+    .GetSection(JwtOptions.SectionName)
+    .Get<JwtOptions>()!;
+
+// ── Database ──────────────────────────────────────────────────────────────────
+builder.Services.AddDbContext<AppDbContext>(opt =>
+    opt.UseSqlite("Data Source=hrdashboard.db"));
+
+// ── Repositories (DataAccess) ─────────────────────────────────────────────────
+builder.Services.AddScoped<IDriverRepository,    DriverRepository>();
+builder.Services.AddScoped<IApplicantRepository, ApplicantRepository>();
+builder.Services.AddScoped<IDocumentRepository,  DocumentRepository>();
+builder.Services.AddScoped<IStatementRepository, StatementRepository>();
+builder.Services.AddScoped<IUserRepository,      UserRepository>();
+
+// ── Services (BusinessLayer) ──────────────────────────────────────────────────
+builder.Services.AddScoped<TokenService>();
+builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<DriverService>();
+builder.Services.AddScoped<ApplicantService>();
+
+// ── JWT Authentication ────────────────────────────────────────────────────────
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(opt => opt.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer           = true,
+        ValidateAudience         = true,
+        ValidateLifetime         = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer              = jwtOptions.Issuer,
+        ValidAudience            = jwtOptions.Audience,
+        IssuerSigningKey         = new SymmetricSecurityKey(
+                                       Encoding.UTF8.GetBytes(jwtOptions.Key)),
+    });
+builder.Services.AddAuthorization();
+
+// ── CORS ──────────────────────────────────────────────────────────────────────
+builder.Services.AddCors(opt => opt.AddPolicy("ReactApp", policy =>
+    policy.WithOrigins(
+            "http://localhost:5173",
+            "https://localhost:5173",
+            "http://localhost:3000")
+        .AllowAnyHeader()
+        .AllowAnyMethod()));
+
+// ── Controllers + Swagger ─────────────────────────────────────────────────────
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-
-// ── Swagger cu suport JWT ─────────────────────────────────────────────────────
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "HRDashboard API", Version = "v1" });
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title       = "HRDashboard API",
+        Version     = "v2.0",
+        Description = "HR Management System - Paks Logistic LLC"
+    });
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name         = "Authorization",
-        Type         = SecuritySchemeType.Http,
+        Type         = SecuritySchemeType.ApiKey,
         Scheme       = "Bearer",
         BearerFormat = "JWT",
         In           = ParameterLocation.Header,
-        Description  = "Introdu token-ul JWT: Bearer {token}"
+        Description  = "Introdu: Bearer {token}",
     });
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
             new OpenApiSecurityScheme
             {
-                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
+                Reference = new OpenApiReference
+                    { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
             },
             Array.Empty<string>()
         }
     });
 });
 
-// ── SQLite Database ───────────────────────────────────────────────────────────
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite("Data Source=hrdashboard.db"));
-
-// ── JWT Authentication ────────────────────────────────────────────────────────
-var jwtKey = builder.Configuration["Jwt:Key"]!;
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
-    {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer           = true,
-            ValidateAudience         = true,
-            ValidateLifetime         = true,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer              = builder.Configuration["Jwt:Issuer"],
-            ValidAudience            = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey         = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
-        };
-    });
-
-builder.Services.AddAuthorization();
-
-// ── TokenService (injectat în controllere) ────────────────────────────────────
-builder.Services.AddScoped<TokenService>();
-
-// ── CORS — permite frontul React ──────────────────────────────────────────────
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("ReactApp", policy =>
-    {
-        policy.WithOrigins(
-            "http://localhost:5173",
-            "https://localhost:5173"   // ← adaugă și versiunea https
-        )
-            .AllowAnyHeader()
-            .AllowAnyMethod();
-    });
-});
-
-// ── Build ─────────────────────────────────────────────────────────────────────
 var app = builder.Build();
 
-// ── Auto-migrate + seed la pornire ───────────────────────────────────────────
+// ── Auto-migrate ──────────────────────────────────────────────────────────────
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.Migrate();
 }
 
-// ── Pipeline ──────────────────────────────────────────────────────────────────
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-
-app.UseHttpsRedirection();
-app.UseCors("ReactApp");          // CORS trebuie înainte de Auth
+// ── Middleware ────────────────────────────────────────────────────────────────
+app.UseSwagger();
+app.UseSwaggerUI();
+app.UseCors("ReactApp");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
