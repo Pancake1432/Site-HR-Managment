@@ -13,7 +13,7 @@ import { Emoji } from '../Emoji';
 export default function DashboardHome() {
   const navigate = useNavigate();
   const { settings } = useSettings();
-  const { companyDrivers, applicants, refresh } = useCompanyData();
+  const { companyDrivers, applicants, refresh, isLoading, fetchError } = useCompanyData();
   const { statements } = useSavedStatements();
   const { isAccounting } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
@@ -50,8 +50,35 @@ export default function DashboardHome() {
 
   const sym = CURRENCY_SYMBOLS[settings.currency];
 
+  if (isLoading) {
+    return (
+      <div className="page">
+        <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: 16 }}>
+          <Emoji symbol="⏳" size={24} /> Loading dashboard data…
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="page">
+      {fetchError && (
+        <div style={{
+          margin: '0 0 16px', padding: '12px 16px', borderRadius: 10,
+          background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)',
+          color: '#dc2626', fontSize: 14, display: 'flex', alignItems: 'center',
+          gap: 10, justifyContent: 'space-between',
+        }}>
+          <span><strong>⚠️ Could not load data:</strong> {fetchError}</span>
+          <button
+            onClick={refresh}
+            style={{ padding: '5px 14px', borderRadius: 7, border: '1px solid #dc2626',
+              background: 'transparent', color: '#dc2626', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}
+          >
+            Retry
+          </button>
+        </div>
+      )}
       <div className="page-header">
         <h1 className="page-title">Dashboard</h1>
         <p className="page-subtitle">Track, manage and control all HR activities</p>
@@ -169,8 +196,10 @@ export default function DashboardHome() {
               date: d.date,
             }));
 
-            // Sort by date descending and take top 6
-            const sorted = events.sort((a, b) => b.date.localeCompare(a.date)).slice(0, 6);
+            // Sort by date descending and take top 6 (guard against undefined dates)
+            const sorted = events
+              .sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''))
+              .slice(0, 6);
 
             return sorted.length > 0 ? sorted.map(item => (
               <div key={item.key} className="activity-item">

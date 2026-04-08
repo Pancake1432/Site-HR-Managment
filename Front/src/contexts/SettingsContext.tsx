@@ -68,7 +68,7 @@ export const PAY_DAY_LABELS:   Record<PayDay,   string> = {
 
 /**
  * Re-format a stored date string (any common format) into the user's chosen format.
- * Handles: MM/DD/YYYY, MM/DD/YY, DD/MM/YYYY, YYYY-MM-DD, JS Date objects.
+ * Handles: ISO datetimes (2026-03-31T14:25:13…), YYYY-MM-DD, MM/DD/YYYY, JS Date objects.
  */
 export function fmtDate(raw: string | Date | undefined | null, fmt: DateFmt): string {
   if (!raw) return '—';
@@ -78,14 +78,18 @@ export function fmtDate(raw: string | Date | undefined | null, fmt: DateFmt): st
     d = raw;
   } else {
     const s = raw.trim();
-    // YYYY-MM-DD
+
+    // ISO datetime or plain YYYY-MM-DD — extract only the date part before any 'T'
     if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
-      d = new Date(s + 'T00:00:00');
+      const datePart = s.substring(0, 10); // "2026-03-31"
+      d = new Date(datePart + 'T00:00:00');
+
     // MM/DD/YYYY or MM/DD/YY
     } else if (/^\d{1,2}\/\d{1,2}\/\d{2,4}$/.test(s)) {
       const [m, day, y] = s.split('/').map(Number);
       const year = y < 100 ? 2000 + y : y;
       d = new Date(year, m - 1, day);
+
     } else {
       return raw as string; // unrecognised — return as-is
     }
@@ -114,7 +118,7 @@ export function fmtCurrency(amount: number | string, currency: Currency): string
 
 /**
  * Returns the short distance label for the current unit.
- * fmtDistLabel('miles') → 'mi'   fmtDistLabel('km') → 'km'
+ * fmtDistUnit('miles') → 'mi'   fmtDistUnit('km') → 'km'
  */
 export function fmtDistUnit(unit: DistUnit): string {
   return unit === 'km' ? 'km' : 'mi';

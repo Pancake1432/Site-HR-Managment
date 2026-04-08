@@ -2,29 +2,27 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using HRDashboard.Domain.Entities;
-using HRDashboard.Domain.Settings;
-using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
-namespace HRDashboard.BusinessLayer.Services
+namespace HRDashboard.BusinessLayer.Structure
 {
-    /// <summary>
-    /// Serviciu JWT — foloseste IOptions&lt;JwtOptions&gt; in loc de IConfiguration direct.
-    /// JwtOptions este populat automat din sectiunea "Jwt" din appsettings.json.
-    /// </summary>
     public class TokenService
     {
-        private readonly JwtOptions _jwt;
+        // Set once at startup by Program.cs — never hardcoded here
+        public static string SecretKey { get; set; } = "";
 
-        public TokenService(IOptions<JwtOptions> jwtOptions)
-        {
-            _jwt = jwtOptions.Value;
-        }
+        private const string Issuer   = "HRDashboard";
+        private const string Audience = "HRDashboardClient";
 
-        public string GenerateToken(User user)
+        public TokenService() { }
+
+        public string GenerateToken(UserData user)
         {
-            var key   = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwt.Key));
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+            if (string.IsNullOrEmpty(SecretKey))
+                throw new InvalidOperationException("TokenService.SecretKey has not been set. Call TokenService.SecretKey = ... in Program.cs.");
+
+            var secKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(SecretKey));
+            var creds  = new SigningCredentials(secKey, SecurityAlgorithms.HmacSha256);
 
             var claims = new[]
             {
@@ -37,19 +35,16 @@ namespace HRDashboard.BusinessLayer.Services
             };
 
             var token = new JwtSecurityToken(
-                issuer:             _jwt.Issuer,
-                audience:           _jwt.Audience,
+                issuer:             Issuer,
+                audience:           Audience,
                 claims:             claims,
-                expires:            DateTime.UtcNow.AddHours(_jwt.ExpireHours),
+                expires:            DateTime.UtcNow.AddHours(8),
                 signingCredentials: creds
             );
 
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
-        /// <summary>
-        /// Extrage companyId din JWT-ul curent al request-ului.
-        /// </summary>
         public static string GetCompanyId(ClaimsPrincipal user)
             => user.FindFirstValue("companyId") ?? "";
     }

@@ -1,10 +1,11 @@
-import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { UserX, Eye, UserPlus, AlertTriangle } from 'lucide-react';
 import { Emoji } from '../Emoji';
 import { Driver } from '../../types/dashboard';
 import { useCompanyData } from '../../hooks/useCompanyData';
-import { useDriverDocStorage } from '../../hooks/useDriverDocStorage';
+import { useDriverDocStorage, DriverDocSet } from '../../hooks/useDriverDocStorage';
+import { useLocalOverrides } from '../../hooks/useLocalOverrides';
 import { useSettings, fmtDate } from '../../contexts/SettingsContext';
 import { addManualDriver, fireDriver } from '../../services/applicationSubmitService';
 
@@ -31,6 +32,10 @@ const EMPTY_FORM: AddDriverForm = {
   paymentType:  'miles',
 };
 
+const EMPTY_DOCS: DriverDocSet = {
+  cdl: null, medicalCard: null, applicationPdf: null, workingContract: null,
+};
+
 export default function DriversPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -38,10 +43,14 @@ export default function DriversPage() {
   const { settings } = useSettings();
   const { companyDrivers, refresh } = useCompanyData();
   const { getDriverDocs, uploadDoc, deleteDoc, openDoc } = useDriverDocStorage();
+  const { applyOverrides, saveOverride } = useLocalOverrides();
 
   const [searchQuery, setSearchQuery]       = useState('');
   const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
   const [isUploading, setIsUploading]       = useState<string | null>(null);
+
+  // ── Docs for the selected driver modal (async loaded) ────────────────────
+  const [selectedDriverDocs, setSelectedDriverDocs] = useState<DriverDocSet>(EMPTY_DOCS);
 
   // ── Add Driver modal state ────────────────────────────────────────────────
   const [showAddModal, setShowAddModal] = useState(false);
@@ -53,14 +62,6 @@ export default function DriversPage() {
   // ── Fire Driver confirmation state ────────────────────────────────────────
   const [fireConfirmDriver, setFireConfirmDriver] = useState<Driver | null>(null);
 
-  // ── Driver docs (loaded async from API) ──────────────────────────────────
-  const [driverDocs, setDriverDocs] = useState<import('../../hooks/useDriverDocStorage').DriverDocSet>({ cdl: null, medicalCard: null, applicationPdf: null, workingContract: null });
-
-  useEffect(() => {
-    if (!selectedDriver) return;
-    getDriverDocs(selectedDriver.id).then(setDriverDocs);
-  }, [selectedDriver, getDriverDocs]);
-
   const addCdlRef = useRef<HTMLInputElement>(null);
   const addMedRef = useRef<HTMLInputElement>(null);
 
@@ -69,27 +70,32 @@ export default function DriversPage() {
   const contractInputRef = useRef<HTMLInputElement>(null);
 
   // Apply any locally-saved overrides on top of base data
-  const drivers = useMemo(() => companyDrivers, [companyDrivers]);
+  const drivers = useMemo(() => applyOverrides(companyDrivers), [companyDrivers, applyOverrides]);
 
-  // Sync modal with URL :id — re-runs whenever drivers list refreshes
+  // Sync modal with URL :id
   useEffect(() => {
     if (id) {
       const driver = drivers.find(d => d.id === Number(id));
-      if (driver) {
-        setSelectedDriver(driver);
-      }
-      // Don't set null if not found yet — list might still be loading
+      setSelectedDriver(driver ?? null);
     } else {
       setSelectedDriver(null);
     }
   }, [id, drivers]);
+
+  // Load docs asynchronously whenever the selected driver changes
+  useEffect(() => {
+    if (!selectedDriver) {
+      setSelectedDriverDocs(EMPTY_DOCS);
+      return;
+    }
+    getDriverDocs(selectedDriver.id).then(setSelectedDriverDocs);
+  }, [selectedDriver, getDriverDocs]);
 
   // Auto-open Add Driver modal when navigated from dashboard quick action
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     if (params.get('add') === 'true') {
       setShowAddModal(true);
-      // Clean the query param from the URL without adding a history entry
       navigate('/dashboard/drivers', { replace: true });
     }
   }, [location.search, navigate]);
@@ -113,9 +119,9 @@ export default function DriversPage() {
     setIsUploading(type);
     try {
       await uploadDoc(selectedDriver.id, type, file);
+      // Reload docs for the modal after upload
       const updated = await getDriverDocs(selectedDriver.id);
-      setDriverDocs(updated);
-      refresh();
+      setSelectedDriverDocs(updated);
       alert(`✅ ${getDocLabel(type)} uploaded and saved!`);
     } catch (err: unknown) {
       alert(err instanceof Error ? err.message : '❌ Upload failed. Please try again.');
@@ -127,33 +133,26 @@ export default function DriversPage() {
     }
   };
 
-  const handleDeleteDoc = async (type: 'cdl' | 'medicalCard' | 'workingContract') => {
+  const handleDeleteDoc = (type: 'cdl' | 'medicalCard' | 'workingContract') => {
     if (!selectedDriver) return;
-    const doc = driverDocs[type];
+    const doc = selectedDriverDocs[type];
     if (!doc) return;
     if (window.confirm(`Delete ${getDocLabel(type)}? This cannot be undone.`)) {
-      await deleteDoc(selectedDriver.id, doc.id);
-      const updated = await getDriverDocs(selectedDriver.id);
-      setDriverDocs(updated);
+      // Pass the actual numeric document ID, not the type string
+      deleteDoc(selectedDriver.id, String(doc.id));
+      // Optimistically remove from local state
+      setSelectedDriverDocs(prev => ({ ...prev, [type]: null }));
     }
   };
 
   // ── Status toggle ─────────────────────────────────────────────────────────
-  const toggleDriverStatus = async (driver: Driver) => {
+  const toggleDriverStatus = (driver: Driver) => {
     if (driver.employmentStatus === 'Fired') return;
     const next = driver.driverStatus === 'Ready' ? 'Not Ready' : 'Ready';
-    try {
-      const axios = (await import('axios')).default;
-      const token = localStorage.getItem('hr_access_token') ?? '';
-      const base = import.meta.env.VITE_API_URL ?? 'https://localhost:7001';
-      await axios.put(`${base}/api/drivers/${driver.id}`, { driverStatus: next }, { headers: { Authorization: `Bearer ${token}` } });
-    } catch { /* ignore */ }
-    // Update local state immediately for instant UI feedback
+    saveOverride(driver.id, { driverStatus: next });
     if (selectedDriver?.id === driver.id) {
       setSelectedDriver(prev => prev ? { ...prev, driverStatus: next } : prev);
     }
-    // Refresh the list so the row updates too
-    refresh();
   };
 
   const getDocLabel = (type: string) =>
@@ -174,15 +173,13 @@ export default function DriversPage() {
     }
     setAddSaving(true);
     try {
-      const dateStr = fmtDate(new Date(), settings.dateFormat);
-      const newId   = await addManualDriver(addForm);
+      const newId = await addManualDriver(addForm);
 
-      // Upload docs if provided
       if (addCdlFile) {
-        try { await uploadDoc(newId, 'cdl', addCdlFile, dateStr); } catch { /* ignore */ }
+        try { await uploadDoc(newId, 'cdl', addCdlFile); } catch { /* ignore */ }
       }
       if (addMedFile) {
-        try { await uploadDoc(newId, 'medicalCard', addMedFile, dateStr); } catch { /* ignore */ }
+        try { await uploadDoc(newId, 'medicalCard', addMedFile); } catch { /* ignore */ }
       }
 
       refresh();
@@ -232,7 +229,7 @@ export default function DriversPage() {
           <h2 className="card-title">Overview</h2>
           <button
             className="view-btn"
-            style={{ padding: '8px 16px', fontWeight: 600, background: 'var(--gradient)', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}
+            style={{ padding: '8px 16px', fontWeight: 600, background: 'var(--primary, #2563eb)', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}
             onClick={() => setShowAddModal(true)}
           >
             <UserPlus size={15} />
@@ -254,7 +251,7 @@ export default function DriversPage() {
         <div className="table-body">
           {filtered.length > 0 ? filtered.map(d => (
             <div key={d.id} className="table-row drivers-cols">
-              <span className="cell-name"><span className="row-avatar"><Emoji symbol="👤" size={20} /></span>{d.name || `${d.firstName} ${d.lastName}`.trim() || "—"}</span>
+              <span className="cell-name"><span className="row-avatar"><Emoji symbol="👤" size={20} /></span>{d.name}</span>
               <span className="cell" data-label="Position">{d.position}</span>
               <span className="cell" data-label="Equipment"><span className="equip-badge">{d.equipment}</span></span>
               <span className="cell" data-label="Status">
@@ -272,17 +269,24 @@ export default function DriversPage() {
                 </button>
               </span>
               <span className="cell" data-label="Date">{fmtDate(d.date, settings.dateFormat)}</span>
-              <span className="cell driver-action-cell" data-label="Action">
+              <span className="cell" data-label="Action" style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                 <button
                   className="view-btn"
-                  style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 10px' }}
+                  style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 12px' }}
                   onClick={() => navigate(`/dashboard/drivers/${d.id}`)}
                 >
                   <Eye size={13} /> View
                 </button>
                 <button
                   onClick={() => setFireConfirmDriver(d)}
-                  className="terminate-btn"
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '5px',
+                    padding: '6px 12px', borderRadius: '8px', border: 'none',
+                    background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+                    color: '#fff', cursor: 'pointer', fontSize: '13px', fontWeight: 600,
+                    boxShadow: '0 1px 3px rgba(239,68,68,0.35)', whiteSpace: 'nowrap',
+                    transition: 'opacity 0.15s',
+                  }}
                   onMouseEnter={e => (e.currentTarget.style.opacity = '0.85')}
                   onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
                   title="Terminate this driver"
@@ -319,7 +323,7 @@ export default function DriversPage() {
                       placeholder="John"
                       value={addForm.firstName}
                       onChange={e => setAddForm(f => ({ ...f, firstName: e.target.value }))}
-                      style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', fontSize: 14, background: 'var(--bg-card-secondary)', color: 'var(--text-primary)', colorScheme: 'inherit' }}
+                      style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', fontSize: 14, background: 'var(--input-bg, #fff)', color: 'var(--text-primary)' }}
                     />
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -329,7 +333,7 @@ export default function DriversPage() {
                       placeholder="Smith"
                       value={addForm.lastName}
                       onChange={e => setAddForm(f => ({ ...f, lastName: e.target.value }))}
-                      style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', fontSize: 14, background: 'var(--bg-card-secondary)', color: 'var(--text-primary)', colorScheme: 'inherit' }}
+                      style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', fontSize: 14, background: 'var(--input-bg, #fff)', color: 'var(--text-primary)' }}
                     />
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -344,7 +348,7 @@ export default function DriversPage() {
                           paymentType: pos === 'Owner Operator' ? 'percent' : f.paymentType,
                         }));
                       }}
-                      style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', fontSize: 14, background: 'var(--bg-card-secondary)', color: 'var(--text-primary)', colorScheme: 'inherit' }}
+                      style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', fontSize: 14, background: 'var(--input-bg, #fff)', color: 'var(--text-primary)' }}
                     >
                       {POSITIONS.map(p => <option key={p}>{p}</option>)}
                     </select>
@@ -354,7 +358,7 @@ export default function DriversPage() {
                     <select
                       value={addForm.driverStatus}
                       onChange={e => setAddForm(f => ({ ...f, driverStatus: e.target.value as typeof STATUSES[number] }))}
-                      style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', fontSize: 14, background: 'var(--bg-card-secondary)', color: 'var(--text-primary)', colorScheme: 'inherit' }}
+                      style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', fontSize: 14, background: 'var(--input-bg, #fff)', color: 'var(--text-primary)' }}
                     >
                       {STATUSES.map(s => <option key={s}>{s}</option>)}
                     </select>
@@ -364,7 +368,7 @@ export default function DriversPage() {
                     <select
                       value={addForm.equipment}
                       onChange={e => setAddForm(f => ({ ...f, equipment: e.target.value as typeof EQUIPMENTS[number] }))}
-                      style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', fontSize: 14, background: 'var(--bg-card-secondary)', color: 'var(--text-primary)', colorScheme: 'inherit' }}
+                      style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', fontSize: 14, background: 'var(--input-bg, #fff)', color: 'var(--text-primary)' }}
                     >
                       {EQUIPMENTS.map(eq => <option key={eq}>{eq}</option>)}
                     </select>
@@ -373,10 +377,10 @@ export default function DriversPage() {
                     <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>Payment Type</label>
                     <div style={{ display: 'flex', gap: 10 }}>
                       {(addForm.position === 'Owner Operator' ? ['percent'] : PAYMENT_TYPES).map(pt => (
-                        <label key={pt} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '8px 16px', borderRadius: 8, border: `2px solid ${addForm.paymentType === pt ? 'var(--accent)' : 'var(--border)'}`, cursor: addForm.position === 'Owner Operator' ? 'default' : 'pointer', flex: 1, justifyContent: 'center', background: addForm.paymentType === pt ? 'var(--hover)' : 'transparent', transition: 'all 0.15s' }}>
+                        <label key={pt} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '8px 16px', borderRadius: 8, border: `2px solid ${addForm.paymentType === pt ? 'var(--accent, #667eea)' : 'var(--border)'}`, cursor: addForm.position === 'Owner Operator' ? 'default' : 'pointer', flex: 1, justifyContent: 'center', background: addForm.paymentType === pt ? 'rgba(102,126,234,0.08)' : 'transparent', transition: 'all 0.15s' }}>
                           <input type="radio" name="addPaymentType" value={pt} checked={addForm.paymentType === pt} onChange={() => setAddForm(f => ({ ...f, paymentType: pt as typeof PAYMENT_TYPES[number] }))} style={{ display: 'none' }} />
                           <Emoji symbol={pt === 'miles' ? '🛣️' : '📊'} size={16} />
-                          <span style={{ fontSize: 14, fontWeight: 600, color: addForm.paymentType === pt ? 'var(--accent)' : 'var(--text-primary)' }}>
+                          <span style={{ fontSize: 14, fontWeight: 600, color: addForm.paymentType === pt ? 'var(--accent, #667eea)' : 'var(--text-primary)' }}>
                             {pt === 'miles' ? 'Per Mile' : 'Per Percent'}
                           </span>
                         </label>
@@ -390,11 +394,11 @@ export default function DriversPage() {
                 <h3>Documents <span style={{ fontSize: 12, fontWeight: 400, color: 'var(--text-secondary)' }}>(optional — you can upload later)</span></h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 12 }}>
                   {/* CDL */}
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--bg-card-secondary)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--card-bg, #f9fafb)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <Emoji symbol="📄" size={20} />
                       <div>
-                        <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>CDL Certificate</div>
+                        <div style={{ fontSize: 14, fontWeight: 600 }}>CDL Certificate</div>
                         {addCdlFile && <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{addCdlFile.name}</div>}
                       </div>
                     </div>
@@ -405,11 +409,11 @@ export default function DriversPage() {
                   </div>
 
                   {/* Medical Card */}
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--bg-card-secondary)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--card-bg, #f9fafb)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <Emoji symbol="🏥" size={20} />
                       <div>
-                        <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>Medical Card</div>
+                        <div style={{ fontSize: 14, fontWeight: 600 }}>Medical Card</div>
                         {addMedFile && <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{addMedFile.name}</div>}
                       </div>
                     </div>
@@ -431,7 +435,7 @@ export default function DriversPage() {
                 <button
                   onClick={handleAddDriver}
                   disabled={addSaving}
-                  style={{ padding: '9px 24px', borderRadius: 8, border: 'none', background: 'var(--gradient)', color: '#fff', cursor: addSaving ? 'not-allowed' : 'pointer', fontSize: 14, fontWeight: 600, opacity: addSaving ? 0.7 : 1 }}
+                  style={{ padding: '9px 24px', borderRadius: 8, border: 'none', background: 'var(--primary, #2563eb)', color: '#fff', cursor: addSaving ? 'not-allowed' : 'pointer', fontSize: 14, fontWeight: 600, opacity: addSaving ? 0.7 : 1 }}
                 >
                   {addSaving
                     ? <><Emoji symbol="⏳" size={14} style={{ marginRight: 5 }} /> Saving...</>
@@ -445,103 +449,101 @@ export default function DriversPage() {
       )}
 
       {/* ── Driver detail modal ── */}
-      {selectedDriver && (() => {
-        const docs = driverDocs;
-        return (
-          <div className="modal-overlay" onClick={() => navigate('/dashboard/drivers')}>
-            <div className="modal-content modal-xl" onClick={e => e.stopPropagation()}>
-              <div className="modal-header">
-                <h2>{selectedDriver.name} — Documents</h2>
-                <button className="close-btn" onClick={() => navigate('/dashboard/drivers')}>✕</button>
-              </div>
-              <div className="modal-body">
-                <div className="modal-section">
-                  <h3>Driver Information</h3>
-                  <div className="info-grid">
-                    <div className="info-item"><span className="info-label">Position</span><span className="info-value">{selectedDriver.position}</span></div>
-                    <div className="info-item"><span className="info-label">Equipment</span><span className="info-value"><span className="equip-badge">{selectedDriver.equipment}</span></span></div>
-                    <div className="info-item">
-                      <span className="info-label">Status</span>
-                      <span className="info-value">
-                        <button
-                          className={`status-badge status-driver-${selectedDriver.driverStatus?.toLowerCase().replace(' ', '-')}`}
-                          style={{
-                            cursor: selectedDriver.employmentStatus === 'Fired' ? 'not-allowed' : 'pointer',
-                            border: 'none', background: 'none',
-                            opacity: selectedDriver.employmentStatus === 'Fired' ? 0.6 : 1,
-                          }}
-                          title={selectedDriver.employmentStatus === 'Fired' ? 'Terminated — status locked' : 'Click to toggle'}
-                          onClick={() => toggleDriverStatus(selectedDriver)}
-                        >
-                          {selectedDriver.driverStatus}
-                        </button>
-                      </span>
-                    </div>
-                    <div className="info-item"><span className="info-label">Hired Date</span><span className="info-value">{fmtDate(selectedDriver.date, settings.dateFormat)}</span></div>
+      {selectedDriver && (
+        <div className="modal-overlay" onClick={() => navigate('/dashboard/drivers')}>
+          <div className="modal-content modal-xl" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>{selectedDriver.name} — Documents</h2>
+              <button className="close-btn" onClick={() => navigate('/dashboard/drivers')}>✕</button>
+            </div>
+            <div className="modal-body">
+              <div className="modal-section">
+                <h3>Driver Information</h3>
+                <div className="info-grid">
+                  <div className="info-item"><span className="info-label">Position</span><span className="info-value">{selectedDriver.position}</span></div>
+                  <div className="info-item"><span className="info-label">Equipment</span><span className="info-value"><span className="equip-badge">{selectedDriver.equipment}</span></span></div>
+                  <div className="info-item">
+                    <span className="info-label">Status</span>
+                    <span className="info-value">
+                      <button
+                        className={`status-badge status-driver-${selectedDriver.driverStatus?.toLowerCase().replace(' ', '-')}`}
+                        style={{
+                          cursor: selectedDriver.employmentStatus === 'Fired' ? 'not-allowed' : 'pointer',
+                          border: 'none', background: 'none',
+                          opacity: selectedDriver.employmentStatus === 'Fired' ? 0.6 : 1,
+                        }}
+                        title={selectedDriver.employmentStatus === 'Fired' ? 'Terminated — status locked' : 'Click to toggle'}
+                        onClick={() => toggleDriverStatus(selectedDriver)}
+                      >
+                        {selectedDriver.driverStatus}
+                      </button>
+                    </span>
                   </div>
+                  <div className="info-item"><span className="info-label">Hired Date</span><span className="info-value">{fmtDate(selectedDriver.date, settings.dateFormat)}</span></div>
                 </div>
+              </div>
 
-                <div className="modal-section">
-                  <div className="modal-section-header"><h3>Required Documents</h3></div>
-                  <div className="driver-documents-grid">
-                    {docDefs.map(({ key, icon, label, ref, readOnly }) => {
-                      const doc = docs[key];
-                      const uploading = isUploading === key;
-                      return (
-                        <div key={key} className="driver-doc-card">
-                          <div className="driver-doc-header">
-                            <div className="driver-doc-icon"><Emoji symbol={icon} size={22} /></div>
-                            <h4>{label}</h4>
-                          </div>
-                          {doc ? (
-                            <div className="driver-doc-info">
-                              <p className="driver-doc-name">{doc.name}</p>
-                              <p className="driver-doc-meta">{doc.size} · {doc.uploadDate}</p>
-                              <div className="driver-doc-actions">
-                                <button className="doc-action-btn open" onClick={() => openDoc(selectedDriver.id, doc)}>View</button>
-                                {!readOnly && (
-                                  <button className="doc-action-btn delete" onClick={() => handleDeleteDoc(key as 'cdl' | 'medicalCard' | 'workingContract')}>Delete</button>
-                                )}
-                              </div>
+              <div className="modal-section">
+                <div className="modal-section-header"><h3>Required Documents</h3></div>
+                <div className="driver-documents-grid">
+                  {docDefs.map(({ key, icon, label, ref, readOnly }) => {
+                    const doc = selectedDriverDocs[key];
+                    const uploading = isUploading === key;
+                    return (
+                      <div key={key} className="driver-doc-card">
+                        <div className="driver-doc-header">
+                          <div className="driver-doc-icon"><Emoji symbol={icon} size={22} /></div>
+                          <h4>{label}</h4>
+                        </div>
+                        {doc ? (
+                          <div className="driver-doc-info">
+                            <p className="driver-doc-name">{doc.name}</p>
+                            <p className="driver-doc-meta">{doc.size} · {doc.uploadDate}</p>
+                            <div className="driver-doc-actions">
+                              <button className="doc-action-btn open" onClick={() => openDoc(selectedDriver?.id, doc)}>View</button>
+                              {!readOnly && (
+                                <button className="doc-action-btn delete" onClick={() => handleDeleteDoc(key as 'cdl' | 'medicalCard' | 'workingContract')}>Delete</button>
+                              )}
                             </div>
-                          ) : key === 'workingContract' ? (
-                            <div className="driver-doc-empty">
-                              <p style={{ marginBottom: '6px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 5 }}>
-                                <Emoji symbol="⏳" size={14} /> Pending signature &amp; scan
-                              </p>
-                              <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '10px' }}>
-                                Upload after contract is signed in person and scanned
-                              </p>
+                          </div>
+                        ) : key === 'workingContract' ? (
+                          <div className="driver-doc-empty">
+                            <p style={{ marginBottom: '6px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 5 }}>
+                              <Emoji symbol="⏳" size={14} /> Pending signature &amp; scan
+                            </p>
+                            <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '10px' }}>
+                              Upload after contract is signed in person and scanned
+                            </p>
+                            <button className="upload-doc-btn" disabled={uploading} onClick={() => ref.current?.click()}
+                              style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                              {uploading
+                                ? <><Emoji symbol="⏳" size={13} /> Uploading...</>
+                                : <><Emoji symbol="📤" size={13} /> Upload Signed Contract</>}
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="driver-doc-empty">
+                            <p>No {label} uploaded</p>
+                            {!readOnly && (
                               <button className="upload-doc-btn" disabled={uploading} onClick={() => ref.current?.click()}
                                 style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
                                 {uploading
                                   ? <><Emoji symbol="⏳" size={13} /> Uploading...</>
-                                  : <><Emoji symbol="📤" size={13} /> Upload Signed Contract</>}
+                                  : <><Emoji symbol="📤" size={13} /> Upload {label}</>}
                               </button>
-                            </div>
-                          ) : (
-                            <div className="driver-doc-empty">
-                              <p>No {label} uploaded</p>
-                              {!readOnly && (
-                                <button className="upload-doc-btn" disabled={uploading} onClick={() => ref.current?.click()}
-                                  style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                                  {uploading
-                                    ? <><Emoji symbol="⏳" size={13} /> Uploading...</>
-                                    : <><Emoji symbol="📤" size={13} /> Upload {label}</>}
-                                </button>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
           </div>
-        );
-      })()}
+        </div>
+      )}
+
       {/* ── Fire Driver Confirmation Modal ── */}
       {fireConfirmDriver && (
         <div className="modal-overlay" onClick={() => setFireConfirmDriver(null)}>
@@ -594,4 +596,3 @@ export default function DriversPage() {
     </div>
   );
 }
-
