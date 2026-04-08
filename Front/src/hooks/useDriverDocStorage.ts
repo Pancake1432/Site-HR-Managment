@@ -13,18 +13,10 @@ export interface DriverDocSet {
   medicalCard:     StoredDriverDoc | null;
   applicationPdf:  StoredDriverDoc | null;
   workingContract: StoredDriverDoc | null;
-}
-
-interface ApiDoc {
-  id: number; driverId: number; docType: string;
-  name: string; fileType: string; uploadDate: string; size: string; base64: string;
+  [key: string]:   StoredDriverDoc | null;
 }
 
 const EMPTY_SET: DriverDocSet = { cdl: null, medicalCard: null, applicationPdf: null, workingContract: null };
-
-function apiDocToStored(d: ApiDoc): StoredDriverDoc {
-  return { id: d.id, name: d.name, type: d.fileType, uploadDate: d.uploadDate, size: d.size, base64: d.base64 };
-}
 
 function formatSize(bytes: number): string {
   if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -40,6 +32,15 @@ function readAsBase64(file: File): Promise<string> {
   });
 }
 
+interface ApiDoc {
+  id: number; driverId: number; docType: string;
+  name: string; fileType: string; uploadedAt: string; size: string; base64: string;
+}
+
+function apiDocToStored(d: ApiDoc): StoredDriverDoc {
+  return { id: d.id, name: d.name, type: d.fileType, uploadDate: d.uploadedAt, size: d.size, base64: d.base64 };
+}
+
 export function useDriverDocStorage() {
   const getDriverDocs = useCallback(async (driverId: number): Promise<DriverDocSet> => {
     try {
@@ -47,7 +48,7 @@ export function useDriverDocStorage() {
       const set: DriverDocSet = { ...EMPTY_SET };
       for (const doc of res.data) {
         const stored = apiDocToStored(doc);
-        if      (doc.docType === 'cdl')            set.cdl             = stored;
+        if      (doc.docType === 'cdl')             set.cdl             = stored;
         else if (doc.docType === 'medicalCard')     set.medicalCard     = stored;
         else if (doc.docType === 'applicationPdf')  set.applicationPdf  = stored;
         else if (doc.docType === 'workingContract') set.workingContract = stored;
@@ -56,18 +57,24 @@ export function useDriverDocStorage() {
     } catch { return { ...EMPTY_SET }; }
   }, []);
 
-  const uploadDoc = useCallback(async (driverId: number, docType: keyof DriverDocSet, file: File): Promise<void> => {
+  const uploadDoc = useCallback(async (
+    driverId: number,
+    type: keyof DriverDocSet,
+    file: File,
+    _dateStr?: string
+  ): Promise<void> => {
     const base64 = await readAsBase64(file);
     await axios.post(`${BASE_URL}/api/documents`, {
-      driverId, docType, name: file.name, fileType: 'PDF', size: formatSize(file.size), base64,
+      driverId, docType: type, name: file.name,
+      fileType: 'PDF', size: formatSize(file.size), base64,
     }, { headers: authHeaders() });
   }, []);
 
-  const deleteDoc = useCallback(async (_driverId: number, docId: number): Promise<void> => {
+  const deleteDoc = useCallback(async (_driverId: number, docId: string): Promise<void> => {
     await axios.delete(`${BASE_URL}/api/documents/${docId}`, { headers: authHeaders() });
   }, []);
 
-  const openDoc = useCallback((_driverId: number, doc: StoredDriverDoc): void => {
+  const openDoc = useCallback((_driverId: number | undefined, doc: StoredDriverDoc): void => {
     if (!doc.base64) return;
     try {
       const [header, data] = doc.base64.split(',');
@@ -76,9 +83,7 @@ export function useDriverDocStorage() {
       const arr = new Uint8Array(bytes.length);
       for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
       const blob = new Blob([arr], { type: mime });
-      const url = URL.createObjectURL(blob);
-      window.open(url, '_blank');
-      setTimeout(() => URL.revokeObjectURL(url), 10000);
+      window.open(URL.createObjectURL(blob), '_blank');
     } catch { window.open(doc.base64, '_blank'); }
   }, []);
 

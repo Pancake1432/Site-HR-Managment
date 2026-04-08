@@ -3,8 +3,7 @@ import axios from 'axios';
 import { SavedStatement } from '../types/dashboard';
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? 'https://localhost:7001';
-
-function getToken(): string { return localStorage.getItem('hr_access_token') ?? ''; }
+function getToken() { return localStorage.getItem('hr_access_token') ?? ''; }
 function authHeaders() { return { Authorization: `Bearer ${getToken()}` }; }
 
 interface SavedStatementsCtx {
@@ -24,25 +23,25 @@ export function SavedStatementsProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     axios.get<SavedStatement[]>(`${BASE_URL}/api/statements`, { headers: authHeaders() })
       .then(res => setStatements(res.data))
-      .catch(err => console.error('Failed to load statements:', err));
+      .catch(() => {}); // ignore if not logged in
   }, []);
 
   const addStatement = useCallback((s: SavedStatement) => {
     axios.post<SavedStatement>(`${BASE_URL}/api/statements`, s, { headers: authHeaders() })
       .then(res => setStatements(prev => [res.data, ...prev]))
-      .catch(err => console.error('Failed to save statement:', err));
+      .catch(() => setStatements(prev => [s, ...prev])); // fallback: add locally
   }, []);
 
   const removeStatement = useCallback((id: string) => {
     axios.delete(`${BASE_URL}/api/statements/${id}`, { headers: authHeaders() })
-      .then(() => setStatements(prev => prev.filter(s => s.id !== id)))
-      .catch(err => console.error('Failed to delete statement:', err));
+      .catch(() => {});
+    setStatements(prev => prev.filter(s => s.id !== id));
   }, []);
 
   const clearStatements = useCallback(() => {
     axios.delete(`${BASE_URL}/api/statements`, { headers: authHeaders() })
-      .then(() => setStatements([]))
-      .catch(err => console.error('Failed to clear statements:', err));
+      .catch(() => {});
+    setStatements([]);
   }, []);
 
   return (

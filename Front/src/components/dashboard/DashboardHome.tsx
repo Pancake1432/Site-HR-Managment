@@ -7,15 +7,15 @@ import { useAuth } from '../../contexts/AuthContext';
 import { saveApplicantOverride } from '../../services/applicationSubmitService';
 import StatusDropdown from './StatusDropdown';
 import DashboardCharts from './DashboardCharts';
-import { useSettings, fmtDate, CURRENCY_SYMBOLS } from '../../contexts/SettingsContext';
+import { useSettings, fmtDate, CURRENCY_SYMBOLS, fmtDistUnit } from '../../contexts/SettingsContext';
 import { Emoji } from '../Emoji';
 
 export default function DashboardHome() {
   const navigate = useNavigate();
   const { settings } = useSettings();
-  const { companyDrivers, applicants, refresh } = useCompanyData();
+  const { companyDrivers, applicants, refresh, isLoading, fetchError } = useCompanyData();
   const { statements } = useSavedStatements();
-  const { isAccounting } = useAuth();
+  const {  } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusType | 'all'>('all');
 
@@ -50,8 +50,35 @@ export default function DashboardHome() {
 
   const sym = CURRENCY_SYMBOLS[settings.currency];
 
+  if (isLoading) {
+    return (
+      <div className="page">
+        <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: 16 }}>
+          <Emoji symbol="⏳" size={24} /> Loading dashboard data…
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="page">
+      {fetchError && (
+        <div style={{
+          margin: '0 0 16px', padding: '12px 16px', borderRadius: 10,
+          background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)',
+          color: '#dc2626', fontSize: 14, display: 'flex', alignItems: 'center',
+          gap: 10, justifyContent: 'space-between',
+        }}>
+          <span><strong>⚠️ Could not load data:</strong> {fetchError}</span>
+          <button
+            onClick={refresh}
+            style={{ padding: '5px 14px', borderRadius: 7, border: '1px solid #dc2626',
+              background: 'transparent', color: '#dc2626', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}
+          >
+            Retry
+          </button>
+        </div>
+      )}
       <div className="page-header">
         <h1 className="page-title">Dashboard</h1>
         <p className="page-subtitle">Track, manage and control all HR activities</p>
@@ -142,7 +169,7 @@ export default function DashboardHome() {
               icon: '📝', key: `app-${a.id}`,
               title: 'New application received',
               sub: `${a.name || `${a.firstName} ${a.lastName}`.trim() || 'Unknown'} applied for ${a.position}`,
-              date: a.date,
+              date: new Date(a.date).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' }),
             }));
 
             // New drivers added
@@ -150,14 +177,14 @@ export default function DashboardHome() {
               icon: '🚚', key: `drv-${d.id}`,
               title: 'Driver added',
               sub: `${d.name || `${d.firstName} ${d.lastName}`.trim() || 'Unknown'} — ${d.position} (${d.equipment})`,
-              date: d.date,
+              date: new Date(d.date).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' }),
             }));
 
             // Recent statements
             statements.slice(0, 3).forEach(s => events.push({
               icon: '📋', key: `stmt-${s.id}`,
               title: `Statement created for ${s.driverName}`,
-              sub: `${s.paymentType === 'miles' ? `${s.miles} miles` : `${s.percent}% gross`} → Total: ${sym}${s.total}`,
+              sub: `${s.paymentType === 'miles' ? `${s.miles} ${fmtDistUnit(settings.distanceUnit)}` : `${s.percent}% gross`} → Total: ${sym}${s.total}`,
               date: new Date(s.savedAt).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' }),
             }));
 
@@ -166,11 +193,13 @@ export default function DashboardHome() {
               icon: '🔴', key: `fired-${d.id}`,
               title: 'Driver terminated',
               sub: `${d.name || `${d.firstName} ${d.lastName}`.trim() || 'Unknown'} — ${d.position}`,
-              date: d.date,
+              date: new Date(d.date).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' }),
             }));
 
-            // Sort by date descending and take top 6
-            const sorted = events.sort((a, b) => b.date.localeCompare(a.date)).slice(0, 6);
+            // Sort by date descending and take top 6 (guard against undefined dates)
+            const sorted = events
+              .sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''))
+              .slice(0, 6);
 
             return sorted.length > 0 ? sorted.map(item => (
               <div key={item.key} className="activity-item">

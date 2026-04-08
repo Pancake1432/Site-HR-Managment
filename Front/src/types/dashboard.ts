@@ -19,6 +19,7 @@ export interface Driver {
   driverStatus?: DriverStatusType;
   paymentType?: PaymentType;
   employmentStatus?: EmploymentStatus;
+  notes?: string;
   statements?: Statement[];
 }
 
