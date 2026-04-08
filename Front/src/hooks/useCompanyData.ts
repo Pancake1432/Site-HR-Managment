@@ -12,6 +12,8 @@ interface CompanyData {
   companyDrivers: Driver[];
   applicants:     Driver[];
   companyName:    string;
+  isLoading:      boolean;
+  fetchError:     string | null;
   refresh:        () => void;
 }
 
@@ -25,45 +27,65 @@ function getCompanyNameFromToken(): string {
 }
 
 /**
- * Fetches drivers and applicants using plain axios (not useAxios hook).
- * This avoids infinite re-render loops caused by unstable client references
- * from react-axios-provider-kit.
+ * Normalises a raw API record so the frontend `Driver` shape is always met.
+ * The backend serialises the timestamp as `createdAt`; we alias it to `date`.
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function normalizeRecord(raw: any): Driver {
+  return {
+    ...raw,
+    date:      raw.date      ?? raw.createdAt ?? '',
+    name:      raw.name      ?? `${raw.firstName ?? ''} ${raw.lastName ?? ''}`.trim(),
+    firstName: raw.firstName ?? '',
+    lastName:  raw.lastName  ?? '',
+  } as Driver;
+}
+
 export function useCompanyData(): CompanyData {
   const [companyDrivers, setCompanyDrivers] = useState<Driver[]>([]);
   const [applicants,     setApplicants]     = useState<Driver[]>([]);
+  const [isLoading,      setIsLoading]      = useState(true);
+  const [fetchError,     setFetchError]     = useState<string | null>(null);
   const companyName = getCompanyNameFromToken();
-  const loadingRef = useRef(false);
+  const loadingRef  = useRef(false);
 
   const load = useCallback(async () => {
     if (loadingRef.current) return;
     loadingRef.current = true;
+    setIsLoading(true);
+    setFetchError(null);
     try {
       const headers = { Authorization: `Bearer ${getToken()}` };
       const [driversRes, applicantsRes] = await Promise.all([
         axios.get<Driver[]>(`${BASE_URL}/api/drivers`,    { headers }),
         axios.get<Driver[]>(`${BASE_URL}/api/applicants`, { headers }),
       ]);
-      setCompanyDrivers(driversRes.data);
-      setApplicants(applicantsRes.data);
-    } catch (err) {
+      setCompanyDrivers((driversRes.data   ?? []).map(normalizeRecord));
+      setApplicants(    (applicantsRes.data ?? []).map(normalizeRecord));
+    } catch (err: unknown) {
       console.error('useCompanyData fetch error:', err);
+
+      // Surface a human-readable message so pages can show it instead of empty tables
+      if (axios.isAxiosError(err)) {
+        if (err.response?.status === 401) {
+          setFetchError('Session expired — please log in again.');
+        } else if (err.response?.status === 500) {
+          setFetchError('Server error. Check the backend console for details.');
+        } else if (!err.response) {
+          setFetchError('Cannot reach the server. Make sure the backend is running.');
+        } else {
+          setFetchError(`Unexpected error (${err.response.status}).`);
+        }
+      } else {
+        setFetchError('Unknown error loading data.');
+      }
     } finally {
-      loadingRef.current = false; // ← make sure this resets
+      setIsLoading(false);
+      loadingRef.current = false;
     }
   }, []);
 
   useEffect(() => { load(); }, [load]);
 
-  // Refresh every 5s + when tab regains focus
-  useEffect(() => {
-    const interval = setInterval(load, 5000);
-    window.addEventListener('focus', load);
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener('focus', load);
-    };
-  }, [load]);
-
-  return { companyDrivers, applicants, companyName, refresh: load };
+  return { companyDrivers, applicants, companyName, isLoading, fetchError, refresh: load };
 }

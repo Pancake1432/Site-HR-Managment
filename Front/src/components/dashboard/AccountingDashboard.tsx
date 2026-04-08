@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { useSavedStatements } from '../../contexts/SavedStatementsContext';
-import { useSettings, fmtCurrency, CURRENCY_SYMBOLS } from '../../contexts/SettingsContext';
+import { useSettings, fmtCurrency, fmtDistUnit } from '../../contexts/SettingsContext';
 import { Emoji } from '../Emoji';
 
 export default function AccountingDashboard() {
@@ -10,7 +10,6 @@ export default function AccountingDashboard() {
   const { settings } = useSettings();
   const { companyDrivers } = useCompanyData();
   const { statements } = useSavedStatements();
-  const sym = CURRENCY_SYMBOLS[settings.currency];
 
   const stats = useMemo(() => {
     const working = companyDrivers.filter(d => d.employmentStatus === 'Working').length;
@@ -98,9 +97,9 @@ export default function AccountingDashboard() {
                 <strong>Statement for {s.driverName}</strong>
                 <span className="activity-time">
                   {s.paymentType === 'miles'
-                    ? `${s.miles} miles × ${s.ratePerMile}/mi`
+                    ? `${s.miles} ${fmtDistUnit(settings.distanceUnit)} × ${s.ratePerMile}/${fmtDistUnit(settings.distanceUnit)}`
                     : `${s.percent}% of ${s.grossAmount}`}
-                  {' → '}<strong style={{ color: '#48bb78' }}>{sym}{fmtCurrency(parseFloat(String(s.total)) || 0, settings.currency)}</strong>
+                  {' → '}<strong style={{ color: '#48bb78' }}>{fmtCurrency(parseFloat(String(s.total)) || 0, settings.currency)}</strong>
                 </span>
               </div>
               <span className="activity-date">{new Date(s.savedAt).toLocaleDateString()}</span>

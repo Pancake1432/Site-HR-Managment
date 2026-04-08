@@ -1,6 +1,9 @@
 import { useCallback } from 'react';
-import { useAxios } from 'react-axios-provider-kit';
+import axios from 'axios';
 import { Driver } from '../types/dashboard';
+
+const BASE_URL = import.meta.env.VITE_API_URL ?? 'https://localhost:7001';
+function getToken() { return localStorage.getItem('hr_access_token') ?? ''; }
 
 interface OverrideFields {
   status?:           string;
@@ -10,29 +13,20 @@ interface OverrideFields {
   paymentType?:      string;
 }
 
-/**
- * Înlocuiește vechiul useLocalOverrides care salva în localStorage.
- * Acum trimite modificările direct la API via PUT /api/drivers/{id}.
- *
- * applyOverrides — returnează datele neschimbate (API are deja datele reale)
- * saveOverride   — trimite modificarea la backend
- */
 export function useLocalOverrides() {
-  const { client } = useAxios();
+  const applyOverrides = useCallback(<T extends Driver>(drivers: T[]): T[] => drivers, []);
 
-  // Datele vin direct din API, nu mai trebuie aplicat niciun override local
-  const applyOverrides = useCallback(<T extends Driver>(drivers: T[]): T[] => {
-    return drivers;
-  }, []);
-
-  // Trimite modificarea la backend
   const saveOverride = useCallback(async (driverId: number, fields: OverrideFields) => {
     try {
-      await client.put(`/api/drivers/${driverId}`, fields);
+      await axios.put(
+        `${BASE_URL}/api/drivers/${driverId}`,
+        fields,
+        { headers: { Authorization: `Bearer ${getToken()}` } }
+      );
     } catch (err) {
       console.error('saveOverride error:', err);
     }
-  }, [client]);
+  }, []);
 
   return { applyOverrides, saveOverride };
 }
