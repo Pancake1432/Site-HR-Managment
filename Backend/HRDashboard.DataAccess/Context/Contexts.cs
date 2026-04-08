@@ -11,8 +11,6 @@ namespace HRDashboard.DataAccess.Context
         protected override void OnConfiguring(DbContextOptionsBuilder o)
             => o.UseSqlite(DbSession.ConnectionString);
 
-        // No seed data here — seeding is handled in Program.cs so passwords
-        // never appear in source code.
     }
 
     public class DriverContext : DbContext
