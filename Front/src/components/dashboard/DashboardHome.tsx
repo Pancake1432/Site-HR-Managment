@@ -7,7 +7,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { saveApplicantOverride } from '../../services/applicationSubmitService';
 import StatusDropdown from './StatusDropdown';
 import DashboardCharts from './DashboardCharts';
-import { useSettings, fmtDate, CURRENCY_SYMBOLS } from '../../contexts/SettingsContext';
+import { useSettings, fmtDate, CURRENCY_SYMBOLS, fmtDistUnit } from '../../contexts/SettingsContext';
 import { Emoji } from '../Emoji';
 
 export default function DashboardHome() {
@@ -15,7 +15,7 @@ export default function DashboardHome() {
   const { settings } = useSettings();
   const { companyDrivers, applicants, refresh, isLoading, fetchError } = useCompanyData();
   const { statements } = useSavedStatements();
-  const { isAccounting } = useAuth();
+  const {  } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusType | 'all'>('all');
 
@@ -169,7 +169,7 @@ export default function DashboardHome() {
               icon: '📝', key: `app-${a.id}`,
               title: 'New application received',
               sub: `${a.name || `${a.firstName} ${a.lastName}`.trim() || 'Unknown'} applied for ${a.position}`,
-              date: a.date,
+              date: new Date(a.date).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' }),
             }));
 
             // New drivers added
@@ -177,14 +177,14 @@ export default function DashboardHome() {
               icon: '🚚', key: `drv-${d.id}`,
               title: 'Driver added',
               sub: `${d.name || `${d.firstName} ${d.lastName}`.trim() || 'Unknown'} — ${d.position} (${d.equipment})`,
-              date: d.date,
+              date: new Date(d.date).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' }),
             }));
 
             // Recent statements
             statements.slice(0, 3).forEach(s => events.push({
               icon: '📋', key: `stmt-${s.id}`,
               title: `Statement created for ${s.driverName}`,
-              sub: `${s.paymentType === 'miles' ? `${s.miles} miles` : `${s.percent}% gross`} → Total: ${sym}${s.total}`,
+              sub: `${s.paymentType === 'miles' ? `${s.miles} ${fmtDistUnit(settings.distanceUnit)}` : `${s.percent}% gross`} → Total: ${sym}${s.total}`,
               date: new Date(s.savedAt).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' }),
             }));
 
@@ -193,7 +193,7 @@ export default function DashboardHome() {
               icon: '🔴', key: `fired-${d.id}`,
               title: 'Driver terminated',
               sub: `${d.name || `${d.firstName} ${d.lastName}`.trim() || 'Unknown'} — ${d.position}`,
-              date: d.date,
+              date: new Date(d.date).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' }),
             }));
 
             // Sort by date descending and take top 6 (guard against undefined dates)
