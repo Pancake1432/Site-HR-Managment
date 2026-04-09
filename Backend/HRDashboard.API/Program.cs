@@ -64,8 +64,6 @@ try
     var connStr   = builder.Configuration.GetConnectionString("DefaultConnection")!;
     var adminPw   = builder.Configuration["Seed:AdminPassword"]      ?? "changeme";
     var accountPw = builder.Configuration["Seed:AccountingPassword"] ?? "changeme";
-    var hash1 = BCrypt.Net.BCrypt.HashPassword(adminPw);
-    var hash2 = BCrypt.Net.BCrypt.HashPassword(accountPw);
 
     using var conn = new SqliteConnection(connStr);
     conn.Open();
