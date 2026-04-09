@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.11" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.0.2" />
+    <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.0.2" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\HRDashboard.Domain\HRDashboard.Domain.csproj" />
+    <ProjectReference Include="..\HRDashboard.DataAccess\HRDashboard.DataAccess.csproj" />
+  </ItemGroup>
+</Project>

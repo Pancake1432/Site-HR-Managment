@@ -1,0 +1,232 @@
+/* ── ERROR PAGES — matches site design (gradient bg + white card) ───── */
+
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&display=swap');
+
+/* ── PAGE SHELL ─────────────────────────────────────────────────────── */
+.error-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 20px;
+  position: relative;
+  overflow: hidden;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* Floating circles — same feel as landing */
+.error-page::before {
+  content: '';
+  position: absolute;
+  width: 600px; height: 600px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.05);
+  top: -200px; right: -200px;
+  pointer-events: none;
+}
+.error-page::after {
+  content: '';
+  position: absolute;
+  width: 400px; height: 400px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.04);
+  bottom: -120px; left: -100px;
+  pointer-events: none;
+}
+
+/* ── BRANDING ────────────────────────────────────────────────────────── */
+.error-brand {
+  position: absolute;
+  top: 24px; left: 28px;
+  display: flex; align-items: center; gap: 10px;
+  color: white;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700; font-size: 16px;
+  opacity: 0.9; cursor: pointer; z-index: 2;
+  text-decoration: none;
+  background: none; border: none;
+}
+.error-brand-icon {
+  width: 36px; height: 36px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  border: 1px solid rgba(255,255,255,0.25);
+}
+
+/* ── CARD ────────────────────────────────────────────────────────────── */
+.error-content {
+  position: relative; z-index: 1;
+  background: white;
+  border-radius: 24px;
+  padding: 52px 44px 44px;
+  max-width: 520px; width: 100%;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.18), 0 4px 16px rgba(0,0,0,0.08);
+  animation: card-rise 0.5s cubic-bezier(0.16,1,0.3,1) both;
+}
+@keyframes card-rise {
+  from { opacity: 0; transform: translateY(28px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ── ICON CIRCLE ─────────────────────────────────────────────────────── */
+.error-icon {
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(102,126,234,0.1), rgba(118,75,162,0.1));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 38px;
+  margin: 0 auto 20px;
+  border: 2px solid rgba(102,126,234,0.15);
+  animation: icon-pop 0.5s 0.1s cubic-bezier(0.16,1,0.3,1) both;
+}
+@keyframes icon-pop {
+  from { opacity: 0; transform: scale(0.6); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* ── STATUS PILL ─────────────────────────────────────────────────────── */
+.error-status-pill {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 5px 14px;
+  border-radius: 999px;
+  background: rgba(102,126,234,0.08);
+  border: 1px solid rgba(102,126,234,0.2);
+  color: #667eea;
+  font-size: 12px; font-weight: 600;
+  letter-spacing: 0.8px; text-transform: uppercase;
+  margin-bottom: 18px;
+  animation: card-rise 0.5s 0.12s cubic-bezier(0.16,1,0.3,1) both;
+}
+.error-status-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: #667eea;
+  animation: blink 2s ease-in-out infinite;
+}
+@keyframes blink {
+  0%,100% { opacity: 1; }
+  50%      { opacity: 0.3; }
+}
+
+/* ── ERROR CODE ──────────────────────────────────────────────────────── */
+.error-code {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: clamp(64px,16vw,96px);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -3px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  display: block;
+  margin-bottom: 4px;
+  animation: card-rise 0.5s 0.08s cubic-bezier(0.16,1,0.3,1) both;
+}
+
+/* ── TITLE ───────────────────────────────────────────────────────────── */
+.error-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: clamp(20px,4vw,26px);
+  font-weight: 700;
+  color: #2d3748;
+  margin-bottom: 12px;
+  animation: card-rise 0.5s 0.15s cubic-bezier(0.16,1,0.3,1) both;
+}
+
+/* ── DESCRIPTION ─────────────────────────────────────────────────────── */
+.error-description {
+  font-size: 15px; line-height: 1.7;
+  color: #718096;
+  max-width: 380px; margin: 0 auto 32px;
+  animation: card-rise 0.5s 0.18s cubic-bezier(0.16,1,0.3,1) both;
+}
+
+/* ── ACTIONS ─────────────────────────────────────────────────────────── */
+.error-actions {
+  display: flex; gap: 12px;
+  justify-content: center; flex-wrap: wrap;
+  animation: card-rise 0.5s 0.22s cubic-bezier(0.16,1,0.3,1) both;
+}
+
+.error-btn-primary {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 13px 28px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white; border: none; border-radius: 12px;
+  font-family: inherit; font-size: 14px; font-weight: 600;
+  cursor: pointer; transition: all 0.25s;
+  box-shadow: 0 4px 16px rgba(102,126,234,0.35);
+  white-space: nowrap;
+}
+.error-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(102,126,234,0.45);
+}
+.error-btn-primary:active { transform: translateY(0); }
+
+.error-btn-secondary {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 13px 28px;
+  background: transparent; color: #667eea;
+  border: 2px solid rgba(102,126,234,0.3);
+  border-radius: 12px;
+  font-family: inherit; font-size: 14px; font-weight: 600;
+  cursor: pointer; transition: all 0.25s;
+  white-space: nowrap;
+}
+.error-btn-secondary:hover {
+  border-color: #667eea;
+  background: rgba(102,126,234,0.06);
+  transform: translateY(-2px);
+}
+
+/* ── DIVIDER ─────────────────────────────────────────────────────────── */
+.error-divider {
+  width: 48px; height: 3px; border-radius: 2px;
+  background: linear-gradient(90deg, #667eea, #764ba2);
+  margin: 24px auto;
+}
+
+/* ── ERROR DETAIL CARD (500) ─────────────────────────────────────────── */
+.error-detail-card {
+  background: #f7f8ff;
+  border: 1px solid rgba(102,126,234,0.2);
+  border-radius: 12px; padding: 14px 18px;
+  text-align: left; margin-bottom: 28px;
+  animation: card-rise 0.5s 0.2s both;
+}
+.error-detail-label {
+  font-size: 10px; font-weight: 700;
+  letter-spacing: 1.2px; text-transform: uppercase;
+  color: #667eea; margin-bottom: 8px;
+}
+.error-detail-card code {
+  font-family: 'Fira Code', 'Courier New', monospace;
+  font-size: 12px; color: #764ba2;
+  display: block; white-space: pre-wrap; word-break: break-all;
+  max-height: 90px; overflow-y: auto; line-height: 1.6;
+}
+
+/* ── FOOTER ──────────────────────────────────────────────────────────── */
+.error-footer {
+  margin-top: 24px;
+  color: rgba(255,255,255,0.65);
+  font-size: 13px; z-index: 1;
+  animation: card-rise 0.5s 0.3s both;
+}
+
+/* ── MOBILE ──────────────────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .error-page { padding: 80px 16px 32px; justify-content: flex-start; }
+  .error-content { padding: 36px 24px 32px; border-radius: 20px; }
+  .error-icon { width: 68px; height: 68px; font-size: 32px; }
+  .error-code { font-size: 72px; letter-spacing: -2px; }
+  .error-actions { flex-direction: column; }
+  .error-btn-primary,
+  .error-btn-secondary { width: 100%; justify-content: center; padding: 14px 20px; }
+}
