@@ -85,7 +85,6 @@ export default function StatementsPage() {
 
   const handleDownloadPDF = () => {
     downloadStatementPDF(buildSavedStatement(), settings.currency, settings.distanceUnit, settings.dateFormat, companyName);
-    setShowPreview(false);
   };
 
   const handleClose = () => setShowPreview(false);
