@@ -16,7 +16,9 @@ export interface DriverDocSet {
   [key: string]:   StoredDriverDoc | null;
 }
 
-const EMPTY_SET: DriverDocSet = { cdl: null, medicalCard: null, applicationPdf: null, workingContract: null };
+const EMPTY_SET: DriverDocSet = {
+  cdl: null, medicalCard: null, applicationPdf: null, workingContract: null,
+};
 
 function formatSize(bytes: number): string {
   if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -34,17 +36,45 @@ function readAsBase64(file: File): Promise<string> {
 
 interface ApiDoc {
   id: number; driverId: number; docType: string;
-  name: string; fileType: string; uploadedAt: string; size: string; base64: string;
+  name: string; fileType: string; uploadedAt: string;
+  size: string; base64: string; expiryDate?: string;
 }
 
 function apiDocToStored(d: ApiDoc): StoredDriverDoc {
-  return { id: d.id, name: d.name, type: d.fileType, uploadDate: d.uploadedAt, size: d.size, base64: d.base64 };
+  return {
+    id:         d.id,
+    name:       d.name,
+    type:       d.fileType,
+    uploadDate: d.uploadedAt,
+    size:       d.size,
+    base64:     d.base64,
+    expiryDate: d.expiryDate,
+  };
+}
+
+/** Returns days until expiry (negative = already expired). null if no expiry set. */
+export function daysUntilExpiry(expiryDate?: string): number | null {
+  if (!expiryDate) return null;
+  const diff = new Date(expiryDate).getTime() - Date.now();
+  return Math.ceil(diff / (1000 * 60 * 60 * 24));
+}
+
+/** Returns 'expired' | 'warning' (≤30 days) | 'ok' | null */
+export function expiryStatus(expiryDate?: string): 'expired' | 'warning' | 'ok' | null {
+  const days = daysUntilExpiry(expiryDate);
+  if (days === null) return null;
+  if (days < 0)  return 'expired';
+  if (days <= 30) return 'warning';
+  return 'ok';
 }
 
 export function useDriverDocStorage() {
   const getDriverDocs = useCallback(async (driverId: number): Promise<DriverDocSet> => {
     try {
-      const res = await axios.get<ApiDoc[]>(`${BASE_URL}/api/documents/${driverId}`, { headers: authHeaders() });
+      const res = await axios.get<ApiDoc[]>(
+        `${BASE_URL}/api/documents/${driverId}`,
+        { headers: authHeaders() }
+      );
       const set: DriverDocSet = { ...EMPTY_SET };
       for (const doc of res.data) {
         const stored = apiDocToStored(doc);
@@ -61,12 +91,17 @@ export function useDriverDocStorage() {
     driverId: number,
     type: keyof DriverDocSet,
     file: File,
-    _dateStr?: string
+    expiryDate?: string,
   ): Promise<void> => {
     const base64 = await readAsBase64(file);
     await axios.post(`${BASE_URL}/api/documents`, {
-      driverId, docType: type, name: file.name,
-      fileType: 'PDF', size: formatSize(file.size), base64,
+      driverId,
+      docType:    type,
+      name:       file.name,
+      fileType:   'PDF',
+      size:       formatSize(file.size),
+      base64,
+      expiryDate: expiryDate || null,
     }, { headers: authHeaders() });
   }, []);
 
