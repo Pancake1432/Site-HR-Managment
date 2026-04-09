@@ -70,7 +70,35 @@ namespace HRDashboard.API.Controller
 
         [HttpDelete("{id}")]
         public IActionResult Delete(int id)
-            => Ok(_driver.DeleteDriverAction(id, CompanyId));
+        {
+            // Delete all documents belonging to this driver
+            using (var docDb = new DocumentContext())
+            {
+                var docs = docDb.Documents
+                    .Where(d => d.DriverId == id && d.CompanyId == CompanyId)
+                    .ToList();
+                if (docs.Count > 0)
+                {
+                    docDb.Documents.RemoveRange(docs);
+                    docDb.SaveChanges();
+                }
+            }
+
+            // Delete all salary statements belonging to this driver
+            using (var stmtDb = new StatementContext())
+            {
+                var stmts = stmtDb.Statements
+                    .Where(s => s.DriverId == id && s.CompanyId == CompanyId)
+                    .ToList();
+                if (stmts.Count > 0)
+                {
+                    stmtDb.Statements.RemoveRange(stmts);
+                    stmtDb.SaveChanges();
+                }
+            }
+
+            return Ok(_driver.DeleteDriverAction(id, CompanyId));
+        }
     }
 
     // ── Applicants ────────────────────────────────────────────────────────────
