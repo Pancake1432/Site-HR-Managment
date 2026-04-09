@@ -99,6 +99,7 @@ namespace HRDashboard.Domain.Models
         public string Size       { get; set; } = "";
         public string Base64     { get; set; } = "";
         public DateTime UploadedAt { get; set; }
+        public DateTime? ExpiryDate { get; set; }
     }
 
     public class CreateDocumentDto
@@ -108,7 +109,8 @@ namespace HRDashboard.Domain.Models
         public string Name     { get; set; } = "";
         public string FileType { get; set; } = "PDF";
         public string Size     { get; set; } = "";
-        public string Base64   { get; set; } = "";
+        public string Base64     { get; set; } = "";
+        public DateTime? ExpiryDate { get; set; }
     }
 
     // ── Saved Statement ───────────────────────────────────────────────────────
