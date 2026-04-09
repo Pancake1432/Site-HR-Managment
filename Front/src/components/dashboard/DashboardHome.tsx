@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { StatusType } from '../../types/dashboard';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { useSavedStatements } from '../../contexts/SavedStatementsContext';
-import { useAuth } from '../../contexts/AuthContext';
 import { saveApplicantOverride } from '../../services/applicationSubmitService';
 import StatusDropdown from './StatusDropdown';
 import DashboardCharts from './DashboardCharts';
@@ -15,7 +14,6 @@ export default function DashboardHome() {
   const { settings } = useSettings();
   const { companyDrivers, applicants, refresh, isLoading, fetchError } = useCompanyData();
   const { statements } = useSavedStatements();
-  const {  } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusType | 'all'>('all');
 

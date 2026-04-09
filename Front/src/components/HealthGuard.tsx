@@ -29,7 +29,7 @@ export function HealthGuard({ children }: { children: React.ReactNode }) {
           animation:    'spin 0.8s linear infinite',
         }} />
         <p style={{ color: '#a09890', fontSize: 14, margin: 0 }}>
-          Se conectează la server...
+          Connecting to server...
         </p>
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
