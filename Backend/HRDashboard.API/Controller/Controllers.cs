@@ -205,6 +205,22 @@ namespace HRDashboard.API.Controller
         public IActionResult UploadPublic([FromBody] CreateDocumentDto data)
             => Ok(_document.UploadDocumentAction(data, "company-paks"));
 
+        // Update expiry date on an existing document (CDL / Medical Card)
+        [HttpPut("{id}/expiry")]
+        [Authorize]
+        public IActionResult SetExpiry(int id, [FromBody] SetExpiryDto dto)
+        {
+            using var db = new DocumentContext();
+            var doc = db.Documents.FirstOrDefault(d => d.Id == id && d.CompanyId == CompanyId);
+            if (doc == null) return NotFound();
+            doc.ExpiryDate = string.IsNullOrWhiteSpace(dto.ExpiryDate)
+                ? null
+                : DateTime.Parse(dto.ExpiryDate);
+            db.Documents.Update(doc);
+            db.SaveChanges();
+            return Ok(new { message = "Expiry date updated." });
+        }
+
         [HttpDelete("{id}")]
         [Authorize]
         public IActionResult Delete(int id)

@@ -161,6 +161,12 @@ namespace HRDashboard.Domain.Models
         public string? SalaryExpectation    { get; set; }
     }
 
+    // ── Set Expiry ────────────────────────────────────────────────────────────
+    public class SetExpiryDto
+    {
+        public string? ExpiryDate { get; set; }
+    }
+
     // ── Shared Response ───────────────────────────────────────────────────────
     public class ActionResponse
     {

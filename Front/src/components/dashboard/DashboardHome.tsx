@@ -1,8 +1,10 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { StatusType } from '../../types/dashboard';
 import { useCompanyData } from '../../hooks/useCompanyData';
+import { useDriverDocStorage, expiryStatus } from '../../hooks/useDriverDocStorage';
 import { useSavedStatements } from '../../contexts/SavedStatementsContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { saveApplicantOverride } from '../../services/applicationSubmitService';
 import StatusDropdown from './StatusDropdown';
 import DashboardCharts from './DashboardCharts';
@@ -13,11 +15,42 @@ export default function DashboardHome() {
   const navigate = useNavigate();
   const { settings } = useSettings();
   const { companyDrivers, applicants, refresh, isLoading, fetchError } = useCompanyData();
+  const { getDriverDocs } = useDriverDocStorage();
   const { statements } = useSavedStatements();
+  const {  } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusType | 'all'>('all');
+  const [expiringDocs, setExpiringDocs]   = useState<{ driverName: string; docType: string; days: number | null }[]>([]);
 
   const drivers = companyDrivers;
+
+  // Load expiring docs for all drivers when driver list changes
+  useEffect(() => {
+    if (companyDrivers.length === 0) return;
+    const WARN_DAYS = 30;
+    Promise.all(
+      companyDrivers.map(d => getDriverDocs(d.id).then(docs => ({ driver: d, docs })))
+    ).then(results => {
+      const alerts: { driverName: string; docType: string; days: number | null }[] = [];
+      results.forEach(({ driver, docs }) => {
+        (['cdl', 'medicalCard'] as const).forEach(key => {
+          const doc = docs[key];
+          if (!doc?.expiryDate) return;
+          const status = expiryStatus(doc.expiryDate);
+          if (status === 'expired' || status === 'warning') {
+            const ms   = new Date(doc.expiryDate).getTime() - Date.now();
+            const days = Math.ceil(ms / (1000 * 60 * 60 * 24));
+            alerts.push({
+              driverName: driver.name,
+              docType: key === 'cdl' ? 'CDL Certificate' : 'Medical Card',
+              days,
+            });
+          }
+        });
+      });
+      setExpiringDocs(alerts);
+    });
+  }, [companyDrivers, getDriverDocs]);
 
   const counts = useMemo(() => ({
     applied:   applicants.filter(a => a.status === 'Applied').length,
@@ -87,6 +120,36 @@ export default function DashboardHome() {
         driversReady={driversReady} driversNotReady={driversNotReady}
         equipmentCounts={equipmentCounts}
       />
+
+      {/* ── Expiring Documents Alert ── */}
+      {expiringDocs.length > 0 && (
+        <div className="card" style={{ marginBottom: 20, borderLeft: expiringDocs.some(d => (d.days ?? 0) < 0) ? '4px solid #ef4444' : '4px solid #f59e0b' }}>
+          <div className="card-header">
+            <h2 className="card-title" style={{ color: expiringDocs.some(d => (d.days ?? 0) < 0) ? '#dc2626' : '#b45309' }}>
+              <Emoji symbol={expiringDocs.some(d => (d.days ?? 0) < 0) ? '⛔' : '⚠️'} size={18} style={{ marginRight: 8 }} />
+              {expiringDocs.filter(d => (d.days ?? 0) < 0).length > 0
+                ? `${expiringDocs.filter(d => (d.days ?? 0) < 0).length} Expired Document${expiringDocs.filter(d => (d.days ?? 0) < 0).length > 1 ? 's' : ''} — Immediate Action Required`
+                : `${expiringDocs.length} Document${expiringDocs.length > 1 ? 's' : ''} Expiring Within 30 Days`}
+            </h2>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '0 0 4px' }}>
+            {expiringDocs.map((item, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderRadius: 8, background: (item.days ?? 0) < 0 ? 'rgba(239,68,68,0.06)' : 'rgba(234,179,8,0.06)', border: `1px solid ${(item.days ?? 0) < 0 ? 'rgba(239,68,68,0.2)' : 'rgba(234,179,8,0.25)'}` }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <Emoji symbol={(item.days ?? 0) < 0 ? '⛔' : '⚠️'} size={16} />
+                  <div>
+                    <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-primary)' }}>{item.driverName}</span>
+                    <span style={{ fontSize: 13, color: 'var(--text-secondary)', marginLeft: 8 }}>{item.docType}</span>
+                  </div>
+                </div>
+                <span style={{ fontSize: 12, fontWeight: 700, color: (item.days ?? 0) < 0 ? '#dc2626' : '#b45309' }}>
+                  {(item.days ?? 0) < 0 ? `Expired ${Math.abs(item.days ?? 0)} days ago` : `Expires in ${item.days} days`}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="content-grid">
         {/* RECRUITING */}

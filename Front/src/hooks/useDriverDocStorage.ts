@@ -40,12 +40,19 @@ interface ApiDoc {
   size: string; base64: string; expiryDate?: string;
 }
 
+function formatDateOnly(iso: string): string {
+  if (!iso) return '';
+  const s = iso.substring(0, 10); // "2026-04-09"
+  const [y, m, day] = s.split('-');
+  return `${m}/${day}/${y.slice(2)}`; // MM/DD/YY
+}
+
 function apiDocToStored(d: ApiDoc): StoredDriverDoc {
   return {
     id:         d.id,
     name:       d.name,
     type:       d.fileType,
-    uploadDate: d.uploadedAt,
+    uploadDate: formatDateOnly(d.uploadedAt),
     size:       d.size,
     base64:     d.base64,
     expiryDate: d.expiryDate,
@@ -109,6 +116,14 @@ export function useDriverDocStorage() {
     await axios.delete(`${BASE_URL}/api/documents/${docId}`, { headers: authHeaders() });
   }, []);
 
+  const setDocExpiry = useCallback(async (docId: number, expiryDate: string): Promise<void> => {
+    await axios.put(
+      `${BASE_URL}/api/documents/${docId}/expiry`,
+      { expiryDate: expiryDate || null },
+      { headers: authHeaders() }
+    );
+  }, []);
+
   const openDoc = useCallback((_driverId: number | undefined, doc: StoredDriverDoc): void => {
     if (!doc.base64) return;
     try {
@@ -122,5 +137,5 @@ export function useDriverDocStorage() {
     } catch { window.open(doc.base64, '_blank'); }
   }, []);
 
-  return { getDriverDocs, uploadDoc, deleteDoc, openDoc };
+  return { getDriverDocs, uploadDoc, deleteDoc, openDoc, setDocExpiry };
 }

@@ -34,30 +34,13 @@ const EMPTY_DOCS: DriverDocSet = {
   cdl: null, medicalCard: null, applicationPdf: null, workingContract: null,
 };
 
-function ExpiryBadge({ expiryDate }: { expiryDate?: string }) {
-  const status = expiryStatus(expiryDate);
-  const days   = daysUntilExpiry(expiryDate);
-  if (!status || status === 'ok') return null;
-  const colors = status === 'expired'
-    ? { bg: 'rgba(239,68,68,0.12)', color: '#dc2626', border: 'rgba(239,68,68,0.3)' }
-    : { bg: 'rgba(234,179,8,0.12)',  color: '#b45309', border: 'rgba(234,179,8,0.4)' };
-  const label = status === 'expired'
-    ? `Expired ${Math.abs(days!)}d ago`
-    : `Expires in ${days}d`;
-  return (
-    <span style={{ display: 'inline-block', fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 99, background: colors.bg, color: colors.color, border: `1px solid ${colors.border}`, marginLeft: 6 }}>
-      ⚠ {label}
-    </span>
-  );
-}
-
 export default function DriversPage() {
   const { id } = useParams<{ id: string }>();
   const navigate  = useNavigate();
   const location  = useLocation();
   const { settings } = useSettings();
   const { companyDrivers, refresh } = useCompanyData();
-  const { getDriverDocs, uploadDoc, deleteDoc, openDoc } = useDriverDocStorage();
+  const { getDriverDocs, uploadDoc, deleteDoc, openDoc, setDocExpiry } = useDriverDocStorage();
   const { applyOverrides, saveOverride } = useLocalOverrides();
 
   const [searchQuery, setSearchQuery]       = useState('');
@@ -65,8 +48,9 @@ export default function DriversPage() {
   const [isUploading, setIsUploading]       = useState<string | null>(null);
   const [currentPage, setCurrentPage]       = useState(1);
 
-  const [cdlExpiry, setCdlExpiry] = useState('');
-  const [medExpiry, setMedExpiry] = useState('');
+  const [cdlExpiry, setCdlExpiry]   = useState('');
+  const [medExpiry, setMedExpiry]   = useState('');
+  const [editingExpiry, setEditingExpiry] = useState<string | null>(null); // key of doc being edited
 
   const [selectedDriverDocs, setSelectedDriverDocs] = useState<DriverDocSet>(EMPTY_DOCS);
 
@@ -154,12 +138,13 @@ export default function DriversPage() {
     }
   };
 
-  const toggleDriverStatus = (driver: Driver) => {
+  const toggleDriverStatus = async (driver: Driver) => {
     if (driver.employmentStatus === 'Fired') return;
     const next = driver.driverStatus === 'Ready' ? 'Not Ready' : 'Ready';
-    saveOverride(driver.id, { driverStatus: next });
+    await saveOverride(driver.id, { driverStatus: next });
     if (selectedDriver?.id === driver.id)
       setSelectedDriver(prev => prev ? { ...prev, driverStatus: next } : prev);
+    refresh();
   };
 
   const getDocLabel = (type: string) =>
@@ -171,6 +156,13 @@ export default function DriversPage() {
     { key: 'applicationPdf' as const,  icon: '📋', label: 'Application (Form)', ref: contractInputRef, hasExpiry: false, readOnly: true  },
     { key: 'workingContract' as const, icon: '✍️', label: 'Working Contract',   ref: contractInputRef, hasExpiry: false, readOnly: false },
   ];
+
+  const handleSetExpiry = async (_docKey: string, docId: number, newExpiry: string) => {
+    await setDocExpiry(docId, newExpiry);
+    const updated = await getDriverDocs(selectedDriver!.id);
+    setSelectedDriverDocs(updated);
+    setEditingExpiry(null);
+  };
 
   const handleAddDriver = async () => {
     if (!addForm.firstName.trim() || !addForm.lastName.trim()) { alert('Please enter first and last name.'); return; }
@@ -410,14 +402,51 @@ export default function DriversPage() {
                           <div className="driver-doc-info">
                             <p className="driver-doc-name">{doc.name}</p>
                             <p className="driver-doc-meta">{doc.size} · {doc.uploadDate}</p>
-                            {doc.expiryDate && (
-                              <p style={{ fontSize: 12, marginTop: 4, fontWeight: 600, color: status === 'expired' ? '#dc2626' : status === 'warning' ? '#b45309' : '#16a34a' }}>
-                                {status === 'expired' ? `⛔ Expired ${Math.abs(days!)} days ago`
-                                  : status === 'warning' ? `⚠ Expires in ${days} days`
-                                  : `✅ Valid until ${new Date(doc.expiryDate).toLocaleDateString()}`}
-                              </p>
+
+                            {/* ── Expiry date display / inline editor ── */}
+                            {hasExpiry && (
+                              <div style={{ marginTop: 6 }}>
+                                {editingExpiry === key ? (
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <input
+                                      type="date"
+                                      defaultValue={doc.expiryDate ? doc.expiryDate.substring(0, 10) : ''}
+                                      id={`expiry-input-${key}`}
+                                      style={{ fontSize: 12, padding: '3px 7px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--input-bg, #fff)', color: 'var(--text-primary)' }}
+                                    />
+                                    <button
+                                      onClick={() => {
+                                        const input = document.getElementById(`expiry-input-${key}`) as HTMLInputElement;
+                                        handleSetExpiry(key, doc.id, input.value);
+                                      }}
+                                      style={{ fontSize: 11, padding: '3px 9px', borderRadius: 5, border: 'none', background: '#667eea', color: '#fff', cursor: 'pointer', fontWeight: 600 }}
+                                    >Save</button>
+                                    <button
+                                      onClick={() => setEditingExpiry(null)}
+                                      style={{ fontSize: 11, padding: '3px 8px', borderRadius: 5, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer' }}
+                                    >✕</button>
+                                  </div>
+                                ) : doc.expiryDate ? (
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <p style={{ fontSize: 12, fontWeight: 600, color: status === 'expired' ? '#dc2626' : status === 'warning' ? '#b45309' : '#16a34a', margin: 0 }}>
+                                      {status === 'expired' ? `⛔ Expired ${Math.abs(days!)} days ago`
+                                        : status === 'warning' ? `⚠ Expires in ${days} days`
+                                        : `✅ Valid until ${new Date(doc.expiryDate).toLocaleDateString()}`}
+                                    </p>
+                                    <button onClick={() => setEditingExpiry(key)} style={{ fontSize: 11, padding: '2px 7px', borderRadius: 5, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer' }}>Edit</button>
+                                  </div>
+                                ) : (
+                                  <button
+                                    onClick={() => setEditingExpiry(key)}
+                                    style={{ fontSize: 12, padding: '3px 10px', borderRadius: 5, border: '1px dashed var(--border)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer' }}
+                                  >
+                                    + Set expiry date
+                                  </button>
+                                )}
+                              </div>
                             )}
-                            <div className="driver-doc-actions">
+
+                            <div className="driver-doc-actions" style={{ marginTop: 8 }}>
                               <button className="doc-action-btn open" onClick={() => openDoc(selectedDriver?.id, doc)}>View</button>
                               {!readOnly && (
                                 <button className="doc-action-btn delete" onClick={() => handleDeleteDoc(key as 'cdl' | 'medicalCard' | 'workingContract')}>Delete</button>
