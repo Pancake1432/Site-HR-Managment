@@ -7,6 +7,7 @@ using HRDashboard.Domain.Entities;
 using HRDashboard.Domain.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using HRDashboard.API.Services;
 
 namespace HRDashboard.API.Controller
 {
@@ -302,6 +303,9 @@ namespace HRDashboard.API.Controller
     [ApiController]
     public class ApplicationsController : ControllerBase
     {
+        private readonly EmailService _email;
+        public ApplicationsController(EmailService email) { _email = email; }
+
         [HttpPost]
         public IActionResult Submit([FromBody] ApplicationSubmitDto dto)
         {
@@ -322,6 +326,25 @@ namespace HRDashboard.API.Controller
             var applicantId  = applicantDto?.Id ?? 0;
 
             var appId = $"APP-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}";
+
+            // Send new application notification email (fire-and-forget, never blocks response)
+            _ = _email.SendToAdminAsync(
+                $"📝 New Driver Application — {dto.Name}",
+                $@"Hello,
+
+A new driver application has been submitted.
+
+  Name:        {dto.Name}
+  Phone:       {dto.Phone ?? "—"}
+  Email:       {dto.Email ?? "—"}
+  City/State:  {dto.City ?? "—"}, {dto.State ?? "—"}
+  Application: {appId}
+  Submitted:   {DateTime.UtcNow:MM/dd/yyyy HH:mm} UTC
+
+Will get back to you with a phone call.
+
+— {_email.CompanyName} HR System");
+
             return Ok(new
             {
                 applicationId = appId,

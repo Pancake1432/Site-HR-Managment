@@ -4,6 +4,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Microsoft.Data.Sqlite;
 using HRDashboard.BusinessLayer.Structure;
+using HRDashboard.API.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -55,6 +56,12 @@ builder.Services.AddSwaggerGen(c =>
         Array.Empty<string>()
     }});
 });
+
+// Register email service (singleton — shared by controllers and background service)
+builder.Services.AddSingleton<EmailService>();
+
+// Register daily expiry notification background service
+builder.Services.AddHostedService<ExpiryNotificationService>();
 
 var app = builder.Build();
 
