@@ -38,7 +38,7 @@ namespace HRDashboard.BusinessLayer.Structure
                 issuer:             Issuer,
                 audience:           Audience,
                 claims:             claims,
-                expires:            DateTime.UtcNow.AddHours(8),
+                expires:            DateTime.UtcNow.AddHours(14),
                 signingCredentials: creds
             );
 

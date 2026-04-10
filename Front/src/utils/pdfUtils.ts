@@ -88,6 +88,7 @@ export function downloadStatementPDF(
       <h3>Driver Information</h3>
       <table>
         <tr><td>Driver Name</td><td>${statement.driverName}</td></tr>
+        <tr><td>Company</td><td>${companyName}</td></tr>
       </table>
     </div>
 
@@ -108,13 +109,17 @@ export function downloadStatementPDF(
 
     <div class="footer">${companyName} &mdash; Generated on ${date}</div>
   </div>
-  <script>window.onload = () => { window.print(); window.onafterprint = () => window.close(); }</script>
 </body>
 </html>`;
 
-  const win = window.open('', '_blank', 'width=800,height=900');
-  if (win) {
-    win.document.write(html);
-    win.document.close();
-  }
+  // Create a Blob and trigger a real file download — no print dialog
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `Statement-${statement.driverName.replace(/\s+/g, '-')}-${date}.html`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }

@@ -247,6 +247,7 @@ namespace HRDashboard.BusinessLayer.Core
             Size       = d.Size,
             Base64     = d.Base64,
             UploadedAt = d.UploadedAt,
+            ExpiryDate = d.ExpiryDate,
         };
     }
 }

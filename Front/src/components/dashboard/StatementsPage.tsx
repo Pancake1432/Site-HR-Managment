@@ -85,7 +85,6 @@ export default function StatementsPage() {
 
   const handleDownloadPDF = () => {
     downloadStatementPDF(buildSavedStatement(), settings.currency, settings.distanceUnit, settings.dateFormat, companyName);
-    setShowPreview(false);
   };
 
   const handleClose = () => setShowPreview(false);
@@ -392,11 +391,11 @@ export default function StatementsPage() {
               <div className="statement-actions">
                 <button className="save-salary-btn" onClick={handleSaveToSalary}
                   style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                  <Emoji symbol="💾" size={16} /> Save to Salary
+                  <Emoji symbol="📥" size={16} /> Save to Salary
                 </button>
                 <button className="download-btn" onClick={handleDownloadPDF}
                   style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                  <Emoji symbol="📄" size={16} /> Download PDF
+                  <Emoji symbol="💾" size={16} /> Download PDF
                 </button>
                 <button className="close-preview-btn" onClick={handleClose}>
                   Close

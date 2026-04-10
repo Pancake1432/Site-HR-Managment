@@ -128,6 +128,9 @@ namespace HRDashboard.Domain.Entities
 
         [DataType(DataType.Date)]
         public DateTime UploadedAt { get; set; } = DateTime.Now;
+
+        // Optional expiry date — for CDL and Medical Card tracking
+        public DateTime? ExpiryDate { get; set; }
     }
 }
 

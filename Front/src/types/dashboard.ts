@@ -31,6 +31,8 @@ export interface DocFile {
   size: string;
   /** Semantic type used to route docs to the correct driver slot on hire */
   docType?: 'cdl' | 'medicalCard' | 'application';
+  /** ISO date string — expiry date for CDL and Medical Card */
+  expiryDate?: string;
 }
 
 export interface Statement {
@@ -53,10 +55,9 @@ export interface StatementData {
   adjustmentReason: string;
 }
 
-/** A fully-calculated statement saved to the Salary page */
 export interface SavedStatement {
   id: string;
-  savedAt: string;        // ISO date string
+  savedAt: string;
   driverId: number | null;
   driverName: string;
   paymentType: PaymentType;
