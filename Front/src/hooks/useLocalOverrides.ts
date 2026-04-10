@@ -11,6 +11,7 @@ interface OverrideFields {
   driverStatus?:     string;
   employmentStatus?: string;
   paymentType?:      string;
+  notes?:            string;
 }
 
 export function useLocalOverrides() {
