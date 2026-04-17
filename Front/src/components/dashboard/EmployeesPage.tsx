@@ -9,6 +9,8 @@ import { useSettings, fmtDate, fmtCurrency, fmtPerDist } from '../../contexts/Se
 import EquipmentDropdown from './EquipmentDropdown';
 import { Emoji } from '../Emoji';
 
+const PAGE_SIZE = 10;
+
 const EMPTY_DOCS: DriverDocSet = {
   cdl: null, medicalCard: null, applicationPdf: null, workingContract: null,
 };
@@ -24,6 +26,7 @@ export default function EmployeesPage() {
   const { settings } = useSettings();
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage]   = useState(1);
   const [selected, setSelected]       = useState<Driver | null>(null);
 
   // Docs loaded async for the open modal
@@ -59,6 +62,9 @@ export default function EmployeesPage() {
     getDriverDocs(selected.id).then(setSelectedDocs);
   }, [selected, getDriverDocs]);
 
+  // Reset to page 1 when search query changes
+  useEffect(() => { setCurrentPage(1); }, [searchQuery]);
+
   const filtered = useMemo(() => employees.filter(e => {
     const q = searchQuery.toLowerCase();
     return e.firstName.toLowerCase().includes(q)
@@ -66,16 +72,20 @@ export default function EmployeesPage() {
       || e.name.toLowerCase().includes(q);
   }), [searchQuery, employees]);
 
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const paginated  = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
   const workingCount = employees.filter(e => e.employmentStatus === 'Working').length;
   const firedCount   = employees.filter(e => e.employmentStatus === 'Fired').length;
 
   // ── Toggle employment status ──────────────────────────────────────────────
-  const toggleEmploymentStatus = (emp: Driver) => {
+  const toggleEmploymentStatus = async (emp: Driver) => {
     const next: EmploymentStatus = emp.employmentStatus === 'Working' ? 'Fired' : 'Working';
-    saveOverride(emp.id, { employmentStatus: next });
+    await saveOverride(emp.id, { employmentStatus: next });
     if (selected?.id === emp.id) {
       setSelected(prev => prev ? { ...prev, employmentStatus: next } : prev);
     }
+    refresh();
   };
 
   // ── Save equipment change ─────────────────────────────────────────────────
@@ -134,7 +144,7 @@ export default function EmployeesPage() {
           <span>Name</span><span>Position</span><span>Equipment</span><span>Payment Type</span><span>Employment Status</span><span>Action</span>
         </div>
         <div className="table-body">
-          {filtered.length > 0 ? filtered.map(e => (
+          {paginated.length > 0 ? paginated.map(e => (
             <div key={e.id} className="table-row employees-cols">
               <span className="cell-name"><span className="row-avatar"><Emoji symbol="👤" size={20} /></span>{e.name}</span>
               <span className="cell" data-label="Position">{e.position}</span>
@@ -166,6 +176,28 @@ export default function EmployeesPage() {
             </div>
           )) : <div className="no-results">No employees found</div>}
         </div>
+        {totalPages > 1 && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '16px 0 4px' }}>
+            <button
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              style={{ padding: '6px 14px', borderRadius: 7, border: '1px solid var(--border)', background: 'transparent', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', opacity: currentPage === 1 ? 0.4 : 1, fontSize: 13, color: 'var(--text-primary)' }}
+            >← Prev</button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+              <button
+                key={p}
+                onClick={() => setCurrentPage(p)}
+                style={{ width: 34, height: 34, borderRadius: 7, border: 'none', background: p === currentPage ? 'var(--primary, #2563eb)' : 'var(--card-bg, #f9fafb)', color: p === currentPage ? '#fff' : 'var(--text-primary)', cursor: 'pointer', fontSize: 13, fontWeight: p === currentPage ? 700 : 400 }}
+              >{p}</button>
+            ))}
+            <button
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              style={{ padding: '6px 14px', borderRadius: 7, border: '1px solid var(--border)', background: 'transparent', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', opacity: currentPage === totalPages ? 0.4 : 1, fontSize: 13, color: 'var(--text-primary)' }}
+            >Next →</button>
+            <span style={{ fontSize: 12, color: 'var(--text-secondary)', marginLeft: 4 }}>{filtered.length} employees</span>
+          </div>
+        )}
       </div>
 
       {/* ── Employee detail modal ── */}
@@ -202,7 +234,7 @@ export default function EmployeesPage() {
                     <strong>Employment Status</strong>
                     <button
                       className={`employment-badge ${selected.employmentStatus?.toLowerCase()}`}
-                      style={{ cursor: 'pointer', border: 'none', background: 'none' }}
+                      style={{ cursor: 'pointer', border: 'none', background: 'none', textAlign: 'left', padding: 0 }}
                       title="Click to toggle"
                       onClick={() => toggleEmploymentStatus(selected)}
                     >

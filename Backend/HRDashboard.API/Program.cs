@@ -4,6 +4,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Microsoft.Data.Sqlite;
 using HRDashboard.BusinessLayer.Structure;
+using HRDashboard.API.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -55,6 +56,12 @@ builder.Services.AddSwaggerGen(c =>
         Array.Empty<string>()
     }});
 });
+
+// Register email service (singleton — shared by controllers and background service)
+builder.Services.AddSingleton<EmailService>();
+
+// Register daily expiry notification background service
+builder.Services.AddHostedService<ExpiryNotificationService>();
 
 var app = builder.Build();
 
@@ -115,7 +122,8 @@ try
             FileType   TEXT NOT NULL DEFAULT 'PDF',
             Size       TEXT NOT NULL DEFAULT '',
             Base64     TEXT NOT NULL DEFAULT '',
-            UploadedAt TEXT NOT NULL DEFAULT ''
+            UploadedAt TEXT NOT NULL DEFAULT '',
+            ExpiryDate TEXT
         );
         CREATE TABLE IF NOT EXISTS Statements (
             Id               TEXT PRIMARY KEY,
@@ -155,6 +163,22 @@ try
         Console.WriteLine("[Startup] Added Notes column to Drivers.");
     }
 
+    // Add ExpiryDate column to Documents if upgrading from older database
+    var docCols = conn.CreateCommand();
+    docCols.CommandText = "PRAGMA table_info(Documents)";
+    bool hasExpiry = false;
+    using (var r = docCols.ExecuteReader())
+        while (r.Read())
+            if (r.GetString(1).Equals("ExpiryDate", StringComparison.OrdinalIgnoreCase))
+            { hasExpiry = true; break; }
+    if (!hasExpiry)
+    {
+        var alterDoc = conn.CreateCommand();
+        alterDoc.CommandText = "ALTER TABLE Documents ADD COLUMN ExpiryDate TEXT";
+        alterDoc.ExecuteNonQuery();
+        Console.WriteLine("[Startup] Added ExpiryDate column to Documents.");
+    }
+
     // Seed default users — passwords come from appsettings, not source code
     var hash1 = BCrypt.Net.BCrypt.HashPassword(adminPw);
     var hash2 = BCrypt.Net.BCrypt.HashPassword(accountPw);
@@ -176,8 +200,11 @@ catch (Exception ex)
     Console.WriteLine(ex.StackTrace);
 }
 
-app.UseSwagger();
-app.UseSwaggerUI();
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 app.UseCors("ReactApp");
 app.UseAuthentication();
 app.UseAuthorization();

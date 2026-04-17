@@ -568,7 +568,7 @@ export default function SalaryPage() {
                         title="Download PDF"
                         onClick={() => handleDownload(s)}
                       >
-                        <Emoji symbol="📄" size={16} />
+                        <Emoji symbol="💾" size={16} />
                       </button>
                       <button
                         className="salary-action-btn salary-action-delete"

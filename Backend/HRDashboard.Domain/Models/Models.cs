@@ -99,6 +99,7 @@ namespace HRDashboard.Domain.Models
         public string Size       { get; set; } = "";
         public string Base64     { get; set; } = "";
         public DateTime UploadedAt { get; set; }
+        public DateTime? ExpiryDate { get; set; }
     }
 
     public class CreateDocumentDto
@@ -108,7 +109,8 @@ namespace HRDashboard.Domain.Models
         public string Name     { get; set; } = "";
         public string FileType { get; set; } = "PDF";
         public string Size     { get; set; } = "";
-        public string Base64   { get; set; } = "";
+        public string Base64     { get; set; } = "";
+        public DateTime? ExpiryDate { get; set; }
     }
 
     // ── Saved Statement ───────────────────────────────────────────────────────
@@ -157,6 +159,12 @@ namespace HRDashboard.Domain.Models
         public string? DrugTest             { get; set; }
         public string? SecuringUnloading    { get; set; }
         public string? SalaryExpectation    { get; set; }
+    }
+
+    // ── Set Expiry ────────────────────────────────────────────────────────────
+    public class SetExpiryDto
+    {
+        public string? ExpiryDate { get; set; }
     }
 
     // ── Shared Response ───────────────────────────────────────────────────────
