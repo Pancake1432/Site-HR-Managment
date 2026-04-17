@@ -7,6 +7,7 @@ using HRDashboard.Domain.Entities;
 using HRDashboard.Domain.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using HRDashboard.API.Services;
 
 namespace HRDashboard.API.Controller
 {
@@ -144,13 +145,13 @@ namespace HRDashboard.API.Controller
             var driverAction = new BusinessLogic().DriverAction();
             var result = driverAction.CreateDriverAction(new CreateDriverDto
             {
-                Name             = applicant.Name,
-                FirstName        = applicant.FirstName,
-                LastName         = applicant.LastName,
-                Position         = applicant.Position,
-                Equipment        = applicant.Equipment == "Unsigned" ? "Van" : applicant.Equipment,
-                DriverStatus     = "Not Ready",
-                PaymentType      = "miles",
+                Name = applicant.Name,
+                FirstName = applicant.FirstName,
+                LastName = applicant.LastName,
+                Position = applicant.Position,
+                Equipment = applicant.Equipment == "Unsigned" ? "Van" : applicant.Equipment,
+                DriverStatus = "Not Ready",
+                PaymentType = "miles",
                 EmploymentStatus = "Working",
             }, CompanyId);
 
@@ -252,22 +253,22 @@ namespace HRDashboard.API.Controller
         {
             var s = new SavedStatementData
             {
-                Id               = string.IsNullOrEmpty(dto.Id) ? Guid.NewGuid().ToString() : dto.Id,
-                CompanyId        = CompanyId,
-                DriverId         = dto.DriverId,
-                DriverName       = dto.DriverName,
-                PaymentType      = dto.PaymentType,
-                Miles            = dto.Miles,
-                RatePerMile      = dto.RatePerMile,
-                Percent          = dto.Percent,
-                GrossAmount      = dto.GrossAmount,
-                AdjustmentType   = dto.AdjustmentType,
+                Id = string.IsNullOrEmpty(dto.Id) ? Guid.NewGuid().ToString() : dto.Id,
+                CompanyId = CompanyId,
+                DriverId = dto.DriverId,
+                DriverName = dto.DriverName,
+                PaymentType = dto.PaymentType,
+                Miles = dto.Miles,
+                RatePerMile = dto.RatePerMile,
+                Percent = dto.Percent,
+                GrossAmount = dto.GrossAmount,
+                AdjustmentType = dto.AdjustmentType,
                 AdjustmentAmount = dto.AdjustmentAmount,
                 AdjustmentReason = dto.AdjustmentReason,
-                Adjustment       = dto.Adjustment,
-                Subtotal         = dto.Subtotal,
-                Total            = dto.Total,
-                SavedAt          = DateTime.UtcNow,
+                Adjustment = dto.Adjustment,
+                Subtotal = dto.Subtotal,
+                Total = dto.Total,
+                SavedAt = DateTime.UtcNow,
             };
             using (var db = new StatementContext()) { db.Statements.Add(s); db.SaveChanges(); }
             return Ok(s);
@@ -302,6 +303,9 @@ namespace HRDashboard.API.Controller
     [ApiController]
     public class ApplicationsController : ControllerBase
     {
+        private readonly EmailService _email;
+        public ApplicationsController(EmailService email) { _email = email; }
+
         [HttpPost]
         public IActionResult Submit([FromBody] ApplicationSubmitDto dto)
         {
@@ -310,23 +314,66 @@ namespace HRDashboard.API.Controller
 
             var result = applicantAction.CreateApplicantAction(new CreateApplicantDto
             {
-                Name      = dto.Name ?? "",
+                Name = dto.Name ?? "",
                 FirstName = parts[0],
-                LastName  = parts.Length > 1 ? parts[1] : "",
-                Position  = "Company Driver",
+                LastName = parts.Length > 1 ? parts[1] : "",
+                Position = "Company Driver",
                 Equipment = "Unsigned",
-                Status    = "Documents Sent",
+                Status = "Documents Sent",
             }, dto.CompanyId ?? "company-paks");
 
             var applicantDto = result.Data as ApplicantDto;
-            var applicantId  = applicantDto?.Id ?? 0;
+            var applicantId = applicantDto?.Id ?? 0;
 
             var appId = $"APP-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}";
+            var miamiTz = TimeZoneInfo.FindSystemTimeZoneById("Eastern Standard Time");
+            var miamiTime = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, miamiTz);
+            var miamiStr = miamiTime.ToString("MM/dd/yyyy hh:mm tt") + " ET";
+
+            // 1. Notify admin about new application (fire-and-forget)
+            _ = _email.SendToAdminAsync(
+                $"📝 New Driver Application — {dto.Name}",
+                $@"Hello,
+
+A new driver application has been submitted.
+
+  Name:        {dto.Name}
+  Phone:       {dto.Phone ?? "—"}
+  Email:       {dto.Email ?? "—"}
+  City/State:  {dto.City ?? "—"}, {dto.State ?? "—"}
+  Application: {appId}
+  Submitted:   {miamiStr}
+
+Log in to the HR dashboard to review the application and documents.
+
+— {_email.CompanyName} HR System");
+
+            // 2. Send confirmation email to the candidate (fire-and-forget)
+            if (!string.IsNullOrWhiteSpace(dto.Email))
+            {
+                _ = _email.SendAsync(
+                    dto.Email,
+                    $"✅ Application Received — {_email.CompanyName}",
+                    $@"Hello {dto.Name?.Split(' ')[0] ?? "there"},
+
+Thank you for applying to {_email.CompanyName}!
+
+We have received your application and will review it shortly.
+Our team will contact you by phone or email within a few business days.
+
+  Application ID: {appId}
+  Submitted:      {miamiStr}
+
+If you have any questions, please contact us at dispatch@pakslogistic.com.
+
+— {_email.CompanyName} HR Team");
+            }
+
             return Ok(new
             {
                 applicationId = appId,
-                applicantId   = applicantId,
-                message       = "Application submitted successfully."
+                applicantId = applicantId,
+                message = "Application submitted successfully."
             });
         }
     }
