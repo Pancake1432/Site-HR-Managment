@@ -2114,6 +2114,103 @@ html.dark .statement-section p strong { color: var(--text-primary); }
 html.dark .total-amount         { color: var(--accent); }
 
 /* ── SETTINGS MODAL ── */
+
+/* ── CHANGE PASSWORD FORM (in Settings) ──────────────────────────────── */
+.pwd-form {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pwd-form-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 2px;
+}
+
+.pwd-form-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(102,126,234,0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 16px;
+}
+
+.pwd-form-title  { font-size: 14px; font-weight: 600; color: var(--text-primary); margin: 0; }
+.pwd-form-sub    { font-size: 12px; color: var(--text-secondary); margin: 0; }
+
+.pwd-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.pwd-field label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.pwd-field input {
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+  background: var(--bg-card, #fff);
+  color: var(--text-primary);
+  transition: border-color 0.2s;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.pwd-field input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(102,126,234,0.12);
+}
+
+.pwd-form-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 2px;
+}
+
+.pwd-msg {
+  font-size: 12px;
+  font-weight: 500;
+  margin: 0;
+}
+.pwd-msg--ok  { color: #16a34a; }
+.pwd-msg--err { color: #dc2626; }
+
+.pwd-submit-btn {
+  padding: 8px 20px;
+  border-radius: 8px;
+  border: none;
+  background: var(--gradient, linear-gradient(135deg,#667eea,#764ba2));
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+}
+.pwd-submit-btn:hover   { opacity: 0.9; transform: translateY(-1px); }
+.pwd-submit-btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+
+html.dark .pwd-field input { background: var(--bg-card-secondary); border-color: var(--border); }
+html.dark .pwd-form-icon   { background: rgba(102,126,234,0.2); }
+
 html.dark .stg-card             { background: var(--bg-card-secondary); border-color: var(--border); }
 html.dark .stg-row-label        { color: var(--text-primary); }
 html.dark .stg-row-sub          { color: var(--text-secondary); }
