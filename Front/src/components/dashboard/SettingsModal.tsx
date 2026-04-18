@@ -216,17 +216,6 @@ export default function SettingsModal({ onClose }: Props) {
             />
           </div>
 
-          {/* ── NOTIFICATIONS ── */}
-          <SectionHeader icon="🔔" title="Notifications" />
-          <div className="stg-card">
-            <ToggleRow
-              label="Email Notifications"
-              sub="Receive updates on new applications and documents"
-              checked={settings.emailNotifications}
-              onChange={v => update('emailNotifications', v)}
-            />
-          </div>
-
           {/* ── DATA ── */}
           <SectionHeader icon="💾" title="Data" />
           <div className="stg-card">
