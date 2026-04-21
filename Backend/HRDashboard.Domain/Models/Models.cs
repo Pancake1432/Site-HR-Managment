@@ -167,6 +167,13 @@ namespace HRDashboard.Domain.Models
         public string? ExpiryDate { get; set; }
     }
 
+    // ── Change Password ───────────────────────────────────────────────────────
+    public class ChangePasswordDto
+    {
+        public string CurrentPassword { get; set; } = "";
+        public string NewPassword     { get; set; } = "";
+    }
+
     // ── Shared Response ───────────────────────────────────────────────────────
     public class ActionResponse
     {

@@ -1,3 +1,5 @@
+import { useState } from 'react';
+import axios from 'axios';
 import {
   useSettings,
   CURRENCY_LABELS, DIST_LABELS, DATE_LABELS, PAY_DAY_LABELS,
@@ -68,6 +70,75 @@ function SegmentRow<T extends string>({
 }
 
 /* ── Main modal ── */
+const BASE_URL = import.meta.env.VITE_API_URL ?? 'https://localhost:7001';
+
+function ChangePasswordForm() {
+  const [current, setCurrent] = useState('');
+  const [next,    setNext]    = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [saving,  setSaving]  = useState(false);
+  const [message, setMessage] = useState<{ text: string; ok: boolean } | null>(null);
+
+  const handleSubmit = async () => {
+    if (!current || !next || !confirm) { setMessage({ text: 'All fields are required.', ok: false }); return; }
+    if (next !== confirm)              { setMessage({ text: 'New passwords do not match.', ok: false }); return; }
+    if (next.length < 8)               { setMessage({ text: 'New password must be at least 8 characters.', ok: false }); return; }
+    setSaving(true);
+    setMessage(null);
+    try {
+      const token = localStorage.getItem('hr_access_token') ?? '';
+      await axios.put(`${BASE_URL}/api/auth/change-password`,
+        { currentPassword: current, newPassword: next },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setMessage({ text: 'Password changed successfully.', ok: true });
+      setCurrent(''); setNext(''); setConfirm('');
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setMessage({ text: msg ?? 'Failed to change password.', ok: false });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="pwd-form">
+      <div className="pwd-form-header">
+        <div className="pwd-form-icon">🔐</div>
+        <div>
+          <p className="pwd-form-title">Change password</p>
+          <p className="pwd-form-sub">Update your login credentials</p>
+        </div>
+      </div>
+
+      <div className="pwd-field">
+        <label>Current password</label>
+        <input type="password" placeholder="Enter current password" value={current} onChange={e => setCurrent(e.target.value)} />
+      </div>
+      <div className="pwd-field">
+        <label>New password</label>
+        <input type="password" placeholder="At least 8 characters" value={next} onChange={e => setNext(e.target.value)} />
+      </div>
+      <div className="pwd-field">
+        <label>Confirm new password</label>
+        <input type="password" placeholder="Repeat new password" value={confirm} onChange={e => setConfirm(e.target.value)} />
+      </div>
+
+      <div className="pwd-form-footer">
+        {message
+          ? <p className={`pwd-msg ${message.ok ? 'pwd-msg--ok' : 'pwd-msg--err'}`}>
+              {message.ok ? '✓ ' : '✕ '}{message.text}
+            </p>
+          : <span />}
+        <button className="pwd-submit-btn" onClick={handleSubmit} disabled={saving}>
+          {saving ? 'Saving…' : 'Update password'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+
 export default function SettingsModal({ onClose }: Props) {
   const { settings, update } = useSettings();
 
@@ -145,17 +216,6 @@ export default function SettingsModal({ onClose }: Props) {
             />
           </div>
 
-          {/* ── NOTIFICATIONS ── */}
-          <SectionHeader icon="🔔" title="Notifications" />
-          <div className="stg-card">
-            <ToggleRow
-              label="Email Notifications"
-              sub="Receive updates on new applications and documents"
-              checked={settings.emailNotifications}
-              onChange={v => update('emailNotifications', v)}
-            />
-          </div>
-
           {/* ── DATA ── */}
           <SectionHeader icon="💾" title="Data" />
           <div className="stg-card">
@@ -165,6 +225,12 @@ export default function SettingsModal({ onClose }: Props) {
               checked={settings.autoSave}
               onChange={v => update('autoSave', v)}
             />
+          </div>
+
+          {/* ── ACCOUNT ── */}
+          <SectionHeader icon="🔐" title="Account" />
+          <div className="stg-card">
+            <ChangePasswordForm />
           </div>
 
           {/* ── FOOTER ── */}

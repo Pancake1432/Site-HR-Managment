@@ -39,6 +39,7 @@ export default function DriversPage() {
   const navigate  = useNavigate();
   const location  = useLocation();
   const { settings } = useSettings();
+  const dateScheme = settings.darkMode ? 'dark' : 'light' as const;
   const { companyDrivers, refresh } = useCompanyData();
   const { getDriverDocs, uploadDoc, deleteDoc, openDoc, setDocExpiry } = useDriverDocStorage();
   const { applyOverrides, saveOverride } = useLocalOverrides();
@@ -196,7 +197,7 @@ export default function DriversPage() {
     refresh();
   };
 
-  const iStyle: React.CSSProperties = { padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', fontSize: 14, background: 'var(--input-bg, #fff)', color: 'var(--text-primary)' };
+  const iStyle: React.CSSProperties = { padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', fontSize: 14, background: 'var(--bg-card)', color: 'var(--text-primary)', colorScheme: dateScheme };
 
   return (
     <div className="page">
@@ -325,13 +326,13 @@ export default function DriversPage() {
                     { label: 'CDL Certificate', icon: '📄', file: addCdlFile, setFile: setAddCdlFile, ref: addCdlRef, expiry: addCdlExpiry, setExpiry: setAddCdlExpiry, accept: '.pdf,application/pdf' },
                     { label: 'Medical Card',    icon: '🏥', file: addMedFile, setFile: setAddMedFile, ref: addMedRef, expiry: addMedExpiry, setExpiry: setAddMedExpiry, accept: '.pdf,application/pdf,.jpg,.jpeg,.png,image/*' },
                   ].map(({ label, icon, file, setFile, ref, expiry, setExpiry, accept }) => (
-                    <div key={label} style={{ padding: '10px 14px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--card-bg, #f9fafb)' }}>
+                    <div key={label} style={{ padding: '10px 14px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--bg-card-secondary)' }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                           <Emoji symbol={icon} size={20} />
                           <div>
-                            <div style={{ fontSize: 14, fontWeight: 600 }}>{label}</div>
-                            {file && <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{file.name}</div>}
+                            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>{label}</div>
+                            {file && <div style={{ fontSize: 12, color: 'var(--text-primary)' }}>{file.name}</div>}
                           </div>
                         </div>
                         <button className="upload-doc-btn" onClick={() => ref.current?.click()} style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
@@ -340,8 +341,8 @@ export default function DriversPage() {
                         <input ref={ref} type="file" accept={accept} style={{ display: 'none' }} onChange={e => setFile(e.target.files?.[0] ?? null)} />
                       </div>
                       <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <label style={{ fontSize: 12, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Expiry date:</label>
-                        <input type="date" value={expiry} onChange={e => setExpiry(e.target.value)} style={{ ...iStyle, fontSize: 12, padding: '4px 8px', flex: 1 }} />
+                        <label style={{ fontSize: 12, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>Expiry date:</label>
+                        <input type="date" value={expiry} onChange={e => setExpiry(e.target.value)} style={{ ...iStyle, fontSize: 12, padding: '4px 8px', flex: 1, colorScheme: dateScheme }} />
                       </div>
                     </div>
                   ))}
@@ -412,7 +413,7 @@ export default function DriversPage() {
                                       type="date"
                                       defaultValue={doc.expiryDate ? doc.expiryDate.substring(0, 10) : ''}
                                       id={`expiry-input-${key}`}
-                                      style={{ fontSize: 12, padding: '3px 7px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--input-bg, #fff)', color: 'var(--text-primary)' }}
+                                      style={{ fontSize: 12, padding: '3px 7px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-card)', color: 'var(--text-primary)', colorScheme: dateScheme }}
                                     />
                                     <button
                                       onClick={() => {
@@ -468,7 +469,7 @@ export default function DriversPage() {
                                 {hasExpiry && (
                                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
                                     <label style={{ fontSize: 12, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Expiry:</label>
-                                    <input type="date" value={key === 'cdl' ? cdlExpiry : medExpiry} onChange={e => key === 'cdl' ? setCdlExpiry(e.target.value) : setMedExpiry(e.target.value)} style={{ fontSize: 12, padding: '3px 7px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--input-bg, #fff)', color: 'var(--text-primary)' }} />
+                                    <input type="date" value={key === 'cdl' ? cdlExpiry : medExpiry} onChange={e => key === 'cdl' ? setCdlExpiry(e.target.value) : setMedExpiry(e.target.value)} style={{ fontSize: 12, padding: '3px 7px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-card)', color: 'var(--text-primary)', colorScheme: dateScheme }} />
                                   </div>
                                 )}
                                 <button className="upload-doc-btn" disabled={uploading} onClick={() => ref.current?.click()} style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
