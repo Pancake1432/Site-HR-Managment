@@ -1,3 +1,4 @@
+import { jsPDF } from 'jspdf';
 import { SavedStatement } from '../types/dashboard';
 
 type Currency = 'USD' | 'EUR';
@@ -28,98 +29,111 @@ export function downloadStatementPDF(
   const sym  = CURRENCY_SYMBOLS[currency];
   const dist = distanceUnit;
   const date = fmtDateStr(statement.savedAt, dateFormat);
-  const hasAdj = parseFloat(statement.adjustmentAmount || '0') > 0;
 
-  const paymentRows =
-    statement.paymentType === 'miles'
-      ? `
-        <tr><td>Payment Type</td><td>Per ${dist}</td></tr>
-        <tr><td>${dist.charAt(0).toUpperCase() + dist.slice(1)} Driven</td><td>${statement.miles} ${dist}</td></tr>
-        <tr><td>Rate per ${dist}</td><td>${sym}${statement.ratePerMile}</td></tr>`
-      : `
-        <tr><td>Payment Type</td><td>Percentage</td></tr>
-        <tr><td>Percentage</td><td>${statement.percent}%</td></tr>
-        <tr><td>Gross Amount</td><td>${fmtMoney(statement.grossAmount, currency)}</td></tr>`;
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  const W   = 210;
+  const pad = 20;
+  let   y   = 25;
 
-  const adjSection = hasAdj
-    ? `<div class="section">
-        <h3>Adjustments</h3>
-        <table>
-          <tr><td>Type</td><td>${statement.adjustmentType === 'bonus' ? 'Bonus' : 'Deduction'}</td></tr>
-          <tr><td>Amount</td><td>${statement.adjustmentType === 'bonus' ? '+' : '-'}${fmtMoney(statement.adjustmentAmount, currency)}</td></tr>
-          ${statement.adjustmentReason ? `<tr><td>Reason</td><td>${statement.adjustmentReason}</td></tr>` : ''}
-        </table>
-      </div>`
-    : '';
+  const accent: [number, number, number] = [102, 126, 234];
 
-  const html = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8" />
-  <title>Payment Statement — ${statement.driverName}</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 13px; color: #1a202c; padding: 40px; }
-    .doc { max-width: 680px; margin: 0 auto; }
-    .header { text-align: center; border-bottom: 2px solid #667eea; padding-bottom: 18px; margin-bottom: 28px; }
-    .header h1 { font-size: 26px; font-weight: 700; color: #667eea; margin-bottom: 4px; }
-    .header p  { font-size: 12px; color: #718096; }
-    .section { margin-bottom: 22px; }
-    .section h3 { font-size: 14px; font-weight: 700; color: #4a5568; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; margin-bottom: 10px; }
-    table { width: 100%; border-collapse: collapse; }
-    td { padding: 7px 10px; font-size: 13px; }
-    td:first-child { color: #718096; font-weight: 500; width: 50%; }
-    tr:nth-child(even) td { background: #f7fafc; }
-    .total-box { background: linear-gradient(135deg, #667eea, #764ba2); color: white; border-radius: 10px; text-align: center; padding: 22px; margin-top: 8px; }
-    .total-box h3 { font-size: 14px; font-weight: 600; opacity: 0.85; margin-bottom: 6px; }
-    .total-amount { font-size: 32px; font-weight: 700; }
-    .footer { text-align: center; margin-top: 36px; font-size: 11px; color: #a0aec0; }
-    @media print { body { padding: 0; } }
-  </style>
-</head>
-<body>
-  <div class="doc">
-    <div class="header">
-      <h1>Payment Statement</h1>
-      <p>Date: ${date} &nbsp;|&nbsp; Statement ID: ${statement.id}</p>
-    </div>
+  // ── Header ────────────────────────────────────────────────────────────────
+  doc.setFontSize(22);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...accent);
+  doc.text('Payment Statement', W / 2, y, { align: 'center' });
+  y += 8;
 
-    <div class="section">
-      <h3>Driver Information</h3>
-      <table>
-        <tr><td>Driver Name</td><td>${statement.driverName}</td></tr>
-        <tr><td>Company</td><td>${companyName}</td></tr>
-      </table>
-    </div>
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(120, 120, 120);
+  doc.text(`${companyName}  |  Date: ${date}  |  ID: ${statement.id}`, W / 2, y, { align: 'center' });
+  y += 5;
 
-    <div class="section">
-      <h3>Payment Details</h3>
-      <table>
-        ${paymentRows}
-        <tr><td>Subtotal</td><td>${fmtMoney(statement.subtotal, currency)}</td></tr>
-      </table>
-    </div>
+  doc.setDrawColor(...accent);
+  doc.setLineWidth(0.5);
+  doc.line(pad, y, W - pad, y);
+  y += 10;
 
-    ${adjSection}
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  const section = (title: string) => {
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(50, 50, 50);
+    doc.text(title, pad, y);
+    y += 2;
+    doc.setDrawColor(220, 220, 220);
+    doc.setLineWidth(0.3);
+    doc.line(pad, y, W - pad, y);
+    y += 7;
+  };
 
-    <div class="total-box">
-      <h3>Total Payment</h3>
-      <div class="total-amount">${fmtMoney(statement.total, currency)}</div>
-    </div>
+  const row = (label: string, value: string, shaded = false) => {
+    if (shaded) {
+      doc.setFillColor(245, 247, 255);
+      doc.rect(pad, y - 5, W - pad * 2, 8, 'F');
+    }
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(110, 110, 110);
+    doc.text(label, pad + 2, y);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(30, 30, 30);
+    doc.text(value, W - pad - 2, y, { align: 'right' });
+    y += 8;
+  };
 
-    <div class="footer">${companyName} &mdash; Generated on ${date}</div>
-  </div>
-</body>
-</html>`;
+  // ── Driver Info ───────────────────────────────────────────────────────────
+  section('Driver Information');
+  row('Driver Name', statement.driverName, true);
+  y += 3;
 
-  // Create a Blob and trigger a real file download — no print dialog
-  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  a.href     = url;
-  a.download = `Statement-${statement.driverName.replace(/\s+/g, '-')}-${date}.html`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  // ── Payment Details ───────────────────────────────────────────────────────
+  section('Payment Details');
+  if (statement.paymentType === 'miles') {
+    row('Payment Type', `Per ${dist}`, true);
+    row(`${dist.charAt(0).toUpperCase() + dist.slice(1)} Driven`, `${statement.miles} ${dist}`);
+    row(`Rate per ${dist}`, `${sym}${statement.ratePerMile}`, true);
+  } else {
+    row('Payment Type', 'Percentage', true);
+    row('Percentage', `${statement.percent}%`);
+    row('Gross Amount', fmtMoney(statement.grossAmount, currency), true);
+  }
+  row('Subtotal', fmtMoney(statement.subtotal, currency));
+  y += 3;
+
+  // ── Adjustments ───────────────────────────────────────────────────────────
+  if (parseFloat(statement.adjustmentAmount || '0') > 0) {
+    section('Adjustments');
+    row('Type', statement.adjustmentType === 'bonus' ? 'Bonus' : 'Deduction', true);
+    row('Amount', `${statement.adjustmentType === 'bonus' ? '+' : '-'}${fmtMoney(statement.adjustmentAmount, currency)}`);
+    if (statement.adjustmentReason)
+      row('Reason', statement.adjustmentReason, true);
+    y += 3;
+  }
+
+  // ── Total Box ─────────────────────────────────────────────────────────────
+  doc.setFillColor(...accent);
+  doc.roundedRect(pad, y, W - pad * 2, 24, 4, 4, 'F');
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(255, 255, 255);
+  doc.text('Total Payment', W / 2, y + 8, { align: 'center' });
+  doc.setFontSize(20);
+  doc.setFont('helvetica', 'bold');
+  doc.text(fmtMoney(statement.total, currency), W / 2, y + 18, { align: 'center' });
+  y += 32;
+
+  // ── Footer ────────────────────────────────────────────────────────────────
+  doc.setDrawColor(220, 220, 220);
+  doc.setLineWidth(0.3);
+  doc.line(pad, y, W - pad, y);
+  y += 5;
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(160, 160, 160);
+  doc.text(`${companyName} — Generated on ${date}`, W / 2, y, { align: 'center' });
+
+  // ── Download ──────────────────────────────────────────────────────────────
+  doc.save(`Statement-${statement.driverName.replace(/\s+/g, '-')}-${date}.pdf`);
 }
