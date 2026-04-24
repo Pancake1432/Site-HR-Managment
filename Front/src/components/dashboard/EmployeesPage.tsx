@@ -6,6 +6,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useLocalOverrides } from '../../hooks/useLocalOverrides';
 import { useDriverDocStorage, DriverDocSet } from '../../hooks/useDriverDocStorage';
 import { useSavedStatements } from '../../contexts/SavedStatementsContext';
+import { downloadStatementPDF } from '../../utils/pdfUtils';
 import { useSettings, fmtDate, fmtCurrency, fmtPerDist } from '../../contexts/SettingsContext';
 import EquipmentDropdown from './EquipmentDropdown';
 import { Emoji } from '../Emoji';
@@ -331,7 +332,13 @@ export default function EmployeesPage() {
                 {employeeStatements.length > 0 ? (
                   <div className="modal-statements-list">
                     {employeeStatements.map(s => (
-                      <div key={s.id} className="modal-statement-item">
+                      <div
+                        key={s.id}
+                        className="modal-statement-item"
+                        onClick={() => downloadStatementPDF(s, settings.currency, settings.distanceUnit, settings.dateFormat)}
+                        title="Click to download PDF"
+                        style={{ cursor: 'pointer' }}
+                      >
                         <div className="statement-icon-small"><Emoji symbol="📋" size={18} /></div>
                         <div className="statement-info-small">
                           <strong>{fmtDate(new Date(s.savedAt), settings.dateFormat)}</strong>
@@ -340,6 +347,7 @@ export default function EmployeesPage() {
                             {' '}— Total: {fmtCurrency(Number(s.total), settings.currency)}
                           </span>
                         </div>
+                        <div style={{ marginLeft: 'auto', color: 'var(--text-secondary)', fontSize: 16 }} title="Download PDF">⬇</div>
                       </div>
                     ))}
                   </div>
