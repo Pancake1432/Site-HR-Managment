@@ -342,6 +342,7 @@ namespace HRDashboard.API.Controller
                 if (s == null) return NotFound();
                 db.Statements.Remove(s); db.SaveChanges();
             }
+            _ = EventsController.BroadcastAsync("refresh");
             return Ok(new { message = "Statement deleted." });
         }
 
@@ -353,6 +354,7 @@ namespace HRDashboard.API.Controller
                 var all = db.Statements.Where(s => s.CompanyId == CompanyId).ToList();
                 db.Statements.RemoveRange(all); db.SaveChanges();
             }
+            _ = EventsController.BroadcastAsync("refresh");
             return Ok(new { message = "All statements cleared." });
         }
     }
