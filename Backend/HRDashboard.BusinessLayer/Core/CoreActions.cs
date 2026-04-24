@@ -18,9 +18,14 @@ namespace HRDashboard.BusinessLayer.Core
             if (user == null || !BCrypt.Net.BCrypt.Verify(udata.Password, user.PasswordHash))
                 return null;
 
+            var miamiTz   = TimeZoneInfo.FindSystemTimeZoneById("Eastern Standard Time");
+            var expiresUtc = DateTime.UtcNow.AddHours(14);
+            var expiresET  = TimeZoneInfo.ConvertTimeFromUtc(expiresUtc, miamiTz);
+
             return new UserLoginResponseDto
             {
                 Token       = new Structure.TokenService().GenerateToken(user),
+                ExpiresAt   = expiresET.ToString("MM/dd/yyyy hh:mm tt") + " ET",
                 Email       = user.Email,
                 Name        = user.Name,
                 Role        = user.Role,

@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Driver, EmploymentStatus, EquipmentType } from '../../types/dashboard';
 import { useCompanyData } from '../../hooks/useCompanyData';
+import { useAuth } from '../../contexts/AuthContext';
 import { useLocalOverrides } from '../../hooks/useLocalOverrides';
 import { useDriverDocStorage, DriverDocSet } from '../../hooks/useDriverDocStorage';
 import { useSavedStatements } from '../../contexts/SavedStatementsContext';
@@ -17,6 +18,7 @@ const EMPTY_DOCS: DriverDocSet = {
 
 export default function EmployeesPage() {
   const { companyDrivers, refresh } = useCompanyData();
+  const { isAdmin } = useAuth();
   const { applyOverrides, saveOverride } = useLocalOverrides();
   const { getDriverDocs, openDoc }       = useDriverDocStorage();
   const { statements }                   = useSavedStatements();
@@ -217,13 +219,14 @@ export default function EmployeesPage() {
                   <div className="info-item"><strong>Name</strong><span>{selected.name}</span></div>
                   <div className="info-item"><strong>Position</strong><span>{selected.position}</span></div>
 
-                  {/* Equipment — editable dropdown */}
+                  {/* Equipment — editable for admin only */}
                   <div className="info-item">
                     <strong>Equipment</strong>
-                    <EquipmentDropdown
-                      value={editEquipment}
-                      onChange={handleEquipmentChange}
-                    />
+                    <div style={{ display: 'inline-block' }}>
+                      {isAdmin
+                        ? <EquipmentDropdown value={editEquipment} onChange={handleEquipmentChange} />
+                        : <span className="equip-badge">{selected.equipment}</span>}
+                    </div>
                   </div>
 
                   <div className="info-item">
@@ -252,22 +255,28 @@ export default function EmployeesPage() {
               <div className="employee-info-section">
                 <h3>Internal Notes</h3>
                 <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 10 }}>
-                  Visible only to dispatchers and admins. Use this for truck number, trailer, phone, contacts, or any other info.
+                  Visible only to dispatchers and admins.
                 </p>
-                <textarea
-                  value={editNotes}
-                  onChange={e => { setEditNotes(e.target.value); setNotesSaved(false); }}
-                  placeholder="e.g. Truck #4821 · Trailer T-09 · Cell: 555-0100 · Prefers night routes..."
-                  rows={4}
-                  style={{
-                    width: '100%', padding: '10px 12px', borderRadius: 8,
-                    border: '1px solid var(--border)', fontSize: 14,
-                    background: 'var(--input-bg, #fff)', color: 'var(--text-primary)',
-                    resize: 'vertical', fontFamily: 'inherit', lineHeight: 1.6,
-                    boxSizing: 'border-box',
-                  }}
-                />
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8 }}>
+                {isAdmin ? (
+                  <textarea
+                    value={editNotes}
+                    onChange={e => { setEditNotes(e.target.value); setNotesSaved(false); }}
+                    placeholder="e.g. Truck #4821 · Trailer T-09 · Cell: 555-0100 · Prefers night routes..."
+                    rows={4}
+                    style={{
+                      width: '100%', padding: '10px 12px', borderRadius: 8,
+                      border: '1px solid var(--border)', fontSize: 14,
+                      background: 'var(--bg-card)', color: 'var(--text-primary)',
+                      resize: 'vertical', fontFamily: 'inherit', lineHeight: 1.6,
+                      boxSizing: 'border-box',
+                    }}
+                  />
+                ) : (
+                  <div style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border)', fontSize: 14, color: 'var(--text-primary)', background: 'var(--bg-card-secondary)', minHeight: 80, lineHeight: 1.6 }}>
+                    {editNotes || <span style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>No notes added.</span>}
+                  </div>
+                )}
+                {isAdmin && <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8 }}>
                   <button
                     onClick={handleSaveNotes}
                     disabled={notesSaving}
@@ -285,7 +294,7 @@ export default function EmployeesPage() {
                       <Emoji symbol="✅" size={13} /> Saved
                     </span>
                   )}
-                </div>
+                </div>}
               </div>
 
               {/* ── Documents ── */}
