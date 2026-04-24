@@ -26,10 +26,6 @@ function getCompanyNameFromToken(): string {
   } catch { return ''; }
 }
 
-/**
- * Normalises a raw API record so the frontend `Driver` shape is always met.
- * The backend serialises the timestamp as `createdAt`; we alias it to `date`.
- */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function normalizeRecord(raw: any): Driver {
   return {
@@ -49,11 +45,15 @@ export function useCompanyData(): CompanyData {
   const companyName = getCompanyNameFromToken();
   const loadingRef  = useRef(false);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (silent = false) => {
     if (loadingRef.current) return;
     loadingRef.current = true;
-    setIsLoading(true);
-    setFetchError(null);
+
+    if (!silent) {
+      setIsLoading(true);
+      setFetchError(null);
+    }
+
     try {
       const headers = { Authorization: `Bearer ${getToken()}` };
       const [driversRes, applicantsRes] = await Promise.all([
@@ -63,21 +63,20 @@ export function useCompanyData(): CompanyData {
       setCompanyDrivers((driversRes.data   ?? []).map(normalizeRecord));
       setApplicants(    (applicantsRes.data ?? []).map(normalizeRecord));
     } catch (err: unknown) {
-      console.error('useCompanyData fetch error:', err);
-
-      // Surface a human-readable message so pages can show it instead of empty tables
-      if (axios.isAxiosError(err)) {
-        if (err.response?.status === 401) {
-          setFetchError('Session expired — please log in again.');
-        } else if (err.response?.status === 500) {
-          setFetchError('Server error. Check the backend console for details.');
-        } else if (!err.response) {
-          setFetchError('Cannot reach the server. Make sure the backend is running.');
+      if (!silent) {
+        if (axios.isAxiosError(err)) {
+          if (err.response?.status === 401) {
+            setFetchError('Session expired — please log in again.');
+          } else if (err.response?.status === 500) {
+            setFetchError('Server error. Check the backend console for details.');
+          } else if (!err.response) {
+            setFetchError('Cannot reach the server. Make sure the backend is running.');
+          } else {
+            setFetchError(`Unexpected error (${err.response.status}).`);
+          }
         } else {
-          setFetchError(`Unexpected error (${err.response.status}).`);
+          setFetchError('Unknown error loading data.');
         }
-      } else {
-        setFetchError('Unknown error loading data.');
       }
     } finally {
       setIsLoading(false);
@@ -85,7 +84,51 @@ export function useCompanyData(): CompanyData {
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  // Initial load
+  useEffect(() => { load(false); }, [load]);
 
-  return { companyDrivers, applicants, companyName, isLoading, fetchError, refresh: load };
+  // ── Server-Sent Events — real-time sync ───────────────────────────────────
+  // The backend broadcasts "refresh" whenever a driver or applicant is mutated.
+  // All connected clients receive it and silently re-fetch — instant sync.
+  useEffect(() => {
+    const token = getToken();
+    if (!token) return;
+
+    // EventSource doesn't support Authorization headers, so we pass the token
+    // as a query param. The backend reads it via the JWT middleware.
+    let es: EventSource | null = null;
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+    let alive = true;
+
+    function connect() {
+      if (!alive) return;
+      es = new EventSource(`${BASE_URL}/api/events?access_token=${token}`);
+
+      es.onmessage = (event) => {
+        if (event.data === 'refresh') {
+          load(true); // silent re-fetch — no spinner
+        }
+      };
+
+      es.onerror = () => {
+        es?.close();
+        // Reconnect after 5 seconds if the connection drops
+        if (alive) {
+          reconnectTimer = setTimeout(connect, 5_000);
+        }
+      };
+    }
+
+    connect();
+
+    return () => {
+      alive = false;
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      es?.close();
+    };
+  }, [load]);
+
+  const refresh = useCallback(() => load(false), [load]);
+
+  return { companyDrivers, applicants, companyName, isLoading, fetchError, refresh };
 }
