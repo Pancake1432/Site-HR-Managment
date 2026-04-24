@@ -20,15 +20,31 @@ var jwtKey = builder.Configuration["Jwt:Key"]
 TokenService.SecretKey = jwtKey;
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(opt => opt.TokenValidationParameters = new TokenValidationParameters
+    .AddJwtBearer(opt =>
     {
-        ValidateIssuer           = true,
-        ValidateAudience         = true,
-        ValidateLifetime         = true,
-        ValidateIssuerSigningKey = true,
-        ValidIssuer              = "HRDashboard",
-        ValidAudience            = "HRDashboardClient",
-        IssuerSigningKey         = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+        opt.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer           = true,
+            ValidateAudience         = true,
+            ValidateLifetime         = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer              = "HRDashboard",
+            ValidAudience            = "HRDashboardClient",
+            IssuerSigningKey         = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+        };
+        // Allow SSE to pass the JWT as ?access_token= because EventSource
+        // does not support Authorization headers
+        opt.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = ctx =>
+            {
+                var token = ctx.Request.Query["access_token"];
+                if (!string.IsNullOrEmpty(token) &&
+                    ctx.Request.Path.StartsWithSegments("/api/events"))
+                    ctx.Token = token;
+                return Task.CompletedTask;
+            }
+        };
     });
 builder.Services.AddAuthorization();
 
