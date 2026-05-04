@@ -20,16 +20,50 @@ const Ctx = createContext<SavedStatementsCtx>({
 export function SavedStatementsProvider({ children }: { children: ReactNode }) {
   const [statements, setStatements] = useState<SavedStatement[]>([]);
 
-  useEffect(() => {
+  const loadStatements = useCallback(() => {
+    const token = getToken();
+    if (!token) return;
     axios.get<SavedStatement[]>(`${BASE_URL}/api/statements`, { headers: authHeaders() })
       .then(res => setStatements(res.data))
-      .catch(() => {}); // ignore if not logged in
+      .catch(() => {});
   }, []);
+
+  // Initial load
+  useEffect(() => { loadStatements(); }, [loadStatements]);
+
+  // SSE listener — silently reload when backend broadcasts "refresh"
+  useEffect(() => {
+    const token = getToken();
+    if (!token) return;
+
+    let es: EventSource | null = null;
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+    let alive = true;
+
+    function connect() {
+      if (!alive) return;
+      es = new EventSource(`${BASE_URL}/api/events?access_token=${token}`);
+      es.onmessage = (event) => {
+        if (event.data === 'refresh') loadStatements();
+      };
+      es.onerror = () => {
+        es?.close();
+        if (alive) reconnectTimer = setTimeout(connect, 5_000);
+      };
+    }
+
+    connect();
+    return () => {
+      alive = false;
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      es?.close();
+    };
+  }, [loadStatements]);
 
   const addStatement = useCallback((s: SavedStatement) => {
     axios.post<SavedStatement>(`${BASE_URL}/api/statements`, s, { headers: authHeaders() })
       .then(res => setStatements(prev => [res.data, ...prev]))
-      .catch(() => setStatements(prev => [s, ...prev])); // fallback: add locally
+      .catch(() => setStatements(prev => [s, ...prev]));
   }, []);
 
   const removeStatement = useCallback((id: string) => {

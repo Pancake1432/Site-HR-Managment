@@ -10,6 +10,7 @@ namespace HRDashboard.Domain.Models
     public class UserLoginResponseDto
     {
         public string Token       { get; set; } = "";
+        public string ExpiresAt   { get; set; } = "";  // Miami ET time
         public string Email       { get; set; } = "";
         public string Name        { get; set; } = "";
         public string Role        { get; set; } = "";

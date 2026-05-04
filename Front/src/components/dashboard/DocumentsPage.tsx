@@ -7,6 +7,7 @@ import { deleteApplicant, saveApplicantOverride, hireApplicant } from '../../ser
 import EquipmentDropdown from './EquipmentDropdown';
 import StatusDropdown from './StatusDropdown';
 import { Emoji } from '../Emoji';
+import { useSettings, fmtDate } from '../../contexts/SettingsContext';
 
 const EMPTY_DOCS: DriverDocSet = { cdl: null, medicalCard: null, applicationPdf: null, workingContract: null };
 
@@ -19,6 +20,7 @@ function canHireDocs(docs: DriverDocSet): boolean {
 
 export default function DocumentsPage() {
   const { applicants: allApplicantsData, refresh } = useCompanyData();
+  const { settings } = useSettings();
   const { getDriverDocs, uploadDoc, deleteDoc, openDoc } = useDriverDocStorage();
 
   const { id }       = useParams<{ id: string }>();
@@ -95,7 +97,7 @@ export default function DocumentsPage() {
     if (!doc) return;
     const label = type === 'cdl' ? 'CDL' : 'Medical Card';
     if (window.confirm(`Delete ${label}? This cannot be undone.`)) {
-      await deleteDoc(selectedDriver.id, doc.id);
+      await deleteDoc(selectedDriver.id, String(doc.id));
       const updated = await getDriverDocs(selectedDriver.id);
       setModalDocs(updated);
       setGridDocs(prev => ({ ...prev, [selectedDriver.id]: updated }));
@@ -206,7 +208,7 @@ export default function DocumentsPage() {
                   <div className="info-item"><span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Position</span><span style={{ fontWeight: 500 }}>{selectedDriver.position}</span></div>
                   <div className="info-item"><span style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>Status</span><StatusDropdown value={selectedDriver.status} onChange={s => handleStatusChange(selectedDriver.id, s)} /></div>
                   <div className="info-item"><span style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>Equipment</span><EquipmentDropdown value={selectedDriver.equipment} onChange={eq => handleEquipmentChange(selectedDriver.id, eq)} /></div>
-                  <div className="info-item"><span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Date</span><span style={{ fontWeight: 500 }}>{selectedDriver.date}</span></div>
+                  <div className="info-item"><span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Date</span><span style={{ fontWeight: 500 }}>{fmtDate(selectedDriver.date, settings.dateFormat)}</span></div>
                 </div>
               </div>
 

@@ -33,16 +33,20 @@ function ApplicationFormContent() {
     switch (step) {
       case 0: return true; // Info step has no inputs
 
-      case 1: // Personal Information
+      case 1: { // Personal Information
+        const phoneDigits = formData.phone.replace(/\D/g, '');
+        const emailOk = formData.email.includes('@') && formData.email.split('@')[1]?.includes('.');
+        const zipOk   = /^\d{5}$/.test(formData.zip);
         return !!(
           formData.name.trim() &&
-          formData.phone.trim() &&
-          formData.email.trim() &&
+          phoneDigits.length >= 10 &&
+          emailOk &&
           formData.city.trim() &&
           formData.state.trim() &&
-          formData.zip.trim() &&
+          zipOk &&
           formData.familyStatus
         );
+      }
 
       case 2: // Driving Experience
         return !!(

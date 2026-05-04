@@ -90,11 +90,19 @@ namespace HRDashboard.API.Controller
 
         [HttpPost]
         public IActionResult Create([FromBody] CreateDriverDto data)
-            => Ok(_driver.CreateDriverAction(data, CompanyId));
+        {
+            var result = _driver.CreateDriverAction(data, CompanyId);
+            _ = EventsController.BroadcastAsync("refresh");
+            return Ok(result);
+        }
 
         [HttpPut("{id}")]
         public IActionResult Update(int id, [FromBody] UpdateDriverDto data)
-            => Ok(_driver.UpdateDriverAction(id, data, CompanyId));
+        {
+            var result = _driver.UpdateDriverAction(id, data, CompanyId);
+            _ = EventsController.BroadcastAsync("refresh");
+            return Ok(result);
+        }
 
         [HttpDelete("{id}")]
         public IActionResult Delete(int id)
@@ -125,7 +133,9 @@ namespace HRDashboard.API.Controller
                 }
             }
 
-            return Ok(_driver.DeleteDriverAction(id, CompanyId));
+            var del = _driver.DeleteDriverAction(id, CompanyId);
+            _ = EventsController.BroadcastAsync("refresh");
+            return Ok(del);
         }
     }
 
@@ -151,16 +161,28 @@ namespace HRDashboard.API.Controller
 
         [HttpPost]
         public IActionResult Create([FromBody] CreateApplicantDto data)
-            => Ok(_applicant.CreateApplicantAction(data, CompanyId));
+        {
+            var result = _applicant.CreateApplicantAction(data, CompanyId);
+            _ = EventsController.BroadcastAsync("refresh");
+            return Ok(result);
+        }
 
         [HttpPut("{id}")]
         [HttpPut("{id}/status")]
         public IActionResult Update(int id, [FromBody] UpdateApplicantDto data)
-            => Ok(_applicant.UpdateApplicantAction(id, data, CompanyId));
+        {
+            var result = _applicant.UpdateApplicantAction(id, data, CompanyId);
+            _ = EventsController.BroadcastAsync("refresh");
+            return Ok(result);
+        }
 
         [HttpDelete("{id}")]
         public IActionResult Delete(int id)
-            => Ok(_applicant.DeleteApplicantAction(id, CompanyId));
+        {
+            var result = _applicant.DeleteApplicantAction(id, CompanyId);
+            _ = EventsController.BroadcastAsync("refresh");
+            return Ok(result);
+        }
 
         // Promote applicant to driver
         [HttpPost("{id}/hire")]
@@ -205,6 +227,7 @@ namespace HRDashboard.API.Controller
             }
 
             _applicant.DeleteApplicantAction(id, CompanyId);
+            _ = EventsController.BroadcastAsync("refresh");
             return Ok(result);
         }
     }
@@ -226,7 +249,11 @@ namespace HRDashboard.API.Controller
         [HttpPost]
         [Authorize]
         public IActionResult Upload([FromBody] CreateDocumentDto data)
-            => Ok(_document.UploadDocumentAction(data, CompanyId));
+        {
+            var result = _document.UploadDocumentAction(data, CompanyId);
+            _ = EventsController.BroadcastAsync("refresh");
+            return Ok(result);
+        }
 
         // Public upload — used by the application form (no auth token available)
         [HttpPost("public")]
@@ -252,7 +279,11 @@ namespace HRDashboard.API.Controller
         [HttpDelete("{id}")]
         [Authorize]
         public IActionResult Delete(int id)
-            => Ok(_document.DeleteDocumentAction(id, CompanyId));
+        {
+            var result = _document.DeleteDocumentAction(id, CompanyId);
+            _ = EventsController.BroadcastAsync("refresh");
+            return Ok(result);
+        }
     }
 
     // ── Statements ────────────────────────────────────────────────────────────
@@ -298,6 +329,7 @@ namespace HRDashboard.API.Controller
                 SavedAt          = DateTime.UtcNow,
             };
             using (var db = new StatementContext()) { db.Statements.Add(s); db.SaveChanges(); }
+            _ = EventsController.BroadcastAsync("refresh");
             return Ok(s);
         }
 
@@ -310,6 +342,7 @@ namespace HRDashboard.API.Controller
                 if (s == null) return NotFound();
                 db.Statements.Remove(s); db.SaveChanges();
             }
+            _ = EventsController.BroadcastAsync("refresh");
             return Ok(new { message = "Statement deleted." });
         }
 
@@ -321,6 +354,7 @@ namespace HRDashboard.API.Controller
                 var all = db.Statements.Where(s => s.CompanyId == CompanyId).ToList();
                 db.Statements.RemoveRange(all); db.SaveChanges();
             }
+            _ = EventsController.BroadcastAsync("refresh");
             return Ok(new { message = "All statements cleared." });
         }
     }
@@ -356,6 +390,8 @@ namespace HRDashboard.API.Controller
             var miamiTz   = TimeZoneInfo.FindSystemTimeZoneById("Eastern Standard Time");
             var miamiTime = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, miamiTz);
             var miamiStr  = miamiTime.ToString("MM/dd/yyyy hh:mm tt") + " ET";
+
+            _ = EventsController.BroadcastAsync("refresh");
 
             // 1. Notify admin about new application (fire-and-forget)
             _ = _email.SendToAdminAsync(
