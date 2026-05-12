@@ -19,6 +19,7 @@ import DocumentsPage       from './components/dashboard/DocumentsPage';
 import StatementsPage      from './components/dashboard/StatementsPage';
 import SalaryPage          from './components/dashboard/SalaryPage';
 import EmployeesPage       from './components/dashboard/EmployeesPage';
+import EquipmentPage       from './components/dashboard/EquipmentPage';
 
 import InfoStep              from './components/application/InfoStep';
 import PersonalInfoStep      from './components/application/PersonalInfoStep';
@@ -65,6 +66,7 @@ function AppContent() {
             <Route path="documents/:id" element={<DocumentsPage />} />
             <Route path="drivers"       element={<DriversPage />} />
             <Route path="drivers/:id"   element={<DriversPage />} />
+            <Route path="equipment"     element={<EquipmentPage />} />
             <Route path="statements"    element={<StatementsPage />} />
             <Route path="salary"        element={<SalaryPage />} />
             <Route path="employees"     element={<EmployeesPage />} />

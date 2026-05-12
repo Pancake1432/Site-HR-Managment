@@ -11,6 +11,7 @@ const ADMIN_NAV = [
   { path: '/dashboard',            icon: '📊', label: 'Dashboard'  },
   { path: '/dashboard/documents',  icon: '📄', label: 'Documents'  },
   { path: '/dashboard/drivers',    icon: '🚚', label: 'Drivers'    },
+  { path: '/dashboard/equipment',  icon: '🛠️', label: 'Equipment'  },
   { path: '/dashboard/statements', icon: '📋', label: 'Statements' },
   { path: '/dashboard/salary',     icon: '💰', label: 'Salary'     },
   { path: '/dashboard/employees',  icon: '👥', label: 'Employees'  },
@@ -50,7 +51,7 @@ function DashboardLayout() {
 
   useEffect(() => {
     if (isAccounting) {
-      const restricted = ['/dashboard/documents', '/dashboard/drivers'];
+      const restricted = ['/dashboard/documents', '/dashboard/drivers', '/dashboard/equipment'];
       if (restricted.some(p => location.pathname.startsWith(p))) {
         navigate('/dashboard', { replace: true });
       }
