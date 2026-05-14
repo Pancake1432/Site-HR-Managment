@@ -79,7 +79,7 @@
   box-sizing: border-box;
 }
 
-.page { animation: fadeIn 0.5s ease; }
+.page { animation: fadeIn 0.5s ease; width: 100%; box-sizing: border-box; overflow-x: hidden; }
 @keyframes fadeIn { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
 
 /* ── PAGE HEADER ─────────────────────────────────────────────────────── */
@@ -1435,10 +1435,16 @@
     margin-left: 0 !important;
     padding: 16px 12px 80px !important;
     padding-top: 80px !important;
+    overflow-x: hidden;
+    width: 100%;
+    box-sizing: border-box;
   }
 
   /* Hide desktop-only elements */
   .desktop-only { display: none !important; }
+
+  /* Hide floating settings button on mobile — topbar has one already */
+  .settings-icon { display: none !important; }
 
   /* Mobile bottom nav */
   .mobile-bottom-nav {
@@ -2395,6 +2401,99 @@ html.compact .activity-item     { padding: 10px; }
   opacity: 0.7;
 }
 
+
+/* ── Equipment CRUD page ─────────────────────────────────────────────── */
+.equipment-cols {
+  grid-template-columns: 130px 110px 120px 130px 1fr 130px 160px;
+}
+
+.equipment-form {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(180px, 1fr));
+  gap: 16px;
+}
+
+.equipment-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.equipment-form input,
+.equipment-form select,
+.equipment-form textarea {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.equipment-form textarea {
+  min-height: 78px;
+  resize: vertical;
+}
+
+.equipment-notes-field {
+  grid-column: 1 / -1;
+}
+
+.equipment-form-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.equipment-secondary-btn,
+.equipment-delete-btn {
+  padding: 7px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.equipment-secondary-btn {
+  background: var(--bg-card-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+}
+
+.equipment-delete-btn {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: #fff;
+}
+
+.equipment-action-cell {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.status-equipment-available   { background: #d1fae5; color: #065f46; }
+.status-equipment-in-use      { background: #dbeafe; color: #1e40af; }
+.status-equipment-maintenance { background: #fef3c7; color: #92400e; }
+
+html.dark .status-equipment-available   { background: rgba(16,185,129,0.15); color: #6ee7b7; }
+html.dark .status-equipment-in-use      { background: rgba(59,130,246,0.15); color: #93c5fd; }
+html.dark .status-equipment-maintenance { background: rgba(245,158,11,0.15); color: #fcd34d; }
+
+@media (max-width: 1100px) {
+  .equipment-cols { grid-template-columns: 120px 95px 105px 115px 1fr 110px 140px; }
+}
+
+@media (max-width: 860px) {
+  .equipment-form { grid-template-columns: 1fr; }
+  .equipment-cols { grid-template-columns: 1fr; }
+  .equipment-action-cell { margin-top: 8px; }
+}
+
 /* Mobile */
 @media (max-width: 480px) {
   .stg-modal  { border-radius: 0 !important; }
@@ -2442,7 +2541,7 @@ html.dark { --heatmap-empty: #2d3748; }
   .salary-charts-grid  { grid-template-columns: 1fr; }
   .salary-heatmap-card { grid-column: 1; }
 }
-.salary-summary-card { text-align: center; padding: 24px 16px; }
+.salary-summary-card { text-align: center; padding: 24px 16px; box-sizing: border-box; min-width: 0; }
 .salary-summary-card.salary-summary-total { background: var(--gradient); color: white; }
 .salary-summary-label { font-size: 13px; font-weight: 500; color: var(--text-secondary); margin-bottom: 6px; }
 .salary-summary-total .salary-summary-label { color: rgba(255,255,255,0.8); }
@@ -2618,6 +2717,27 @@ html.dark .modal-content input:focus {
   outline: none !important;
   border-color: var(--accent) !important;
   box-shadow: 0 0 0 2px rgba(129,140,248,0.15) !important;
+}
+html.dark .modal-content textarea {
+  background: var(--bg-card-secondary) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border) !important;
+  color-scheme: dark;
+}
+html.dark .modal-content textarea::placeholder {
+  color: var(--text-secondary) !important;
+  opacity: 1;
+}
+html.dark .modal-content textarea:focus {
+  outline: none !important;
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 2px rgba(129,140,248,0.15) !important;
+}
+html.dark .modal-content input[type="date"] {
+  background: var(--bg-card-secondary) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border) !important;
+  color-scheme: dark;
 }
 
 /* ── Driver action cell — View + Terminate buttons ──────────────────────── */

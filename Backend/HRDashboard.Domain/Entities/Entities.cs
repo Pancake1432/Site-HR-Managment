@@ -132,6 +132,43 @@ namespace HRDashboard.Domain.Entities
         // Optional expiry date — for CDL and Medical Card tracking
         public DateTime? ExpiryDate { get; set; }
     }
+
+    public class EquipmentData
+    {
+        [Key][DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int Id { get; set; }
+
+        [Required][StringLength(50)]
+        public string CompanyId { get; set; } = "";
+
+        [Required][StringLength(50)]
+        public string UnitNumber { get; set; } = "";
+
+        [StringLength(30)]
+        public string Type { get; set; } = "Truck";
+
+        [StringLength(50)]
+        public string PlateNumber { get; set; } = "";
+
+        [StringLength(17)]
+        public string Vin { get; set; } = "";
+
+        [StringLength(20)]
+        public string Status { get; set; } = "Available";
+
+        [StringLength(100)]
+        public string AssignedDriver { get; set; } = "";
+
+        public int? AssignedDriverId { get; set; }
+
+        [DataType(DataType.Date)]
+        public DateTime? InspectionDate { get; set; }
+
+        public string? Notes { get; set; }
+
+        [DataType(DataType.Date)]
+        public DateTime CreatedAt { get; set; } = DateTime.Now;
+    }
 }
 
 // ── SavedStatement ────────────────────────────────────────────────────────────

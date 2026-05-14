@@ -255,4 +255,94 @@ namespace HRDashboard.BusinessLayer.Core
             ExpiryDate = d.ExpiryDate,
         };
     }
+
+    // ── Equipment Actions ─────────────────────────────────────────────────────
+    public class EquipmentActions
+    {
+        protected EquipmentActions() { }
+
+        protected List<EquipmentDto> GetAllEquipmentActionExecution(string companyId)
+        {
+            List<EquipmentData> list;
+            using (var db = new EquipmentContext())
+                list = db.Equipment.Where(x => x.CompanyId == companyId).ToList();
+            return list.Select(MapEquipment).ToList();
+        }
+
+        protected EquipmentDto? GetEquipmentByIdActionExecution(int id, string companyId)
+        {
+            EquipmentData? e;
+            using (var db = new EquipmentContext())
+                e = db.Equipment.FirstOrDefault(x => x.Id == id && x.CompanyId == companyId);
+            return e == null ? null : MapEquipment(e);
+        }
+
+        protected ActionResponse CreateEquipmentActionExecution(CreateEquipmentDto data, string companyId)
+        {
+            var e = new EquipmentData
+            {
+                CompanyId        = companyId,
+                UnitNumber       = data.UnitNumber,
+                Type             = data.Type,
+                PlateNumber      = data.PlateNumber,
+                Vin              = data.Vin,
+                Status           = data.Status,
+                AssignedDriver   = data.AssignedDriver,
+                AssignedDriverId = data.AssignedDriverId,
+                InspectionDate   = string.IsNullOrWhiteSpace(data.InspectionDate) ? null : DateTime.Parse(data.InspectionDate),
+                Notes            = data.Notes,
+                CreatedAt        = DateTime.Now,
+            };
+            using (var db = new EquipmentContext()) { db.Equipment.Add(e); db.SaveChanges(); }
+            return new ActionResponse { IsSuccess = true, Message = "Equipment created.", Data = MapEquipment(e) };
+        }
+
+        protected ActionResponse UpdateEquipmentActionExecution(int id, UpdateEquipmentDto data, string companyId)
+        {
+            EquipmentData? e;
+            using (var db = new EquipmentContext())
+            {
+                e = db.Equipment.FirstOrDefault(x => x.Id == id && x.CompanyId == companyId);
+                if (e == null) return new ActionResponse { IsSuccess = false, Message = "Equipment not found." };
+                if (data.UnitNumber       != null) e.UnitNumber       = data.UnitNumber;
+                if (data.Type             != null) e.Type             = data.Type;
+                if (data.PlateNumber      != null) e.PlateNumber      = data.PlateNumber;
+                if (data.Vin              != null) e.Vin              = data.Vin;
+                if (data.Status           != null) e.Status           = data.Status;
+                if (data.AssignedDriver   != null) e.AssignedDriver   = data.AssignedDriver;
+                if (data.AssignedDriverId.HasValue) e.AssignedDriverId = data.AssignedDriverId;
+                if (data.InspectionDate   != null) e.InspectionDate   = string.IsNullOrWhiteSpace(data.InspectionDate) ? null : DateTime.Parse(data.InspectionDate);
+                if (data.Notes            != null) e.Notes            = data.Notes;
+                db.Equipment.Update(e); db.SaveChanges();
+            }
+            return new ActionResponse { IsSuccess = true, Message = "Equipment updated.", Data = MapEquipment(e) };
+        }
+
+        protected ActionResponse DeleteEquipmentActionExecution(int id, string companyId)
+        {
+            using (var db = new EquipmentContext())
+            {
+                var e = db.Equipment.FirstOrDefault(x => x.Id == id && x.CompanyId == companyId);
+                if (e == null) return new ActionResponse { IsSuccess = false, Message = "Equipment not found." };
+                db.Equipment.Remove(e); db.SaveChanges();
+            }
+            return new ActionResponse { IsSuccess = true, Message = "Equipment deleted." };
+        }
+
+        private static EquipmentDto MapEquipment(EquipmentData e) => new EquipmentDto
+        {
+            Id               = e.Id,
+            CompanyId        = e.CompanyId,
+            UnitNumber       = e.UnitNumber,
+            Type             = e.Type,
+            PlateNumber      = e.PlateNumber,
+            Vin              = e.Vin,
+            Status           = e.Status,
+            AssignedDriver   = e.AssignedDriver,
+            AssignedDriverId = e.AssignedDriverId,
+            InspectionDate   = e.InspectionDate.HasValue ? e.InspectionDate.Value.ToString("yyyy-MM-dd") : null,
+            Notes            = e.Notes,
+            CreatedAt        = e.CreatedAt,
+        };
+    }
 }

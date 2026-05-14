@@ -359,6 +359,51 @@ namespace HRDashboard.API.Controller
         }
     }
 
+    // ── Equipment ─────────────────────────────────────────────────────────────
+    [Route("api/equipment")]
+    [ApiController]
+    [Authorize]
+    public class EquipmentController : ControllerBase
+    {
+        internal IEquipmentAction _equipment;
+        public EquipmentController() { _equipment = new BusinessLogic().EquipmentAction(); }
+        private string CompanyId => TokenService.GetCompanyId(User);
+
+        [HttpGet]
+        public IActionResult GetAll() => Ok(_equipment.GetAllEquipmentAction(CompanyId));
+
+        [HttpGet("{id}")]
+        public IActionResult GetById(int id)
+        {
+            var e = _equipment.GetEquipmentByIdAction(id, CompanyId);
+            return e == null ? NotFound() : Ok(e);
+        }
+
+        [HttpPost]
+        public IActionResult Create([FromBody] CreateEquipmentDto data)
+        {
+            var result = _equipment.CreateEquipmentAction(data, CompanyId);
+            _ = EventsController.BroadcastAsync("refresh");
+            return Ok(result);
+        }
+
+        [HttpPut("{id}")]
+        public IActionResult Update(int id, [FromBody] UpdateEquipmentDto data)
+        {
+            var result = _equipment.UpdateEquipmentAction(id, data, CompanyId);
+            _ = EventsController.BroadcastAsync("refresh");
+            return Ok(result);
+        }
+
+        [HttpDelete("{id}")]
+        public IActionResult Delete(int id)
+        {
+            var result = _equipment.DeleteEquipmentAction(id, CompanyId);
+            _ = EventsController.BroadcastAsync("refresh");
+            return Ok(result);
+        }
+    }
+
     // ── Applications — public form submission ─────────────────────────────────
     [Route("api/applications")]
     [ApiController]

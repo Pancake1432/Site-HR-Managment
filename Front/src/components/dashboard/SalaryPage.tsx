@@ -113,7 +113,8 @@ function WeeklyPayStrip({
   const fmtShort = (d: Date) =>
     d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
-  const CELL = 18, GAP = 4;
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 600;
+  const CELL = isMobile ? 12 : 18, GAP = isMobile ? 2 : 4;
 
   return (
     <div style={{ position: 'relative' }}>
@@ -352,7 +353,7 @@ export default function SalaryPage() {
             📅 Paid every {DAY_NAMES[parseInt(settings.payDay)]}
           </span>
         </div>
-        <div style={{ overflowX: 'auto', paddingBottom: 4 }}>
+        <div className="salary-heatmap-scroll">
           <WeeklyPayStrip statements={statements} currency={settings.currency} payDay={parseInt(settings.payDay)} />
         </div>
       </div>
@@ -360,7 +361,7 @@ export default function SalaryPage() {
       {/* ── Statements table ── */}
       <div className="card" style={{ marginTop: 16 }}>
         <div
-          className="card-header"
+          className="salary-search-row"
           style={{
             display: 'flex',
             justifyContent: 'space-between',
@@ -568,7 +569,7 @@ export default function SalaryPage() {
                         title="Download PDF"
                         onClick={() => handleDownload(s)}
                       >
-                        <Emoji symbol="💾" size={16} />
+                        <Emoji symbol="📄" size={16} />
                       </button>
                       <button
                         className="salary-action-btn salary-action-delete"

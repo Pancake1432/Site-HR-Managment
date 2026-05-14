@@ -162,6 +162,49 @@ namespace HRDashboard.Domain.Models
         public string? SalaryExpectation    { get; set; }
     }
 
+    // ── Equipment ─────────────────────────────────────────────────────────────
+    public class EquipmentDto
+    {
+        public int      Id               { get; set; }
+        public string   CompanyId        { get; set; } = "";
+        public string   UnitNumber       { get; set; } = "";
+        public string   Type             { get; set; } = "";
+        public string   PlateNumber      { get; set; } = "";
+        public string   Vin              { get; set; } = "";
+        public string   Status           { get; set; } = "";
+        public string   AssignedDriver   { get; set; } = "";
+        public int?     AssignedDriverId { get; set; }
+        public string?  InspectionDate   { get; set; }
+        public string?  Notes            { get; set; }
+        public DateTime CreatedAt        { get; set; }
+    }
+
+    public class CreateEquipmentDto
+    {
+        public string  UnitNumber       { get; set; } = "";
+        public string  Type             { get; set; } = "Truck";
+        public string  PlateNumber      { get; set; } = "";
+        public string  Vin              { get; set; } = "";
+        public string  Status           { get; set; } = "Available";
+        public string  AssignedDriver   { get; set; } = "";
+        public int?    AssignedDriverId { get; set; }
+        public string? InspectionDate   { get; set; }
+        public string? Notes            { get; set; }
+    }
+
+    public class UpdateEquipmentDto
+    {
+        public string? UnitNumber       { get; set; }
+        public string? Type             { get; set; }
+        public string? PlateNumber      { get; set; }
+        public string? Vin              { get; set; }
+        public string? Status           { get; set; }
+        public string? AssignedDriver   { get; set; }
+        public int?    AssignedDriverId { get; set; }
+        public string? InspectionDate   { get; set; }
+        public string? Notes            { get; set; }
+    }
+
     // ── Set Expiry ────────────────────────────────────────────────────────────
     public class SetExpiryDto
     {

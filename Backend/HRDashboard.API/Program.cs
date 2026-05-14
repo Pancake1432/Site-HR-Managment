@@ -159,6 +159,20 @@ try
             Total            TEXT NOT NULL DEFAULT '0',
             SavedAt          TEXT NOT NULL DEFAULT ''
         );
+        CREATE TABLE IF NOT EXISTS Equipment (
+            Id               INTEGER PRIMARY KEY AUTOINCREMENT,
+            CompanyId        TEXT NOT NULL DEFAULT '',
+            UnitNumber       TEXT NOT NULL DEFAULT '',
+            Type             TEXT NOT NULL DEFAULT 'Truck',
+            PlateNumber      TEXT NOT NULL DEFAULT '',
+            Vin              TEXT NOT NULL DEFAULT '',
+            Status           TEXT NOT NULL DEFAULT 'Available',
+            AssignedDriver   TEXT NOT NULL DEFAULT '',
+            AssignedDriverId INTEGER,
+            InspectionDate   TEXT,
+            Notes            TEXT,
+            CreatedAt        TEXT NOT NULL DEFAULT ''
+        );
     ";
     create.ExecuteNonQuery();
     Console.WriteLine("[Startup] All tables created / verified.");

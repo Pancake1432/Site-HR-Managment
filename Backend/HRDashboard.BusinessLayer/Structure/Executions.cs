@@ -34,6 +34,15 @@ namespace HRDashboard.BusinessLayer.Structure
         public ActionResponse    UploadDocumentAction(CreateDocumentDto d, string cid)      => UploadDocumentActionExecution(d, cid);
         public ActionResponse    DeleteDocumentAction(int id, string companyId)             => DeleteDocumentActionExecution(id, companyId);
     }
+
+    public class EquipmentActionExecution : EquipmentActions, IEquipmentAction
+    {
+        public List<EquipmentDto> GetAllEquipmentAction(string companyId)                        => GetAllEquipmentActionExecution(companyId);
+        public EquipmentDto?      GetEquipmentByIdAction(int id, string companyId)               => GetEquipmentByIdActionExecution(id, companyId);
+        public ActionResponse     CreateEquipmentAction(CreateEquipmentDto d, string cid)        => CreateEquipmentActionExecution(d, cid);
+        public ActionResponse     UpdateEquipmentAction(int id, UpdateEquipmentDto d, string cid)=> UpdateEquipmentActionExecution(id, d, cid);
+        public ActionResponse     DeleteEquipmentAction(int id, string companyId)                => DeleteEquipmentActionExecution(id, companyId);
+    }
 }
 
 // ── BusinessLogic factory — same pattern as professor ────────────────────────
@@ -47,5 +56,6 @@ namespace HRDashboard.BusinessLayer
         public Interfaces.IDriverAction    DriverAction()      => new Structure.DriverActionExecution();
         public Interfaces.IApplicantAction ApplicantAction()   => new Structure.ApplicantActionExecution();
         public Interfaces.IDocumentAction  DocumentAction()    => new Structure.DocumentActionExecution();
+        public Interfaces.IEquipmentAction EquipmentAction()   => new Structure.EquipmentActionExecution();
     }
 }

@@ -40,11 +40,13 @@ export default function DashboardHome() {
           if (status === 'expired' || status === 'warning') {
             const ms   = new Date(doc.expiryDate).getTime() - Date.now();
             const days = Math.ceil(ms / (1000 * 60 * 60 * 24));
-            alerts.push({
-              driverName: driver.name,
-              docType: key === 'cdl' ? 'CDL Certificate' : 'Medical Card',
-              days,
-            });
+            if (days <= WARN_DAYS || status === 'expired') {
+              alerts.push({
+                driverName: driver.name,
+                docType: key === 'cdl' ? 'CDL Certificate' : 'Medical Card',
+                days,
+              });
+            }
           }
         });
       });

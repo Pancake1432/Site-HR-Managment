@@ -31,4 +31,13 @@ namespace HRDashboard.BusinessLayer.Interfaces
         ActionResponse    UploadDocumentAction(CreateDocumentDto data, string companyId);
         ActionResponse    DeleteDocumentAction(int id, string companyId);
     }
+
+    public interface IEquipmentAction
+    {
+        List<EquipmentDto> GetAllEquipmentAction(string companyId);
+        EquipmentDto?      GetEquipmentByIdAction(int id, string companyId);
+        ActionResponse     CreateEquipmentAction(CreateEquipmentDto data, string companyId);
+        ActionResponse     UpdateEquipmentAction(int id, UpdateEquipmentDto data, string companyId);
+        ActionResponse     DeleteEquipmentAction(int id, string companyId);
+    }
 }

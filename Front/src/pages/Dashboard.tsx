@@ -11,6 +11,7 @@ const ADMIN_NAV = [
   { path: '/dashboard',            icon: '📊', label: 'Dashboard'  },
   { path: '/dashboard/documents',  icon: '📄', label: 'Documents'  },
   { path: '/dashboard/drivers',    icon: '🚚', label: 'Drivers'    },
+  { path: '/dashboard/equipment',  icon: '🛠️', label: 'Equipment'  },
   { path: '/dashboard/statements', icon: '📋', label: 'Statements' },
   { path: '/dashboard/salary',     icon: '💰', label: 'Salary'     },
   { path: '/dashboard/employees',  icon: '👥', label: 'Employees'  },
@@ -27,7 +28,7 @@ function DashboardLayout() {
   const navigate     = useNavigate();
   const location     = useLocation();
   const { settings } = useSettings();
-  const { user, isAccounting } = useAuth();
+  const { isAccounting } = useAuth();
   const [showSettings, setShowSettings] = useState(false);
 
   const NAV_ITEMS = isAccounting ? ACCOUNTING_NAV : ADMIN_NAV;
@@ -35,6 +36,7 @@ function DashboardLayout() {
   const activePath = NAV_ITEMS
     .slice().reverse()
     .find(item => location.pathname.startsWith(item.path))?.path ?? '/dashboard';
+  const currentPageLabel = NAV_ITEMS.find(item => item.path === activePath)?.label ?? 'Dashboard';
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', settings.darkMode);
@@ -50,7 +52,7 @@ function DashboardLayout() {
 
   useEffect(() => {
     if (isAccounting) {
-      const restricted = ['/dashboard/documents', '/dashboard/drivers'];
+      const restricted = ['/dashboard/documents', '/dashboard/drivers', '/dashboard/equipment'];
       if (restricted.some(p => location.pathname.startsWith(p))) {
         navigate('/dashboard', { replace: true });
       }
@@ -116,10 +118,18 @@ function DashboardLayout() {
 
       {/* MOBILE TOPBAR */}
       <div className="mobile-topbar">
-        <div className="mobile-topbar-logo">
-          <Emoji symbol="🏢" size={20} label="Company" />
-          <span>HR Manager</span>
+        {/* Left: logo icon */}
+        <div className="mobile-topbar-brand">
+          <div className="mobile-topbar-logo">
+            <Emoji symbol="🏢" size={20} label="Company" />
+          </div>
         </div>
+        {/* Center: app name + current page */}
+        <div className="mobile-topbar-center">
+          <span className="mobile-topbar-app">HR Manager</span>
+          <span className="mobile-topbar-page">{currentPageLabel}</span>
+        </div>
+        {/* Right: settings + logout */}
         <div className="mobile-topbar-actions">
           <button className="mobile-topbar-btn" onClick={() => setShowSettings(true)} aria-label="Settings">⚙️</button>
           <button className="mobile-topbar-btn mobile-topbar-logout" onClick={handleLogout} aria-label="Logout">🚪</button>

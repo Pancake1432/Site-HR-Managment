@@ -247,7 +247,7 @@ export default function DriversPage() {
                   <Eye size={13} /> View
                 </button>
                 <button onClick={() => setFireConfirmDriver(d)} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 12px', borderRadius: '8px', border: 'none', background: 'linear-gradient(135deg, #ef4444, #dc2626)', color: '#fff', cursor: 'pointer', fontSize: '13px', fontWeight: 600, whiteSpace: 'nowrap' }}>
-                  <UserX size={13} /> Terminate
+                  <UserX size={13} /> <span className="terminate-text">Terminate</span>
                 </button>
               </span>
             </div>

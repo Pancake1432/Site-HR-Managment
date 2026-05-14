@@ -44,4 +44,12 @@ namespace HRDashboard.DataAccess.Context
         protected override void OnConfiguring(DbContextOptionsBuilder o)
             => o.UseSqlite(DbSession.ConnectionString);
     }
+
+    public class EquipmentContext : DbContext
+    {
+        public DbSet<EquipmentData> Equipment { get; set; }
+
+        protected override void OnConfiguring(DbContextOptionsBuilder o)
+            => o.UseSqlite(DbSession.ConnectionString);
+    }
 }
